@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -132,8 +133,8 @@ fun SplitView(onBack: () -> Unit) {
                         val isSelected = selectedPages.contains(index)
                         Box(Modifier.aspectRatio(0.75f).padding(4.dp).clip(RoundedCornerShape(8.dp)).border(2.dp, if (isSelected) Color(0xFFE91E63) else Color.Transparent, RoundedCornerShape(8.dp)).clickable { selectedPages = if (isSelected) selectedPages - index else selectedPages + index }) {
                             thumbnails[index]?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-                            if (isSelected) Box(Modifier.fillMaxSize().background(Color(0xFFE91E63).copy(0.2f)), Alignment.Center) { Icon(Icons.Default.CheckCircle, null, tint = Color(0xFFE91E63)) }
-                            Text("${index + 1}", Modifier.align(Alignment.BottomStart).padding(4.dp).background(Color.Black.copy(0.6f)).padding(horizontal = 4.dp), color = Color.White, fontSize = 10.sp)
+                            if (isSelected) Box(Modifier.fillMaxSize().background(Color(0xFFE91E63).copy(alpha = 0.2f)), Alignment.Center) { Icon(Icons.Default.CheckCircle, null, tint = Color(0xFFE91E63)) }
+                            Text("${index + 1}", Modifier.align(Alignment.BottomStart).padding(4.dp).background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 4.dp), color = Color.White, fontSize = 10.sp)
                         }
                     }
                 }
