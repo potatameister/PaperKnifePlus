@@ -25,7 +25,7 @@ jobs:
       run: gradle wrapper --gradle-version 8.7
 
     - name: Build APKs
-      run: ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
+      run: ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace --info
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
