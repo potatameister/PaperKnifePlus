@@ -11,8 +11,10 @@ android {
     // Reproducible Builds hardening
     val sourceDateEpoch = System.getenv("SOURCE_DATE_EPOCH")
     if (sourceDateEpoch != null) {
-        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-            kotlinOptions.freeCompilerArgs += "-Xno-param-assertions"
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
+            compilerOptions {
+                freeCompilerArgs.add("-Xno-param-assertions")
+            }
         }
     }
 
@@ -43,9 +45,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
+    
+    // Modern Kotlin Compiler Options
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+        }
     }
+
     buildFeatures {
         compose = true
     }
@@ -73,5 +80,5 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test-manifest)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
