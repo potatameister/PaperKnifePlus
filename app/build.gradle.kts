@@ -35,9 +35,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    
+    // Modern Kotlin 2.0 Compiler Options
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
+
     buildFeatures {
         compose = true
     }
@@ -52,21 +57,21 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.pdfbox.android)
-    implementation(libs.coil.compose)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.cmp.core.ktx)
+    implementation(libs.cmp.lifecycle.runtime)
+    implementation(libs.cmp.activity.compose)
+    implementation(platform(libs.cmp.compose.bom))
+    implementation(libs.cmp.ui)
+    implementation(libs.cmp.ui.graphics)
+    implementation(libs.cmp.ui.tooling.preview)
+    implementation(libs.cmp.material3)
+    implementation(libs.cmp.pdfbox.android)
+    implementation(libs.cmp.coil.compose)
+    testImplementation(libs.cmp.junit)
+    androidTestImplementation(libs.cmp.androidx.junit)
+    androidTestImplementation(libs.cmp.androidx.espresso.core)
+    androidTestImplementation(platform(libs.cmp.compose.bom))
+    androidTestImplementation(libs.cmp.ui.test.junit4)
+    debugImplementation(libs.cmp.ui.tooling)
+    debugImplementation(libs.cmp.ui.test.manifest)
 }
