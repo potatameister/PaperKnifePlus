@@ -16,9 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
-import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
+import com.tomroush.pdfbox.pdmodel.PDDocument
+import com.tomroush.pdfbox.pdmodel.encryption.AccessPermission
+import com.tomroush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
