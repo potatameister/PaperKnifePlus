@@ -38,10 +38,14 @@ fun PdfToImageView(onBack: () -> Unit) {
     ) { uri ->
         uri?.let {
             selectedUri = it
-            context.contentResolver.openFileDescriptor(it, "r")?.use { pfd ->
-                val renderer = PdfRenderer(pfd)
-                pageCount = renderer.pageCount
-                renderer.close()
+            try {
+                context.contentResolver.openFileDescriptor(it, "r")?.use { pfd ->
+                    val renderer = PdfRenderer(pfd)
+                    pageCount = renderer.pageCount
+                    renderer.close()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error opening PDF: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -54,24 +58,24 @@ fun PdfToImageView(onBack: () -> Unit) {
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                        val zipOut = ZipOutputStream(outputStream)
-                        context.contentResolver.openFileDescriptor(selectedUri!!, "r")?.use { pfd ->
-                            val renderer = PdfRenderer(pfd)
-                            for (i in 0 until renderer.pageCount) {
-                                val page = renderer.openPage(i)
-                                val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                
-                                val zipEntry = ZipEntry("page_${i + 1}.jpg")
-                                zipOut.putNextEntry(zipEntry)
-                                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
-                                zipOut.closeEntry()
-                                page.close()
-                                bitmap.recycle()
+                        ZipOutputStream(outputStream).use { zipOut ->
+                            context.contentResolver.openFileDescriptor(selectedUri!!, "r")?.use { pfd ->
+                                val renderer = PdfRenderer(pfd)
+                                for (i in 0 until renderer.pageCount) {
+                                    val page = renderer.openPage(i)
+                                    val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+                                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                    
+                                    val zipEntry = ZipEntry("page_${i + 1}.jpg")
+                                    zipOut.putNextEntry(zipEntry)
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
+                                    zipOut.closeEntry()
+                                    page.close()
+                                    bitmap.recycle()
+                                }
+                                renderer.close()
                             }
-                            renderer.close()
                         }
-                        zipOut.close()
                     }
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Images Exported!", Toast.LENGTH_LONG).show()

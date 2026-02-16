@@ -3,7 +3,6 @@ package com.paperknifeplus.app.ui.components
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,16 +29,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tomroush.pdfbox.multipdf.PDFMergerUtility
 import com.tomroush.pdfbox.pdmodel.PDDocument
 import com.tomroush.pdfbox.util.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SplitView(onBack: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var pageCount by remember { mutableStateOf(0) }
     var selectedPages by remember { mutableStateOf(setOf<Int>()) }
@@ -51,62 +51,71 @@ fun SplitView(onBack: () -> Unit) {
     ) { uri ->
         uri?.let {
             selectedUri = it
-            // Load metadata
-            context.contentResolver.openFileDescriptor(it, "r")?.use { pfd ->
-                val renderer = PdfRenderer(pfd)
-                pageCount = renderer.pageCount
-                selectedPages = (0 until pageCount).toSet() // Default select all
-                renderer.close()
+            scope.launch(Dispatchers.IO) {
+                try {
+                    context.contentResolver.openFileDescriptor(it, "r")?.use { pfd ->
+                        val renderer = PdfRenderer(pfd)
+                        val count = renderer.pageCount
+                        val thumbs = mutableMapOf<Int, Bitmap>()
+                        for (i in 0 until minOf(count, 20)) {
+                            val page = renderer.openPage(i)
+                            val bitmap = Bitmap.createBitmap(page.width/4, page.height/4, Bitmap.Config.ARGB_8888)
+                            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            thumbs[i] = bitmap
+                            page.close()
+                        }
+                        withContext(Dispatchers.Main) {
+                            pageCount = count
+                            thumbnails = thumbs
+                            selectedPages = (0 until count).toSet()
+                        }
+                        renderer.close()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
 
     val saveLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        uri?.let { saveUri ->
+    ) { saveUri ->
+        saveUri?.let { uri ->
             isProcessing = true
-            try {
-                context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                    val document = PDDocument.load(inputStream)
-                    val newDocument = PDDocument()
-                    selectedPages.sorted().forEach { pageIndex ->
-                        newDocument.addPage(document.getPage(pageIndex))
+            scope.launch(Dispatchers.IO) {
+                try {
+                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
+                        val document = PDDocument.load(inputStream)
+                        val newDocument = PDDocument()
+                        selectedPages.sorted().forEach { pageIndex ->
+                            newDocument.addPage(document.getPage(pageIndex))
+                        }
+                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                            newDocument.save(outputStream)
+                        }
+                        newDocument.close()
+                        document.close()
                     }
-                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
-                        newDocument.save(outputStream)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Split successful!", Toast.LENGTH_LONG).show()
+                        onBack()
                     }
-                    newDocument.close()
-                    document.close()
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    isProcessing = false
                 }
-                Toast.makeText(context, "Split successfully!", Toast.LENGTH_LONG).show()
-                onBack()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                isProcessing = false
             }
         }
     }
 
-    LaunchedEffect(selectedUri) {
-        selectedUri?.let { uri ->
-            withContext(Dispatchers.IO) {
-                context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-                    val renderer = PdfRenderer(pfd)
-                    val newThumbnails = mutableMapOf<Int, Bitmap>()
-                    for (i in 0 until minOf(pageCount, 20)) { // Limit initial thumbnails for speed
-                        val page = renderer.openPage(i)
-                        val bitmap = Bitmap.createBitmap(page.width/4, page.height/4, Bitmap.Config.ARGB_8888)
-                        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                        newThumbnails[i] = bitmap
-                        page.close()
-                    }
-                    thumbnails = newThumbnails
-                    renderer.close()
-                }
-            }
-        }
+    LaunchedEffect(Unit) {
+        PDFBoxResourceLoader.init(context)
     }
 
     Scaffold(
@@ -123,7 +132,6 @@ fun SplitView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
             if (selectedUri == null) {
-                // Upload Placeholder (Replicating PaperKnife look)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -141,23 +149,20 @@ fun SplitView(onBack: () -> Unit) {
                     }
                 }
             } else {
-                // Info Bar
                 Card(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Description, contentDescription = null, tint = Color(0xFFE91E63))
                         Spacer(modifier = Modifier.width(12.dp))
-                        Column {
+                        Column(Modifier.weight(1f)) {
                             Text(selectedUri?.lastPathSegment ?: "Document", fontWeight = FontWeight.Bold, maxLines = 1)
                             Text("$pageCount Pages", fontSize = 12.sp)
                         }
-                        Spacer(modifier = Modifier.weight(1f))
                         IconButton(onClick = { selectedUri = null; selectedPages = emptySet() }) {
                             Icon(Icons.Default.Close, contentDescription = "Remove")
                         }
                     }
                 }
 
-                // Grid
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
                     modifier = Modifier.weight(1f),

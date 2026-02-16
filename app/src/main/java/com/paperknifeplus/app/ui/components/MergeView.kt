@@ -19,41 +19,52 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.tomroush.pdfbox.multipdf.PDFMergerUtility
 import com.tomroush.pdfbox.util.PDFBoxResourceLoader
-import java.io.OutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MergeView(onBack: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var isProcessing by remember { mutableStateOf(false) }
     
-    // Launcher for picking PDFs
     val pickLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
         selectedUris = selectedUris + uris
     }
 
-    // Launcher for saving the merged PDF
     val saveLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        uri?.let { saveUri ->
-            try {
-                val merger = PDFMergerUtility()
-                context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
-                    selectedUris.forEach { pdfUri ->
-                        context.contentResolver.openInputStream(pdfUri)?.use { inputStream ->
-                            merger.addSource(inputStream)
+    ) { saveUri ->
+        saveUri?.let { uri ->
+            isProcessing = true
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val merger = PDFMergerUtility()
+                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        selectedUris.forEach { pdfUri ->
+                            context.contentResolver.openInputStream(pdfUri)?.use { inputStream ->
+                                merger.addSource(inputStream)
+                            }
                         }
+                        merger.destinationStream = outputStream
+                        merger.mergeDocuments(null)
                     }
-                    merger.destinationStream = outputStream
-                    merger.mergeDocuments(null)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Merged successfully!", Toast.LENGTH_LONG).show()
+                        onBack()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    isProcessing = false
                 }
-                Toast.makeText(context, "Merged successfully!", Toast.LENGTH_LONG).show()
-                onBack()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -119,9 +130,13 @@ fun MergeView(onBack: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 16.dp),
-                    enabled = selectedUris.size > 1
+                    enabled = selectedUris.size > 1 && !isProcessing
                 ) {
-                    Text("Merge ${selectedUris.size} Files & Save")
+                    if (isProcessing) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Merge ${selectedUris.size} Files & Save")
+                    }
                 }
             }
         }

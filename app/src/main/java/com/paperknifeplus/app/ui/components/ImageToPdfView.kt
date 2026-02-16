@@ -1,5 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.tomroush.pdfbox.pdmodel.PDDocument
@@ -27,13 +29,15 @@ import com.tomroush.pdfbox.pdmodel.PDPage
 import com.tomroush.pdfbox.pdmodel.PDPageContentStream
 import com.tomroush.pdfbox.pdmodel.common.PDRectangle
 import com.tomroush.pdfbox.pdmodel.graphics.image.LosslessFactory
-import com.tomroush.pdfbox.pdmodel.graphics.image.PDImageXObject
-import android.graphics.BitmapFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImageToPdfView(onBack: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isProcessing by remember { mutableStateOf(false) }
 
@@ -43,32 +47,39 @@ fun ImageToPdfView(onBack: () -> Unit) {
 
     val saveLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        uri?.let { saveUri ->
+    ) { saveUri ->
+        saveUri?.let { uri ->
             isProcessing = true
-            try {
-                val document = PDDocument()
-                selectedUris.forEach { imgUri ->
-                    context.contentResolver.openInputStream(imgUri)?.use { inputStream ->
-                        val bitmap = BitmapFactory.decodeStream(inputStream)
-                        val pdImage = LosslessFactory.createFromImage(document, bitmap)
-                        val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
-                        document.addPage(page)
-                        val contentStream = PDPageContentStream(document, page)
-                        contentStream.drawImage(pdImage, 0f, 0f)
-                        contentStream.close()
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val document = PDDocument()
+                    selectedUris.forEach { imgUri ->
+                        context.contentResolver.openInputStream(imgUri)?.use { inputStream ->
+                            val bitmap = BitmapFactory.decodeStream(inputStream)
+                            val pdImage = LosslessFactory.createFromImage(document, bitmap)
+                            val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
+                            document.addPage(page)
+                            val contentStream = PDPageContentStream(document, page)
+                            contentStream.drawImage(pdImage, 0f, 0f)
+                            contentStream.close()
+                            bitmap.recycle()
+                        }
                     }
+                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        document.save(outputStream)
+                    }
+                    document.close()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "PDF Created!", Toast.LENGTH_LONG).show()
+                        onBack()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    isProcessing = false
                 }
-                context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
-                    document.save(outputStream)
-                }
-                document.close()
-                Toast.makeText(context, "PDF Created!", Toast.LENGTH_LONG).show()
-                onBack()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                isProcessing = false
             }
         }
     }
@@ -120,7 +131,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     enabled = selectedUris.isNotEmpty() && !isProcessing
                 ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     else Text("Create PDF")
                 }
             }

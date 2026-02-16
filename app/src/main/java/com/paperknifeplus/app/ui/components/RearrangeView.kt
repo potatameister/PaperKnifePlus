@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tomroush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,7 +70,9 @@ fun RearrangeView(onBack: () -> Unit) {
                         renderer.close()
                     }
                 } catch (e: Exception) {
-                    // Handle error
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -183,7 +186,7 @@ fun RearrangeView(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isProcessing
                 ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     else Text("Save New Order")
                 }
             }

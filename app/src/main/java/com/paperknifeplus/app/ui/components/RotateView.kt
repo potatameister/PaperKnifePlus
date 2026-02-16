@@ -110,7 +110,7 @@ fun RotateView(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     enabled = rotationAngle != 0 && !isProcessing
                 ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     else Text("Rotate & Save")
                 }
             }

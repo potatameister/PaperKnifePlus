@@ -24,11 +24,15 @@ import androidx.compose.ui.unit.sp
 import com.tomroush.pdfbox.pdmodel.PDDocument
 import com.tomroush.pdfbox.pdmodel.encryption.AccessPermission
 import com.tomroush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProtectView(onBack: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var password by remember { mutableStateOf("") }
     var isProcessing by remember { mutableStateOf(false) }
@@ -39,28 +43,34 @@ fun ProtectView(onBack: () -> Unit) {
 
     val saveLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        uri?.let { saveUri ->
+    ) { saveUri ->
+        saveUri?.let { uri ->
             isProcessing = true
-            try {
-                context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                    val document = PDDocument.load(inputStream)
-                    val ap = AccessPermission()
-                    val spp = StandardProtectionPolicy(password, password, ap)
-                    spp.encryptionKeyLength = 128
-                    document.protect(spp)
-                    
-                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
-                        document.save(outputStream)
+            scope.launch(Dispatchers.IO) {
+                try {
+                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
+                        val document = PDDocument.load(inputStream)
+                        val ap = AccessPermission()
+                        val spp = StandardProtectionPolicy(password, password, ap)
+                        spp.encryptionKeyLength = 128
+                        document.protect(spp)
+                        
+                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                            document.save(outputStream)
+                        }
+                        document.close()
                     }
-                    document.close()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "File protected!", Toast.LENGTH_LONG).show()
+                        onBack()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    isProcessing = false
                 }
-                Toast.makeText(context, "File protected!", Toast.LENGTH_LONG).show()
-                onBack()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                isProcessing = false
             }
         }
     }
@@ -104,7 +114,7 @@ fun ProtectView(onBack: () -> Unit) {
                     }
                 }
 
-                Text("Set Password", fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Gray)
+                Text("Set Password", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = password,
@@ -124,7 +134,7 @@ fun ProtectView(onBack: () -> Unit) {
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
                 ) {
-                    if (isProcessing) CircularProgressIndicator(color = Color.White)
+                    if (isProcessing) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
                     else Text("Protect & Save PDF", fontWeight = FontWeight.Bold)
                 }
             }

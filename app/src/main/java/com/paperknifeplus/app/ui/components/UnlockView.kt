@@ -19,11 +19,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tomroush.pdfbox.pdmodel.PDDocument
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UnlockView(onBack: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var password by remember { mutableStateOf("") }
     var isProcessing by remember { mutableStateOf(false) }
@@ -34,25 +38,31 @@ fun UnlockView(onBack: () -> Unit) {
 
     val saveLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        uri?.let { saveUri ->
+    ) { saveUri ->
+        saveUri?.let { uri ->
             isProcessing = true
-            try {
-                context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                    val document = PDDocument.load(inputStream, password)
-                    document.isAllSecurityToBeRemoved = true
-                    
-                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
-                        document.save(outputStream)
+            scope.launch(Dispatchers.IO) {
+                try {
+                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
+                        val document = PDDocument.load(inputStream, password)
+                        document.isAllSecurityToBeRemoved = true
+                        
+                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                            document.save(outputStream)
+                        }
+                        document.close()
                     }
-                    document.close()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Unlocked successfully!", Toast.LENGTH_LONG).show()
+                        onBack()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Incorrect Password or Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    isProcessing = false
                 }
-                Toast.makeText(context, "Unlocked successfully!", Toast.LENGTH_LONG).show()
-                onBack()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Incorrect Password or Error: ${e.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                isProcessing = false
             }
         }
     }
@@ -97,7 +107,7 @@ fun UnlockView(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     enabled = password.isNotEmpty() && !isProcessing
                 ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     else Text("Unlock & Save")
                 }
             }
