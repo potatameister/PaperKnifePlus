@@ -1,10 +1,10 @@
 [versions]
-agp = "8.3.2"
-kotlin = "1.9.22"
-coreKtx = "1.12.0"
-lifecycleRuntimeKtx = "2.7.0"
-activityCompose = "1.8.2"
-composeBom = "2024.02.00"
+agp = "8.5.0"
+kotlin = "2.0.0"
+coreKtx = "1.13.1"
+lifecycleRuntimeKtx = "2.8.1"
+activityCompose = "1.9.0"
+composeBom = "2024.06.00"
 pdfbox = "2.0.27.0"
 coil = "2.6.0"
 junit = "4.13.2"
@@ -32,3 +32,4 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
