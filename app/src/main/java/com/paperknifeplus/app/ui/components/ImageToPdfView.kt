@@ -51,9 +51,9 @@ fun ImageToPdfView(onBack: () -> Unit) {
                             val pdImage = LosslessFactory.createFromImage(document, bitmap)
                             val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
                             document.addPage(page)
-                            PDPageContentStream(document, page).use { contentStream ->
-                                contentStream.drawImage(pdImage, 0f, 0f)
-                            }
+                            val contentStream = PDPageContentStream(document, page)
+                            contentStream.drawImage(pdImage, 0f, 0f)
+                            contentStream.close()
                             bitmap.recycle()
                         }
                     }
