@@ -22,7 +22,6 @@ jobs:
       uses: gradle/actions/setup-gradle@v3
       with:
         gradle-version: 8.7
-        cache-disabled: true
 
     - name: Build Debug APK
       run: gradle clean assembleDebug --stacktrace --no-daemon --console=plain
