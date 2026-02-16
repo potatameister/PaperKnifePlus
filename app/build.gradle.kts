@@ -8,16 +8,6 @@ android {
     namespace = "com.paperknifeplus.app"
     compileSdk = 34
 
-    // Reproducible Builds hardening
-    val sourceDateEpoch = System.getenv("SOURCE_DATE_EPOCH")
-    if (sourceDateEpoch != null) {
-        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
-            compilerOptions {
-                freeCompilerArgs.add("-Xno-param-assertions")
-            }
-        }
-    }
-
     defaultConfig {
         applicationId = "com.paperknifeplus.app"
         minSdk = 24
@@ -46,7 +36,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     
-    // Modern Kotlin Compiler Options
     kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
