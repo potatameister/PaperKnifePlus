@@ -12,7 +12,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -32,9 +31,7 @@ import com.tomroush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.material3.ExperimentalMaterial3Api
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RearrangeView(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -44,9 +41,7 @@ fun RearrangeView(onBack: () -> Unit) {
     var thumbnails by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
     var isProcessing by remember { mutableStateOf(false) }
 
-    val pickLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
+    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
             scope.launch(Dispatchers.IO) {
@@ -56,7 +51,6 @@ fun RearrangeView(onBack: () -> Unit) {
                         val count = renderer.pageCount
                         val order = (0 until count).toList()
                         val thumbs = mutableMapOf<Int, Bitmap>()
-                        
                         for (i in 0 until minOf(count, 20)) {
                             val page = renderer.openPage(i)
                             val bitmap = Bitmap.createBitmap(page.width/4, page.height/4, Bitmap.Config.ARGB_8888)
@@ -64,130 +58,65 @@ fun RearrangeView(onBack: () -> Unit) {
                             thumbs[i] = bitmap
                             page.close()
                         }
-                        withContext(Dispatchers.Main) {
-                            pageOrder = order
-                            thumbnails = thumbs
-                        }
+                        withContext(Dispatchers.Main) { pageOrder = order; thumbnails = thumbs }
                         renderer.close()
                     }
-                } catch (e: Exception) {
-                    launch(Dispatchers.Main) {
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                } catch (e: Exception) { /* Log error */ }
             }
         }
     }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { saveUri ->
-        saveUri?.let { uri ->
+    val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        uri?.let { saveUri ->
             isProcessing = true
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream)
                         val newDocument = PDDocument()
-                        pageOrder.forEach { oldIndex ->
-                            newDocument.addPage(document.getPage(oldIndex))
-                        }
-                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                            newDocument.save(outputStream)
-                        }
-                        newDocument.close()
-                        document.close()
+                        pageOrder.forEach { oldIndex -> newDocument.addPage(document.getPage(oldIndex)) }
+                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> newDocument.save(outputStream) }
+                        newDocument.close(); document.close()
                     }
-                    launch(Dispatchers.Main) {
-                        Toast.makeText(context, "Rearranged Successfully!", Toast.LENGTH_LONG).show()
-                        onBack()
-                    }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Rearranged!", Toast.LENGTH_LONG).show(); onBack() }
                 } catch (e: Exception) {
-                    launch(Dispatchers.Main) {
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
-                } finally {
-                    isProcessing = false
-                }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
+                } finally { isProcessing = false }
             }
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Rearrange Pages") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") } }
-            )
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+            Text("Rearrange PDF", style = MaterialTheme.typography.titleLarge)
         }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+
+        Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
             if (selectedUri == null) {
-                Box(
-                    modifier = Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") },
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") }, Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.ViewQuilt, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.ViewQuilt, null, Modifier.size(48.dp), MaterialTheme.colorScheme.primary)
                         Text("Select PDF to Rearrange", fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
-                Text("Tap arrows to move pages", fontWeight = FontWeight.Bold)
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.weight(1f).padding(vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(pageOrder) { index, originalPageIndex ->
-                        Card(shape = RoundedCornerShape(8.dp)) {
+                LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.weight(1f)) {
+                    items(pageOrder.size) { index ->
+                        val originalPageIndex = pageOrder[index]
+                        Card(Modifier.padding(4.dp)) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Box(Modifier.aspectRatio(0.7f).background(Color.LightGray)) {
-                                    thumbnails[originalPageIndex]?.let { bitmap ->
-                                        Image(bitmap.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                                    }
-                                    Box(Modifier.align(Alignment.BottomEnd).background(Color.Black.copy(0.6f)).padding(4.dp)) {
-                                        Text("${originalPageIndex + 1}", color = Color.White, fontSize = 10.sp)
-                                    }
-                                }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    IconButton(
-                                        onClick = { 
-                                            if (index > 0) {
-                                                val mutable = pageOrder.toMutableList()
-                                                val temp = mutable[index]
-                                                mutable[index] = mutable[index - 1]
-                                                mutable[index - 1] = temp
-                                                pageOrder = mutable
-                                            }
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    ) { Icon(Icons.Default.ArrowBack, null, Modifier.size(16.dp)) } // Left
-                                    
-                                    IconButton(
-                                        onClick = {
-                                            if (index < pageOrder.size - 1) {
-                                                val mutable = pageOrder.toMutableList()
-                                                val temp = mutable[index]
-                                                mutable[index] = mutable[index + 1]
-                                                mutable[index + 1] = temp
-                                                pageOrder = mutable
-                                            }
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    ) { Icon(Icons.Default.ArrowForward, null, Modifier.size(16.dp)) } // Right
+                                thumbnails[originalPageIndex]?.let { Image(it.asImageBitmap(), null, Modifier.aspectRatio(0.7f), contentScale = ContentScale.Crop) }
+                                Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+                                    IconButton(onClick = { if (index > 0) { val m = pageOrder.toMutableList(); val t = m[index]; m[index] = m[index-1]; m[index-1] = t; pageOrder = m } }) { Icon(Icons.Default.ArrowBack, null, Modifier.size(16.dp)) }
+                                    IconButton(onClick = { if (index < pageOrder.size-1) { val m = pageOrder.toMutableList(); val t = m[index]; m[index] = m[index+1]; m[index+1] = t; pageOrder = m } }) { Icon(Icons.Default.ArrowForward, null, Modifier.size(16.dp)) }
                                 }
                             }
                         }
                     }
                 }
-                Button(
-                    onClick = { saveLauncher.launch("rearranged.pdf") },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isProcessing
-                ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                Button(onClick = { saveLauncher.launch("rearranged.pdf") }, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), enabled = !isProcessing) {
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
                     else Text("Save New Order")
                 }
             }

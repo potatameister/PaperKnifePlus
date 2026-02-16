@@ -23,9 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import androidx.compose.material3.ExperimentalMaterial3Api
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfToImageView(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -34,9 +32,7 @@ fun PdfToImageView(onBack: () -> Unit) {
     var pageCount by remember { mutableStateOf(0) }
     var isProcessing by remember { mutableStateOf(false) }
 
-    val pickLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
+    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
             try {
@@ -45,20 +41,16 @@ fun PdfToImageView(onBack: () -> Unit) {
                     pageCount = renderer.pageCount
                     renderer.close()
                 }
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error opening PDF: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            } catch (e: Exception) { /* Error */ }
         }
     }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/zip")
-    ) { saveUri ->
-        saveUri?.let { uri ->
+    val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        uri?.let { saveUri ->
             isProcessing = true
             scope.launch(Dispatchers.IO) {
                 try {
-                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
                         ZipOutputStream(outputStream).use { zipOut ->
                             context.contentResolver.openFileDescriptor(selectedUri!!, "r")?.use { pfd ->
                                 val renderer = PdfRenderer(pfd)
@@ -66,62 +58,44 @@ fun PdfToImageView(onBack: () -> Unit) {
                                     val page = renderer.openPage(i)
                                     val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
                                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                    
-                                    val zipEntry = ZipEntry("page_${i + 1}.jpg")
-                                    zipOut.putNextEntry(zipEntry)
+                                    val entry = ZipEntry("page_${i + 1}.jpg")
+                                    zipOut.putNextEntry(entry)
                                     bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
                                     zipOut.closeEntry()
-                                    page.close()
-                                    bitmap.recycle()
+                                    page.close(); bitmap.recycle()
                                 }
                                 renderer.close()
                             }
                         }
                     }
-                    launch(Dispatchers.Main) {
-                        Toast.makeText(context, "Images Exported!", Toast.LENGTH_LONG).show()
-                        onBack()
-                    }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "ZIP Exported!", Toast.LENGTH_LONG).show(); onBack() }
                 } catch (e: Exception) {
-                    launch(Dispatchers.Main) {
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
-                } finally {
-                    isProcessing = false
-                }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
+                } finally { isProcessing = false }
             }
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("PDF to Images") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") } }
-            )
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+            Text("PDF to Image ZIP", style = MaterialTheme.typography.titleLarge)
         }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+
+        Column(Modifier.weight(1f).padding(24.dp)) {
             if (selectedUri == null) {
-                Box(
-                    modifier = Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") },
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") }, Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.PictureAsPdf, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("Select PDF to Convert", fontWeight = FontWeight.Bold)
+                        Icon(Icons.Default.PictureAsPdf, null, Modifier.size(48.dp), MaterialTheme.colorScheme.primary)
+                        Text("Select PDF to Export", fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
-                Text("Ready to export $pageCount pages as images.", fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(16.dp))
-                Button(
-                    onClick = { saveLauncher.launch("images.zip") },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isProcessing
-                ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    else Text("Export as ZIP")
+                Text("Export $pageCount pages as JPEG images inside a ZIP.", style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(24.dp))
+                Button(onClick = { saveLauncher.launch("images.zip") }, modifier = Modifier.fillMaxWidth(), enabled = !isProcessing) {
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
+                    else Text("Export ZIP")
                 }
             }
         }

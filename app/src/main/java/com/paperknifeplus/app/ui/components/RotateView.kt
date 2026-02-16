@@ -20,9 +20,7 @@ import com.tomroush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.material3.ExperimentalMaterial3Api
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RotateView(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -31,14 +29,10 @@ fun RotateView(onBack: () -> Unit) {
     var rotationAngle by remember { mutableStateOf(0) }
     var isProcessing by remember { mutableStateOf(false) }
 
-    val pickLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri -> selectedUri = uri }
+    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> selectedUri = uri }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { saveUri ->
-        saveUri?.let { uri ->
+    val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        uri?.let { saveUri ->
             isProcessing = true
             scope.launch(Dispatchers.IO) {
                 try {
@@ -53,65 +47,44 @@ fun RotateView(onBack: () -> Unit) {
                         }
                         document.close()
                     }
-                    launch(Dispatchers.Main) {
-                        Toast.makeText(context, "Rotated Successfully!", Toast.LENGTH_LONG).show()
-                        onBack()
-                    }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Rotated!", Toast.LENGTH_LONG).show(); onBack() }
                 } catch (e: Exception) {
-                    launch(Dispatchers.Main) {
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
-                } finally {
-                    isProcessing = false
-                }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
+                } finally { isProcessing = false }
             }
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Rotate PDF Pages") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") } }
-            )
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+            Text("Rotate PDF", style = MaterialTheme.typography.titleLarge)
         }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+
+        Column(Modifier.weight(1f).padding(24.dp)) {
             if (selectedUri == null) {
-                Box(
-                    modifier = Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") },
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") }, Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.RotateRight, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.RotateRight, null, Modifier.size(48.dp), MaterialTheme.colorScheme.primary)
                         Text("Select PDF to Rotate", fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
-                Text("Select Rotation Angle", fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(16.dp))
-                
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     listOf(90, 180, 270).forEach { angle ->
-                        FilterChip(
-                            selected = rotationAngle == angle,
+                        Button(
                             onClick = { rotationAngle = angle },
-                            label = { Text("$angle°") },
-                            leadingIcon = {
-                                if (rotationAngle == angle) Icon(Icons.Default.Check, null)
-                            }
-                        )
+                            colors = ButtonDefaults.buttonColors(containerColor = if (rotationAngle == angle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                        ) { Text("$angle°", color = if (rotationAngle == angle) Color.White else Color.Black) }
                     }
                 }
-
-                Spacer(Modifier.weight(1f))
-
+                Spacer(Modifier.height(24.dp))
                 Button(
-                    onClick = { saveLauncher.launch("rotated_document.pdf") },
+                    onClick = { saveLauncher.launch("rotated.pdf") },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = rotationAngle != 0 && !isProcessing
                 ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
                     else Text("Rotate & Save")
                 }
             }

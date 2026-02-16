@@ -17,7 +17,6 @@ import com.paperknifeplus.app.ui.components.*
 import com.paperknifeplus.app.ui.theme.PaperKnifePlusTheme
 
 class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -30,52 +29,31 @@ class MainActivity : ComponentActivity() {
                         if (isMainView) {
                             NavigationBar(
                                 containerColor = MaterialTheme.colorScheme.background,
-                                contentColor = MaterialTheme.colorScheme.primary,
                                 tonalElevation = 8.dp
                             ) {
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                                    label = { Text("Home", style = MaterialTheme.typography.labelSmall) },
+                                    label = { Text("Home") },
                                     selected = currentScreen == "home",
-                                    onClick = { currentScreen = "home" },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Color(0xFFF43F5E),
-                                        selectedTextColor = Color(0xFFF43F5E),
-                                        indicatorColor = Color(0xFFF43F5E).copy(alpha = 0.1f)
-                                    )
+                                    onClick = { currentScreen = "home" }
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.GridView, contentDescription = null) },
-                                    label = { Text("Tools", style = MaterialTheme.typography.labelSmall) },
+                                    label = { Text("Tools") },
                                     selected = currentScreen == "tools",
-                                    onClick = { currentScreen = "tools" },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Color(0xFFF43F5E),
-                                        selectedTextColor = Color(0xFFF43F5E),
-                                        indicatorColor = Color(0xFFF43F5E).copy(alpha = 0.1f)
-                                    )
+                                    onClick = { currentScreen = "tools" }
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.History, contentDescription = null) },
-                                    label = { Text("History", style = MaterialTheme.typography.labelSmall) },
+                                    label = { Text("History") },
                                     selected = currentScreen == "history",
-                                    onClick = { currentScreen = "history" },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Color(0xFFF43F5E),
-                                        selectedTextColor = Color(0xFFF43F5E),
-                                        indicatorColor = Color(0xFFF43F5E).copy(alpha = 0.1f)
-                                    )
+                                    onClick = { currentScreen = "history" }
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                                    label = { Text("Settings", style = MaterialTheme.typography.labelSmall) },
+                                    label = { Text("Settings") },
                                     selected = currentScreen == "settings" || currentScreen == "about",
-                                    onClick = { currentScreen = "settings" },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Color(0xFFF43F5E),
-                                        selectedTextColor = Color(0xFFF43F5E),
-                                        indicatorColor = Color(0xFFF43F5E).copy(alpha = 0.1f)
-                                    )
+                                    onClick = { currentScreen = "settings" }
                                 )
                             }
                         }
@@ -92,21 +70,15 @@ class MainActivity : ComponentActivity() {
                             "settings" -> SettingsView(onNavigateToAbout = { currentScreen = "about" })
                             "about" -> AboutView()
                             
-                            // Edit Tools
                             "merge" -> MergeView(onBack = { currentScreen = "home" })
                             "split" -> SplitView(onBack = { currentScreen = "home" })
                             "rotate" -> RotateView(onBack = { currentScreen = "home" })
                             "rearrange" -> RearrangeView(onBack = { currentScreen = "home" })
-                            
-                            // Secure Tools
                             "protect" -> ProtectView(onBack = { currentScreen = "home" })
                             "unlock" -> UnlockView(onBack = { currentScreen = "home" })
-                            
-                            // Convert Tools
                             "img2pdf" -> ImageToPdfView(onBack = { currentScreen = "home" })
                             "pdf2img" -> PdfToImageView(onBack = { currentScreen = "home" })
-                            "pdf2text" -> Box(Modifier.fillMaxSize()) { Text("PDF to Text coming soon", Modifier.padding(16.dp)) }
-
+                            
                             else -> HomeView(onToolClick = { toolId -> currentScreen = toolId })
                         }
                     }

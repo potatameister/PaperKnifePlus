@@ -1,4 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.paperknifeplus.app.ui.components
 
 import android.graphics.Bitmap
@@ -45,9 +44,7 @@ fun SplitView(onBack: () -> Unit) {
     var thumbnails by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
     var isProcessing by remember { mutableStateOf(false) }
 
-    val pickLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
+    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
             scope.launch(Dispatchers.IO) {
@@ -71,30 +68,22 @@ fun SplitView(onBack: () -> Unit) {
                         renderer.close()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show() }
                 }
             }
         }
     }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { saveUri ->
-        saveUri?.let { uri ->
+    val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        uri?.let { saveUri ->
             isProcessing = true
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream)
                         val newDocument = PDDocument()
-                        selectedPages.sorted().forEach { pageIndex ->
-                            newDocument.addPage(document.getPage(pageIndex))
-                        }
-                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                            newDocument.save(outputStream)
-                        }
+                        selectedPages.sorted().forEach { index -> newDocument.addPage(document.getPage(index)) }
+                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> newDocument.save(outputStream) }
                         newDocument.close()
                         document.close()
                     }
@@ -103,9 +92,7 @@ fun SplitView(onBack: () -> Unit) {
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
                 } finally {
                     isProcessing = false
                 }
@@ -113,114 +100,52 @@ fun SplitView(onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        PDFBoxResourceLoader.init(context)
-    }
+    LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Split PDF") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+            Text("Split PDF", style = MaterialTheme.typography.titleLarge)
         }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+
+        Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
             if (selectedUri == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1.5f)
-                        .clip(RoundedCornerShape(32.dp))
-                        .border(2.dp, Color.LightGray.copy(alpha = 0.5f), RoundedCornerShape(32.dp))
-                        .clickable { pickLauncher.launch("application/pdf") },
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") }, Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.ContentCut, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color(0xFFE91E63))
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Icon(Icons.Default.ContentCut, null, Modifier.size(48.dp), Color(0xFFE91E63))
                         Text("Select PDF to Split", fontWeight = FontWeight.Bold)
-                        Text("Everything stays on your device", fontSize = 12.sp, color = Color.Gray)
                     }
                 }
             } else {
-                Card(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Description, contentDescription = null, tint = Color(0xFFE91E63))
-                        Spacer(modifier = Modifier.width(12.dp))
+                Card(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(selectedUri?.lastPathSegment ?: "Document", fontWeight = FontWeight.Bold, maxLines = 1)
                             Text("$pageCount Pages", fontSize = 12.sp)
                         }
-                        IconButton(onClick = { selectedUri = null; selectedPages = emptySet() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove")
-                        }
+                        IconButton(onClick = { selectedUri = null }) { Icon(Icons.Default.Close, null) }
                     }
                 }
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.weight(1f)) {
                     items(pageCount) { index ->
                         val isSelected = selectedPages.contains(index)
-                        Box(
-                            modifier = Modifier
-                                .aspectRatio(0.75f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(
-                                    2.dp, 
-                                    if (isSelected) Color(0xFFE91E63) else Color.Transparent, 
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .clickable {
-                                    selectedPages = if (isSelected) selectedPages - index else selectedPages + index
-                                }
-                        ) {
-                            thumbnails[index]?.let { bitmap ->
-                                Image(
-                                    bitmap = bitmap.asImageBitmap(),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } ?: Box(modifier = Modifier.fillMaxSize().background(Color.LightGray.copy(alpha = 0.3f)))
-
-                            if (isSelected) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize().background(Color(0xFFE91E63).copy(alpha = 0.2f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFFE91E63))
-                                }
-                            }
-                            
-                            Box(
-                                modifier = Modifier.align(Alignment.BottomStart).padding(4.dp).background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp)
-                            ) {
-                                Text("${index + 1}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            }
+                        Box(Modifier.aspectRatio(0.75f).padding(4.dp).clip(RoundedCornerShape(8.dp)).border(2.dp, if (isSelected) Color(0xFFE91E63) else Color.Transparent, RoundedCornerShape(8.dp)).clickable { selectedPages = if (isSelected) selectedPages - index else selectedPages + index }) {
+                            thumbnails[index]?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                            if (isSelected) Box(Modifier.fillMaxSize().background(Color(0xFFE91E63).copy(0.2f)), Alignment.Center) { Icon(Icons.Default.CheckCircle, null, tint = Color(0xFFE91E63)) }
+                            Text("${index + 1}", Modifier.align(Alignment.BottomStart).padding(4.dp).background(Color.Black.copy(0.6f)).padding(horizontal = 4.dp), color = Color.White, fontSize = 10.sp)
                         }
                     }
                 }
 
                 Button(
-                    onClick = { saveLauncher.launch("split_document.pdf") },
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    onClick = { saveLauncher.launch("split.pdf") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                     enabled = selectedPages.isNotEmpty() && !isProcessing,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
                 ) {
-                    if (isProcessing) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text("Extract ${selectedPages.size} Pages")
-                    }
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
+                    else Text("Extract ${selectedPages.size} Pages")
                 }
             }
         }

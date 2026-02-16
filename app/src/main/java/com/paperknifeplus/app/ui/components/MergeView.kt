@@ -1,4 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.paperknifeplus.app.ui.components
 
 import android.net.Uri
@@ -31,21 +30,15 @@ fun MergeView(onBack: () -> Unit) {
     var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isProcessing by remember { mutableStateOf(false) }
     
-    val pickLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris ->
-        selectedUris = selectedUris + uris
-    }
+    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris -> selectedUris = selectedUris + uris }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { saveUri ->
-        saveUri?.let { uri ->
+    val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        uri?.let { saveUri ->
             isProcessing = true
             scope.launch(Dispatchers.IO) {
                 try {
                     val merger = PDFMergerUtility()
-                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
                         selectedUris.forEach { pdfUri ->
                             context.contentResolver.openInputStream(pdfUri)?.use { inputStream ->
                                 merger.addSource(inputStream)
@@ -59,9 +52,7 @@ fun MergeView(onBack: () -> Unit) {
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
                 } finally {
                     isProcessing = false
                 }
@@ -69,76 +60,44 @@ fun MergeView(onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        PDFBoxResourceLoader.init(context)
-    }
+    LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Merge PDFs") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { pickLauncher.launch("application/pdf") }) {
-                Icon(Icons.Default.Add, contentDescription = "Add PDF")
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+                Text("Merge PDFs", style = MaterialTheme.typography.titleLarge)
             }
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            if (selectedUris.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No PDFs selected. Tap + to add.")
-                }
-            } else {
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(selectedUris) { uri ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = uri.lastPathSegment ?: "PDF File",
-                                    modifier = Modifier.weight(1f)
-                                )
-                                IconButton(onClick = { selectedUris = selectedUris - uri }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Remove")
+            
+            Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
+                if (selectedUris.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) { Text("No PDFs selected.") }
+                } else {
+                    LazyColumn(Modifier.weight(1f)) {
+                        items(selectedUris) { uri ->
+                            Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(uri.lastPathSegment ?: "PDF", Modifier.weight(1f), maxLines = 1)
+                                    IconButton(onClick = { selectedUris = selectedUris - uri }) { Icon(Icons.Default.Delete, null) }
                                 }
                             }
                         }
                     }
-                }
-
-                Button(
-                    onClick = { saveLauncher.launch("merged_document.pdf") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    enabled = selectedUris.size > 1 && !isProcessing
-                ) {
-                    if (isProcessing) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text("Merge ${selectedUris.size} Files & Save")
+                    Button(
+                        onClick = { saveLauncher.launch("merged.pdf") },
+                        Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        enabled = selectedUris.size > 1 && !isProcessing
+                    ) {
+                        if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
+                        else Text("Merge ${selectedUris.size} Files")
                     }
                 }
             }
         }
+        
+        FloatingActionButton(
+            onClick = { pickLauncher.launch("application/pdf") },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(32.dp)
+        ) { Icon(Icons.Default.Add, "Add") }
     }
 }
