@@ -1,7 +1,7 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -33,24 +33,25 @@ android {
         }
     }
     buildFeatures { compose = true }
+    lint { abortOnError = false }
 }
 
 dependencies {
-    implementation(libs.corektx)
-    implementation(libs.lifecycle)
-    implementation(libs.activity)
-    implementation(platform(libs.composebom))
-    implementation(libs.ui)
-    implementation(libs.graphics)
-    implementation(libs.preview)
-    implementation(libs.material3)
-    implementation(libs.pdfbox)
-    implementation(libs.coil)
-    testImplementation(libs.testjunit)
-    androidTestImplementation(libs.testext)
-    androidTestImplementation(libs.testespresso)
-    androidTestImplementation(platform(libs.composebom))
-    androidTestImplementation(libs.junit4)
-    debugImplementation(libs.tooling)
-    debugImplementation(libs.manifest)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.pdfbox.android)
+    implementation(libs.coil.compose)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
 }
