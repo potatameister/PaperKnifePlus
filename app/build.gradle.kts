@@ -8,6 +8,14 @@ android {
     namespace = "com.paperknifeplus.app"
     compileSdk = 34
 
+    // Reproducible Builds hardening
+    val sourceDateEpoch = System.getenv("SOURCE_DATE_EPOCH")
+    if (sourceDateEpoch != null) {
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+            kotlinOptions.freeCompilerArgs += "-Xno-param-assertions"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.paperknifeplus.app"
         minSdk = 24
@@ -23,7 +31,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -48,6 +57,8 @@ android {
 }
 
 dependencies {
+    implementation(libs.coil.compose)
+    implementation(libs.pdfbox.android)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
