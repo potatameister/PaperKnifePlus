@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.androidapplication)
-    alias(libs.plugins.kotlinandroid)
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -31,11 +31,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -54,21 +54,21 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidxcorektx)
-    implementation(libs.androidxlifecycleruntime)
-    implementation(libs.androidxactivitycompose)
-    implementation(platform(libs.androidxcomposebom))
-    implementation(libs.androidxui)
-    implementation(libs.androidxuigraphics)
-    implementation(libs.androidxuitoolingpreview)
-    implementation(libs.androidxmaterial3)
-    implementation(libs.pdfboxandroid)
-    implementation(libs.coilcompose)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    implementation(libs.pdfbox.android)
+    implementation(libs.coil.compose)
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidxjunit)
-    androidTestImplementation(libs.androidxespressocore)
-    androidTestImplementation(platform(libs.androidxcomposebom))
-    androidTestImplementation(libs.androidxuitestjunit4)
-    debugImplementation(libs.androidxuitooling)
-    debugImplementation(libs.androidxuitestmanifest)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
