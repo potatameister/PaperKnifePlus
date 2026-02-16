@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tomroush.pdfbox.pdmodel.PDDocument
@@ -103,38 +102,38 @@ fun SplitView(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
 
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
-            Text("Split PDF", style = MaterialTheme.typography.titleLarge)
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+            Text(text = "Split PDF", style = MaterialTheme.typography.titleLarge)
         }
 
-        Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
             if (selectedUri == null) {
-                Box(Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") }, Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") }, contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.ContentCut, null, Modifier.size(48.dp), Color(0xFFE91E63))
-                        Text("Select PDF to Split", fontWeight = FontWeight.Bold)
+                        Icon(imageVector = Icons.Default.ContentCut, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color(0xFFE91E63))
+                        Text(text = "Select PDF to Split", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             } else {
-                Card(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(selectedUri?.lastPathSegment ?: "Document", fontWeight = FontWeight.Bold, maxLines = 1)
-                            Text("$pageCount Pages", fontSize = 12.sp)
+                Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = selectedUri?.lastPathSegment ?: "Document", style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                            Text(text = "$pageCount Pages", style = MaterialTheme.typography.bodySmall)
                         }
-                        IconButton(onClick = { selectedUri = null }) { Icon(Icons.Default.Close, null) }
+                        IconButton(onClick = { selectedUri = null }) { Icon(imageVector = Icons.Default.Close, contentDescription = "Close") }
                     }
                 }
 
                 LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.weight(1f)) {
                     items(pageCount) { index ->
                         val isSelected = selectedPages.contains(index)
-                        Box(Modifier.aspectRatio(0.75f).padding(4.dp).clip(RoundedCornerShape(8.dp)).border(2.dp, if (isSelected) Color(0xFFE91E63) else Color.Transparent, RoundedCornerShape(8.dp)).clickable { selectedPages = if (isSelected) selectedPages - index else selectedPages + index }) {
-                            thumbnails[index]?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-                            if (isSelected) Box(Modifier.fillMaxSize().background(Color(0xFFE91E63).copy(alpha = 0.2f)), Alignment.Center) { Icon(Icons.Default.CheckCircle, null, tint = Color(0xFFE91E63)) }
-                            Text("${index + 1}", Modifier.align(Alignment.BottomStart).padding(4.dp).background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 4.dp), color = Color.White, fontSize = 10.sp)
+                        Box(modifier = Modifier.aspectRatio(0.75f).padding(4.dp).clip(RoundedCornerShape(8.dp)).border(2.dp, if (isSelected) Color(0xFFE91E63) else Color.Transparent, RoundedCornerShape(8.dp)).clickable { selectedPages = if (isSelected) selectedPages - index else selectedPages + index }) {
+                            thumbnails[index]?.let { Image(bitmap = it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                            if (isSelected) Box(modifier = Modifier.fillMaxSize().background(Color(0xFFE91E63).copy(alpha = 0.2f)), contentAlignment = Alignment.Center) { Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFFE91E63)) }
+                            Text(text = "${index + 1}", modifier = Modifier.align(Alignment.BottomStart).padding(4.dp).background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 4.dp), color = Color.White, fontSize = 10.sp)
                         }
                     }
                 }
@@ -145,8 +144,8 @@ fun SplitView(onBack: () -> Unit) {
                     enabled = selectedPages.isNotEmpty() && !isProcessing,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
                 ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
-                    else Text("Extract ${selectedPages.size} Pages")
+                    if (isProcessing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    else Text(text = "Extract ${selectedPages.size} Pages")
                 }
             }
         }

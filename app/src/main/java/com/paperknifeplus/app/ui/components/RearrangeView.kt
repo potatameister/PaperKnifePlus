@@ -87,38 +87,38 @@ fun RearrangeView(onBack: () -> Unit) {
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
-            Text("Rearrange PDF", style = MaterialTheme.typography.titleLarge)
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back") }
+            Text(text = "Rearrange PDF", style = MaterialTheme.typography.titleLarge)
         }
 
-        Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
             if (selectedUri == null) {
-                Box(Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") }, Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize().clickable { pickLauncher.launch("application/pdf") }, contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.ViewQuilt, null, Modifier.size(48.dp), MaterialTheme.colorScheme.primary)
-                        Text("Select PDF to Rearrange", fontWeight = FontWeight.Bold)
+                        Icon(imageVector = Icons.Default.ViewQuilt, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text(text = "Select PDF to Rearrange", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             } else {
                 LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.weight(1f)) {
                     items(pageOrder.size) { index ->
                         val originalPageIndex = pageOrder[index]
-                        Card(Modifier.padding(4.dp)) {
+                        Card(modifier = Modifier.padding(4.dp)) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                thumbnails[originalPageIndex]?.let { Image(it.asImageBitmap(), null, Modifier.aspectRatio(0.7f), contentScale = ContentScale.Crop) }
-                                Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
-                                    IconButton(onClick = { if (index > 0) { val m = pageOrder.toMutableList(); val t = m[index]; m[index] = m[index-1]; m[index-1] = t; pageOrder = m } }) { Icon(Icons.Default.ArrowBack, null, Modifier.size(16.dp)) }
-                                    IconButton(onClick = { if (index < pageOrder.size-1) { val m = pageOrder.toMutableList(); val t = m[index]; m[index] = m[index+1]; m[index+1] = t; pageOrder = m } }) { Icon(Icons.Default.ArrowForward, null, Modifier.size(16.dp)) }
+                                thumbnails[originalPageIndex]?.let { Image(bitmap = it.asImageBitmap(), contentDescription = null, modifier = Modifier.aspectRatio(0.7f), contentScale = ContentScale.Crop) }
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                    IconButton(onClick = { if (index > 0) { val m = pageOrder.toMutableList(); val t = m[index]; m[index] = m[index-1]; m[index-1] = t; pageOrder = m } }) { Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Move Left", modifier = Modifier.size(16.dp)) }
+                                    IconButton(onClick = { if (index < pageOrder.size-1) { val m = pageOrder.toMutableList(); val t = m[index]; m[index] = m[index+1]; m[index+1] = t; pageOrder = m } }) { Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Move Right", modifier = Modifier.size(16.dp)) }
                                 }
                             }
                         }
                     }
                 }
                 Button(onClick = { saveLauncher.launch("rearranged.pdf") }, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), enabled = !isProcessing) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
-                    else Text("Save New Order")
+                    if (isProcessing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    else Text(text = "Save New Order")
                 }
             }
         }

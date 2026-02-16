@@ -67,35 +67,35 @@ fun ImageToPdfView(onBack: () -> Unit) {
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
-            Text("Image to PDF", style = MaterialTheme.typography.titleLarge)
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back") }
+            Text(text = "Image to PDF", style = MaterialTheme.typography.titleLarge)
         }
 
-        Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
             if (selectedUris.isEmpty()) {
-                Box(Modifier.fillMaxSize(), Alignment.Center) { Text("No images selected.") }
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(text = "No images selected.") }
             } else {
-                LazyColumn(Modifier.weight(1f)) {
+                LazyColumn(modifier = Modifier.weight(1f)) {
                     items(selectedUris) { uri ->
-                        Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Image(rememberAsyncImagePainter(uri), null, Modifier.size(60.dp), contentScale = ContentScale.Crop)
-                                Spacer(Modifier.width(16.dp))
-                                Text("Image", Modifier.weight(1f))
-                                IconButton(onClick = { selectedUris = selectedUris - uri }) { Icon(Icons.Default.Delete, null) }
+                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Image(painter = rememberAsyncImagePainter(model = uri), contentDescription = null, modifier = Modifier.size(60.dp), contentScale = ContentScale.Crop)
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(text = "Image", modifier = Modifier.weight(1f))
+                                IconButton(onClick = { selectedUris = selectedUris - uri }) { Icon(imageVector = Icons.Default.Delete, contentDescription = "Remove") }
                             }
                         }
                     }
                 }
-                Button(onClick = { saveLauncher.launch("images.pdf") }, Modifier.fillMaxWidth().padding(vertical = 16.dp), enabled = !isProcessing) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
-                    else Text("Create PDF")
+                Button(onClick = { saveLauncher.launch("images.pdf") }, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), enabled = !isProcessing) {
+                    if (isProcessing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    else Text(text = "Create PDF")
                 }
             }
         }
         
-        FloatingActionButton(onClick = { pickLauncher.launch("image/*") }, Modifier.align(Alignment.End).padding(32.dp)) { Icon(Icons.Default.AddPhotoAlternate, "Add") }
+        FloatingActionButton(onClick = { pickLauncher.launch("image/*") }, modifier = Modifier.align(Alignment.End).padding(32.dp)) { Icon(imageVector = Icons.Default.AddPhotoAlternate, contentDescription = "Add") }
     }
 }
