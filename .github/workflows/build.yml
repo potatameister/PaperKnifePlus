@@ -24,7 +24,7 @@ jobs:
         gradle-version: 8.7
 
     - name: Build Debug APK
-      run: gradle assembleDebug --stacktrace --no-daemon --console=plain
+      run: gradle clean assembleDebug --stacktrace --no-daemon --console=plain
 
     - name: Build Release APK
       run: gradle assembleRelease --stacktrace --no-daemon --console=plain
