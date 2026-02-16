@@ -27,6 +27,7 @@ import com.tomroush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,12 +61,12 @@ fun ProtectView(onBack: () -> Unit) {
                         }
                         document.close()
                     }
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "File protected!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {

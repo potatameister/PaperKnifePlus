@@ -32,6 +32,7 @@ import com.tomroush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +71,7 @@ fun RearrangeView(onBack: () -> Unit) {
                         renderer.close()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -97,12 +98,12 @@ fun RearrangeView(onBack: () -> Unit) {
                         newDocument.close()
                         document.close()
                     }
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Rearranged Successfully!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {

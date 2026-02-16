@@ -21,7 +21,7 @@ import com.tomroush.pdfbox.multipdf.PDFMergerUtility
 import com.tomroush.pdfbox.util.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,12 +54,12 @@ fun MergeView(onBack: () -> Unit) {
                         merger.destinationStream = outputStream
                         merger.mergeDocuments(null)
                     }
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Merged successfully!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {

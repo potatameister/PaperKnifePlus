@@ -22,6 +22,7 @@ import com.tomroush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,12 +53,12 @@ fun UnlockView(onBack: () -> Unit) {
                         }
                         document.close()
                     }
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Unlocked successfully!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Incorrect Password or Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {

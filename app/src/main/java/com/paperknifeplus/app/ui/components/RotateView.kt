@@ -53,12 +53,12 @@ fun RotateView(onBack: () -> Unit) {
                         }
                         document.close()
                     }
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Rotated Successfully!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {

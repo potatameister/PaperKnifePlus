@@ -34,6 +34,7 @@ import com.tomroush.pdfbox.util.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +73,7 @@ fun SplitView(onBack: () -> Unit) {
                         renderer.close()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -99,12 +100,12 @@ fun SplitView(onBack: () -> Unit) {
                         newDocument.close()
                         document.close()
                     }
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Split successful!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {
@@ -218,7 +219,7 @@ fun SplitView(onBack: () -> Unit) {
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
                 ) {
                     if (isProcessing) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     } else {
                         Text("Extract ${selectedPages.size} Pages")
                     }

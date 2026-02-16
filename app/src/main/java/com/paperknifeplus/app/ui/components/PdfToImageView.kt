@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,12 +78,12 @@ fun PdfToImageView(onBack: () -> Unit) {
                             }
                         }
                     }
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Images Exported!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    launch(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {
@@ -119,7 +120,7 @@ fun PdfToImageView(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isProcessing
                 ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     else Text("Export as ZIP")
                 }
             }

@@ -17,6 +17,7 @@ import com.paperknifeplus.app.ui.components.*
 import com.paperknifeplus.app.ui.theme.PaperKnifePlusTheme
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
