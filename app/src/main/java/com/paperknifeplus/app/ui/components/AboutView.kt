@@ -39,9 +39,9 @@ fun AboutView() {
         Spacer(Modifier.height(24.dp))
         Text("STACK", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth())
         listOf("PdfBox-Android" to "Engine", "Compose" to "UI", "Coil" to "Images").forEach { (n, d) ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(n, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text(d, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.5f))
+                Text(d, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
             }
         }
 

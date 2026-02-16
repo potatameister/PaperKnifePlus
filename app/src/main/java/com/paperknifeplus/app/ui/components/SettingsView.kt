@@ -33,19 +33,19 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
         SettingsItem(Icons.Default.Info, "About PaperKnife+", "Credits and License", onClick = onNavigateToAbout)
         
         Spacer(Modifier.weight(1f))
-        Text("Version 1.0.0", Modifier.align(Alignment.CenterHorizontally), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+        Text("Version 1.0.0", Modifier.align(Alignment.CenterHorizontally), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
     }
 }
 
 @Composable
 fun SettingsItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit = {}) {
     Row(Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.6f))
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.5f))
+            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
         }
-        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.3f))
+        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
     }
 }
