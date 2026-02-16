@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.paperknifeplus.app.ui.components
 
 import android.graphics.Bitmap
@@ -13,7 +14,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -34,9 +34,7 @@ import com.tomroush.pdfbox.util.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.material3.ExperimentalMaterial3Api
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SplitView(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -73,7 +71,7 @@ fun SplitView(onBack: () -> Unit) {
                         renderer.close()
                     }
                 } catch (e: Exception) {
-                    launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -100,12 +98,12 @@ fun SplitView(onBack: () -> Unit) {
                         newDocument.close()
                         document.close()
                     }
-                    launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Split successful!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {

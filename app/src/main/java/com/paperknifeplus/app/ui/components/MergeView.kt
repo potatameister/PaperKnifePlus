@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.paperknifeplus.app.ui.components
 
 import android.net.Uri
@@ -21,9 +22,8 @@ import com.tomroush.pdfbox.multipdf.PDFMergerUtility
 import com.tomroush.pdfbox.util.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import androidx.compose.material3.ExperimentalMaterial3Api
+import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MergeView(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -54,12 +54,12 @@ fun MergeView(onBack: () -> Unit) {
                         merger.destinationStream = outputStream
                         merger.mergeDocuments(null)
                     }
-                    launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Merged successfully!", Toast.LENGTH_LONG).show()
                         onBack()
                     }
                 } catch (e: Exception) {
-                    launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 } finally {
