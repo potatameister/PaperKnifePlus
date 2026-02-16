@@ -7,7 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,9 +41,10 @@ fun RotateView(onBack: () -> Unit) {
                         val document = PDDocument.load(inputStream)
                         for (i in 0 until document.numberOfPages) {
                             val page = document.getPage(i)
-                            page.rotation = (page.rotation + rotationAngle) % 360
+                            val currentRotation = page.rotation
+                            page.rotation = (currentRotation + rotationAngle) % 360
                         }
-                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
                             document.save(outputStream)
                         }
                         document.close()
