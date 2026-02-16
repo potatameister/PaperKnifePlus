@@ -2,34 +2,33 @@
 agp = "8.3.2"
 kotlin = "1.9.24"
 coreKtx = "1.12.0"
-junit = "4.13.2"
-junitVersion = "1.1.5"
-espressoCore = "3.5.1"
 lifecycleRuntimeKtx = "2.7.0"
 activityCompose = "1.8.2"
 composeBom = "2024.05.00"
 pdfbox = "2.0.27.0"
 coil = "2.6.0"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
 
 [libraries]
-# Use unique names to avoid Gradle's Version Catalog shadowing issue
-kotlin-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
-kotlin-lifecycle-runtime = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
-compose-activity = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
-compose-ui = { group = "androidx.compose.ui", name = "ui" }
-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
-pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox" }
-coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
-test-junit = { group = "junit", name = "junit", version.ref = "junit" }
-test-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidxcorektx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidxlifecycleruntime = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidxactivitycompose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidxcomposebom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidxui = { group = "androidx.compose.ui", name = "ui" }
+androidxuigraphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidxuitooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidxuitoolingpreview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidxuitestmanifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidxuitestjunit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidxmaterial3 = { group = "androidx.compose.material3", name = "material3" }
+pdfboxandroid = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox" }
+coilcompose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidxjunit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidxespressocore = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 
 [plugins]
-android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+androidapplication = { id = "com.android.application", version.ref = "agp" }
+kotlinandroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.androidapplication)
+    alias(libs.plugins.kotlinandroid)
 }
 
 android {
@@ -54,21 +54,21 @@ android {
 }
 
 dependencies {
-    implementation(libs.kotlin.core.ktx)
-    implementation(libs.kotlin.lifecycle.runtime)
-    implementation(libs.compose.activity)
-    implementation(platform(libs.compose.bom))
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.graphics)
-    implementation(libs.compose.ui.tooling.preview)
-    implementation(libs.compose.material3)
-    implementation(libs.pdfbox.android)
-    implementation(libs.coil.compose)
-    testImplementation(libs.test.junit)
-    androidTestImplementation(libs.test.androidx.junit)
-    androidTestImplementation(libs.test.espresso.core)
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.compose.ui.test.junit4)
-    debugImplementation(libs.compose.ui.tooling)
-    debugImplementation(libs.compose.ui.test.manifest)
+    implementation(libs.androidxcorektx)
+    implementation(libs.androidxlifecycleruntime)
+    implementation(libs.androidxactivitycompose)
+    implementation(platform(libs.androidxcomposebom))
+    implementation(libs.androidxui)
+    implementation(libs.androidxuigraphics)
+    implementation(libs.androidxuitoolingpreview)
+    implementation(libs.androidxmaterial3)
+    implementation(libs.pdfboxandroid)
+    implementation(libs.coilcompose)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidxjunit)
+    androidTestImplementation(libs.androidxespressocore)
+    androidTestImplementation(platform(libs.androidxcomposebom))
+    androidTestImplementation(libs.androidxuitestjunit4)
+    debugImplementation(libs.androidxuitooling)
+    debugImplementation(libs.androidxuitestmanifest)
 }
