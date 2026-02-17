@@ -104,8 +104,6 @@ fun MetadataView(onBack: () -> Unit) {
                             PDDocument.load(inputStream)
                         }
                         
-                        // Fix for Task 8: If it was encrypted, we should probably strip it or handle it.
-                        // For Metadata tool, stripping encryption makes it easiest to save.
                         if (document.isEncrypted) {
                             document.isAllSecurityToBeRemoved = true
                         }
@@ -292,6 +290,27 @@ fun MetadataView(onBack: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SettingsGroup(title: String, content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .padding(vertical = 12.dp)
+    ) {
+        Text(
+            text = title,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Black,
+            color = Color.Gray,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        content()
     }
 }
 
