@@ -3,6 +3,7 @@ package com.paperknifeplus.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,11 +16,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import com.paperknifeplus.app.ui.components.*
 import com.paperknifeplus.app.ui.theme.PaperKnifePlusTheme
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -27,13 +32,17 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false) // Edge-to-edge
         setContent {
             var isDarkMode by remember { mutableStateOf(false) }
             PaperKnifePlusTheme(darkTheme = isDarkMode) {
                 var currentScreen by remember { mutableStateOf("home") }
                 val isMainView = currentScreen in listOf("home", "tools", "history", "settings", "about")
 
-                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                ) {
                     Column(modifier = Modifier.fillMaxSize()) {
                         // Header
                         if (isMainView) {
@@ -52,7 +61,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             when (currentScreen) {
                                 "home" -> HomeView(onToolClick = { toolId -> currentScreen = toolId })
-                                "tools" -> HomeView(onToolClick = { toolId -> currentScreen = toolId })
+                                "tools" -> ToolsView(onToolClick = { toolId -> currentScreen = toolId })
                                 "history" -> Box(Modifier.fillMaxSize()) { Text("History coming soon", Modifier.padding(16.dp)) }
                                 "settings" -> SettingsView(onNavigateToAbout = { currentScreen = "about" })
                                 "about" -> AboutView()
@@ -70,9 +79,9 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         
-                        // Spacer for bottom bar
+                        // Spacer for fixed bottom bar
                         if (isMainView) {
-                            Spacer(modifier = Modifier.height(90.dp))
+                            Spacer(modifier = Modifier.height(84.dp).navigationBarsPadding())
                         }
                     }
 
@@ -92,44 +101,67 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Header(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val dotAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Logo(modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Logo(modifier = Modifier.size(22.dp))
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "PaperKnife",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        letterSpacing = (-1).sp
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .graphicsLayer { alpha = dotAlpha }
+                            .shadow(elevation = 4.dp, shape = CircleShape, spotColor = Color(0xFF06D6A0))
+                            .background(Color(0xFF06D6A0), CircleShape)
+                    )
+                }
                 Text(
-                    text = "PaperKnife",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    letterSpacing = (-0.5).sp
+                    text = "SECURE ENGINE",
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Black,
+                    color = PaperPink,
+                    letterSpacing = 1.5.sp
                 )
             }
-            Text(
-                text = "SECURE ENGINE",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Black,
-                color = PaperPink,
-                letterSpacing = 1.sp
-            )
         }
         
         IconButton(
             onClick = onThemeToggle,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier
+                .size(40.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)
         ) {
             Icon(
                 imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
                 contentDescription = "Toggle Theme",
-                modifier = Modifier.size(22.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -142,44 +174,45 @@ fun FixedTitanBottomBar(
     onNavigate: (String) -> Unit
 ) {
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding(),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        shadowElevation = 16.dp
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        tonalElevation = 0.dp
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                NavItem(Icons.Default.Home, "Home", currentScreen == "home") { onNavigate("home") }
-                NavItem(Icons.Default.GridView, "Tools", currentScreen == "tools") { onNavigate("tools") }
-                
-                Spacer(modifier = Modifier.width(72.dp)) // Space for anchored FAB
-                
-                NavItem(Icons.Default.History, "History", currentScreen == "history") { onNavigate("history") }
-                NavItem(Icons.Default.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
-            }
-
-            // Anchored FAB (Integrated, not floating)
+        Column {
+            Divider(modifier = Modifier.fillMaxWidth(), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
             Box(
                 modifier = Modifier
-                    .offset(y = (-20).dp)
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(PaperPink)
-                    .clickable { /* Action */ },
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .height(84.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(30.dp))
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    NavItem(Icons.Default.Home, "Home", currentScreen == "home") { onNavigate("home") }
+                    NavItem(Icons.Default.GridView, "Tools", currentScreen == "tools") { onNavigate("tools") }
+                    
+                    Spacer(modifier = Modifier.width(80.dp))
+                    
+                    NavItem(Icons.Default.History, "History", currentScreen == "history") { onNavigate("history") }
+                    NavItem(Icons.Default.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
+                }
+
+                // Centered Elevated FAB
+                Box(
+                    modifier = Modifier
+                        .offset(y = (-24).dp)
+                        .size(60.dp)
+                        .shadow(elevation = 8.dp, shape = CircleShape, spotColor = PaperPink)
+                        .background(PaperPink, CircleShape)
+                        .clickable { /* Action */ },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(30.dp))
+                }
             }
         }
     }
@@ -191,19 +224,22 @@ fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> 
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(vertical = 8.dp, horizontal = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(22.dp)
         )
         Text(
             text = label,
-            fontSize = 10.sp,
-            color = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+            fontSize = 9.sp,
+            fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
+            color = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            letterSpacing = 0.5.sp
         )
     }
 }
