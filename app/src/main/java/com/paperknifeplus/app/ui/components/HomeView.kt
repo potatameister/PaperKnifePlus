@@ -37,120 +37,131 @@ fun HomeView(onToolClick: (String) -> Unit) {
         Tool("protect", "Protect", "SECURE", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
     )
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Hero Card
-        item(span = { GridItemSpan(2) }) {
-            HeroCard(onSelectPdf = { /* Action */ })
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Premium Background Hue (Top Right)
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 100.dp, y = (-50).dp)
+                .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.08f), Color.Transparent)))
+        )
 
-        // Section Title
-        item(span = { GridItemSpan(2) }) {
-            Row(
-                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "CORE ENGINES",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.Gray,
-                    letterSpacing = 1.5.sp
-                )
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Hero Card
+            item(span = { GridItemSpan(2) }) {
+                HeroCard(onSelectPdf = { /* Action */ })
             }
-        }
 
-        // Bento Grid Items
-        items(coreEngines) { tool ->
-            BentoCard(tool = tool, onClick = { onToolClick(tool.id) })
-        }
+            // Section Title
+            item(span = { GridItemSpan(2) }) {
+                Row(
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "CORE ENGINES",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.Gray,
+                        letterSpacing = 1.5.sp
+                    )
+                }
+            }
 
-        // More Engines
-        item(span = { GridItemSpan(2) }) {
-            MoreEnginesCard(onClick = { onToolClick("tools") })
-        }
-        
-        item(span = { GridItemSpan(2) }) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "PaperKnife v1.0.0",
-                modifier = Modifier.fillMaxWidth().alpha(0.2f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp
-            )
-            Spacer(modifier = Modifier.height(100.dp))
+            // Bento Grid Items
+            items(coreEngines) { tool ->
+                BentoCard(tool = tool, onClick = { onToolClick(tool.id) })
+            }
+
+            // More Engines
+            item(span = { GridItemSpan(2) }) {
+                MoreEnginesCard(onClick = { onToolClick("tools") })
+            }
+            
+            item(span = { GridItemSpan(2) }) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "PaperKnife v1.0.0",
+                    modifier = Modifier.fillMaxWidth().alpha(0.2f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+                Spacer(modifier = Modifier.height(100.dp))
+            }
         }
     }
 }
 
 @Composable
 fun HeroCard(onSelectPdf: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val containerColor = if (isDark) Color.White else Color(0xFF121212)
+    val textColor = if (isDark) Color.Black else Color.White
+    val subTextColor = if (isDark) Color.DarkGray else Color.Gray
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .shadow(elevation = 20.dp, shape = RoundedCornerShape(32.dp), spotColor = PaperPink.copy(alpha = 0.2f))
+            .height(190.dp)
+            .shadow(elevation = 16.dp, shape = RoundedCornerShape(32.dp), spotColor = PaperPink.copy(alpha = 0.2f))
             .clickable(onClick = onSelectPdf),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF121212))
+        colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(Color(0xFF222222), Color(0xFF000000))
-                    )
-                )
                 .padding(24.dp)
         ) {
-            // High-Premium Glow
+            // Subtle Internal Glow for Hero Card
             Box(
                 modifier = Modifier
-                    .size(180.dp)
+                    .size(100.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 40.dp, y = (-40).dp)
-                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.25f), Color.Transparent)))
+                    .offset(x = 20.dp, y = (-20).dp)
+                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.1f), Color.Transparent)))
             )
 
             Column(modifier = Modifier.align(Alignment.BottomStart)) {
                 Text(
                     text = "Select PDF",
-                    fontSize = 32.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color.White,
-                    letterSpacing = (-1).sp,
-                    lineHeight = 32.sp
+                    color = textColor,
+                    letterSpacing = (-0.5).sp,
+                    lineHeight = 30.sp
                 )
                 Text(
                     text = "TAP TO LOAD FROM DEVICE STORAGE",
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color.Gray,
+                    color = subTextColor,
                     letterSpacing = 0.5.sp
                 )
             }
             
             Surface(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(48.dp)
                     .align(Alignment.TopStart),
-                shape = RoundedCornerShape(16.dp),
-                color = Color.White.copy(alpha = 0.1f),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+                shape = RoundedCornerShape(14.dp),
+                color = if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.08f),
+                border = BorderStroke(1.dp, if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.05f))
             ) {
                 Icon(
                     Icons.Default.FileUpload,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.padding(14.dp)
+                    tint = if (isDark) Color.Black else Color.White,
+                    modifier = Modifier.padding(12.dp)
                 )
             }
             
@@ -164,7 +175,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
             ) {
                 Text(
                     text = "START SESSION",
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
@@ -181,7 +192,7 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(130.dp)
+            .height(125.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
@@ -196,25 +207,25 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Surface(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(38.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = if (isDark) tool.color.copy(alpha = 0.15f) else tool.bgColor
+                color = if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor
             ) {
                 Icon(
                     imageVector = tool.icon ?: Icons.Default.Build,
                     contentDescription = null,
                     tint = tool.color,
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(9.dp)
                 )
             }
             
             Column {
                 Text(
                     text = tool.name,
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface,
-                    letterSpacing = (-0.5).sp,
+                    letterSpacing = (-0.3).sp,
                     lineHeight = 16.sp
                 )
                 Text(
@@ -234,7 +245,7 @@ fun MoreEnginesCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(84.dp)
+            .height(80.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = PaperPink)

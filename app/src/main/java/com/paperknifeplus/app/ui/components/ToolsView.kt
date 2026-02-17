@@ -22,24 +22,32 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun ToolsView(onToolClick: (String) -> Unit) {
+    // Exact 17 Tools with Organized Colors from Reference
     val allTools = listOf(
+        // EDIT
         Tool("merge", "Merge PDF", "Combine multiple PDFs", Icons.Default.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("split", "Split PDF", "Extract specific pages", Icons.Default.ContentCut, "Edit", Color(0xFF3B82F6), Color(0xFFEFF6FF)),
-        Tool("compress", "Compress", "Optimize file size", Icons.Default.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-        Tool("protect", "Protect PDF", "Add password security", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-        Tool("unlock", "Unlock PDF", "Remove PDF password", Icons.Default.LockOpen, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-        Tool("rotate", "Rotate PDF", "Fix page orientation", Icons.Default.RotateRight, "Edit", Color(0xFFF97316), Color(0xFFFFF7ED)),
-        Tool("rearrange", "Rearrange", "Reorder PDF pages", Icons.AutoMirrored.Filled.List, "Edit", Color(0xFF10B981), Color(0xFFECFDF5)),
-        Tool("page-numbers", "Page Numbers", "Add numbering to PDF", Icons.Default.FormatListNumbered, "Edit", Color(0xFF0EA5E9), Color(0xFFF0F9FF)),
+        Tool("rotate", "Rotate PDF", "Fix orientation", Icons.Default.RotateRight, "Edit", Color(0xFFF97316), Color(0xFFFFF7ED)),
+        Tool("rearrange", "Rearrange", "Reorder pages", Icons.AutoMirrored.Filled.List, "Edit", Color(0xFF10B981), Color(0xFFECFDF5)),
+        Tool("page-numbers", "Page Numbers", "Add numbering", Icons.Default.FormatListNumbered, "Edit", Color(0xFF0EA5E9), Color(0xFFF0F9FF)),
         Tool("watermark", "Watermark", "Add text overlay", Icons.Default.TypeSpecimen, "Edit", Color(0xFFA855F7), Color(0xFFFAF5FF)),
-        Tool("metadata", "Metadata", "Edit PDF properties", Icons.Default.Info, "Secure", Color(0xFF06B6D4), Color(0xFFECFEFF)),
-        Tool("img2pdf", "Image to PDF", "Convert photos to PDF", Icons.Default.Image, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-        Tool("pdf2img", "PDF to Image", "Export pages as JPG", Icons.Default.PictureAsPdf, "Convert", Color(0xFF84CC16), Color(0xFFF7FEE7)),
+        Tool("signature", "Signature", "Sign documents", Icons.Default.Draw, "Edit", Color(0xFFEC4899), Color(0xFFFDF2F8)),
+        
+        // OPTIMIZE
+        Tool("compress", "Compress", "Optimize size", Icons.Default.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+        Tool("grayscale", "Grayscale", "Remove colors", Icons.Default.Palette, "Optimize", Color(0xFF71717A), Color(0xFFF4F4F5)),
+        Tool("repair", "Repair PDF", "Fix corrupted files", Icons.Default.Build, "Optimize", Color(0xFFEF4444), Color(0xFFFEF2F2)),
+        
+        // SECURE
+        Tool("protect", "Protect PDF", "Add password", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+        Tool("unlock", "Unlock PDF", "Remove password", Icons.Default.LockOpen, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
+        Tool("metadata", "Metadata", "Edit properties", Icons.Default.Fingerprint, "Secure", Color(0xFF06B6D4), Color(0xFFECFEFF)),
+        
+        // CONVERT
+        Tool("pdf2img", "PDF to Image", "Export as JPG", Icons.Default.PictureAsPdf, "Convert", Color(0xFF84CC16), Color(0xFFF7FEE7)),
+        Tool("img2pdf", "Image to PDF", "Photos to PDF", Icons.Default.Image, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
         Tool("extract-images", "Extract Images", "Save all images", Icons.Default.PhotoLibrary, "Convert", Color(0xFFEAB308), Color(0xFFFEFCE8)),
-        Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Default.TextFields, "Convert", Color(0xFF2563EB), Color(0xFFEFF6FF)),
-        Tool("signature", "Signature", "Sign your documents", Icons.Default.Edit, "Edit", Color(0xFFEC4899), Color(0xFFFDF2F8)),
-        Tool("grayscale", "Grayscale", "Remove PDF colors", Icons.Default.Palette, "Optimize", Color(0xFF71717A), Color(0xFFF4F4F5)),
-        Tool("repair", "Repair PDF", "Fix corrupted files", Icons.Default.Build, "Optimize", Color(0xFFEF4444), Color(0xFFFEF2F2))
+        Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Default.TextFields, "Convert", Color(0xFF2563EB), Color(0xFFEFF6FF))
     )
 
     val categories = listOf("Edit", "Optimize", "Secure", "Convert")
@@ -90,7 +98,7 @@ fun SmallBentoCard(tool: Tool, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(110.dp)
+            .height(105.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -105,7 +113,7 @@ fun SmallBentoCard(tool: Tool, onClick: () -> Unit) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Surface(
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(34.dp),
                 shape = RoundedCornerShape(10.dp),
                 color = if (isDark) tool.color.copy(alpha = 0.15f) else tool.bgColor
             ) {
@@ -113,7 +121,7 @@ fun SmallBentoCard(tool: Tool, onClick: () -> Unit) {
                     imageVector = tool.icon ?: Icons.Default.Build,
                     contentDescription = null,
                     tint = tool.color,
-                    modifier = Modifier.padding(7.dp)
+                    modifier = Modifier.padding(8.dp)
                 )
             }
             
@@ -124,7 +132,8 @@ fun SmallBentoCard(tool: Tool, onClick: () -> Unit) {
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    letterSpacing = (-0.3).sp
+                    letterSpacing = (-0.3).sp,
+                    lineHeight = 14.sp
                 )
                 Text(
                     text = tool.description,

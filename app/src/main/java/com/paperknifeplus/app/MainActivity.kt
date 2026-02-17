@@ -171,22 +171,24 @@ fun FixedTitanBottomBar(
     currentScreen: String,
     onNavigate: (String) -> Unit
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-        tonalElevation = 0.dp
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .height(100.dp), // Increased height to prevent cropping
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Column {
-            Divider(modifier = Modifier.fillMaxWidth(), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .height(72.dp),
-                contentAlignment = Alignment.Center
-            ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+            tonalElevation = 8.dp
+        ) {
+            Column {
+                Divider(modifier = Modifier.fillMaxWidth(), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                 Row(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().padding(bottom = 4.dp),
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -198,21 +200,21 @@ fun FixedTitanBottomBar(
                     NavItem(Icons.Default.History, "History", currentScreen == "history") { onNavigate("history") }
                     NavItem(Icons.Default.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
                 }
+            }
+        }
 
-                // FAB - Premium Pill shape
-                Surface(
-                    modifier = Modifier
-                        .offset(y = (-20).dp)
-                        .size(56.dp)
-                        .shadow(elevation = 12.dp, shape = RoundedCornerShape(18.dp), spotColor = PaperPink)
-                        .clickable { /* Action */ },
-                    shape = RoundedCornerShape(18.dp),
-                    color = PaperPink
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(28.dp))
-                    }
-                }
+        // Standardized + Button (Elevated and centered)
+        Surface(
+            modifier = Modifier
+                .offset(y = (-32).dp)
+                .size(60.dp)
+                .shadow(elevation = 16.dp, shape = RoundedCornerShape(20.dp), spotColor = PaperPink)
+                .clickable { /* Action */ },
+            shape = RoundedCornerShape(20.dp),
+            color = PaperPink
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(32.dp))
             }
         }
     }
