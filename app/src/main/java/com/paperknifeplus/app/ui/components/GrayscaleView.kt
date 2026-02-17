@@ -4,10 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -44,7 +40,6 @@ fun GrayscaleView(onBack: () -> Unit) {
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
-    var isProcessing by remember { mutableStateOf(false) }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -56,7 +51,6 @@ fun GrayscaleView(onBack: () -> Unit) {
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
-            isProcessing = true
             currentState = ToolState.PROCESSING
             scope.launch(Dispatchers.IO) {
                 try {
@@ -79,8 +73,6 @@ fun GrayscaleView(onBack: () -> Unit) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                         currentState = ToolState.CONFIGURING
                     }
-                } finally {
-                    isProcessing = false
                 }
             }
         }
@@ -107,7 +99,7 @@ fun GrayscaleView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -150,7 +142,6 @@ fun GrayscaleView(onBack: () -> Unit) {
                         accentColor = accentColor
                     )
                 }
-                else -> {}
             }
         }
     }
