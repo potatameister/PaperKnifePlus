@@ -28,7 +28,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         Tool("split", "Split PDF", "Extract specific pages", Icons.Default.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("rotate", "Rotate PDF", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("rearrange", "Rearrange", "Reorder pages", Icons.AutoMirrored.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("page-numbers", "Page Numbers", "Add numbering", Icons.AutoMirrored.Filled.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("page-numbers", "Page Numbers", "Add numbering", androidx.compose.material.icons.automirrored.outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("watermark", "Watermark", "Add text overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("signature", "Signature", "Sign documents", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         
