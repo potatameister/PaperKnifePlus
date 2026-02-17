@@ -1,17 +1,17 @@
 package com.paperknifeplus.app.ui.components
 
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
+import android.graphics.*
 import android.net.Uri
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.PDResources
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceGray
-import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
+import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
+import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.rendering.PDFRenderer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,6 +22,16 @@ data class UriDetails(
     val name: String,
     val size: String
 )
+
+object PreferencesManager {
+    fun setDefaultAuthor(context: Context, name: String) {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("default_author", name).apply()
+    }
+    fun getDefaultAuthor(context: Context): String {
+        return context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE).getString("default_author", "") ?: ""
+    }
+}
 
 @SuppressLint("Range")
 fun getUriDetails(context: Context, uri: Uri): UriDetails {
@@ -125,7 +135,6 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
             renderer.close()
         }
     } catch (e: Exception) {
-        // Fallback to PDFBox for encrypted or complex files
         try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
@@ -140,28 +149,94 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
 }
 
 fun toGrayscaleBitmap(src: Bitmap): Bitmap {
-    val height = src.height
-    val width = src.width
-    val bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val c = Canvas(bmpGrayscale)
+    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmpGrayscale)
     val paint = Paint()
-    val cm = ColorMatrix()
-    cm.setSaturation(0f)
-    val f = ColorMatrixColorFilter(cm)
-    paint.colorFilter = f
-    c.drawBitmap(src, 0f, 0f, paint)
+    val cm = ColorMatrix().apply { setSaturation(0f) }
+    paint.colorFilter = ColorMatrixColorFilter(cm)
+    canvas.drawBitmap(src, 0f, 0f, paint)
     return bmpGrayscale
 }
 
 suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
         val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        // Enabling this removes corruption in structure
         document.isAllSecurityToBeRemoved = true 
-        context.contentResolver.openOutputStream(outputUri)?.use { outputStream ->
-            document.save(outputStream)
-            outputStream.flush()
-        }
-        document.close()
+        saveAndFlush(context, document, outputUri)
     }
+}
+
+suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
+    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
+        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        
+        for (page in document.pages) {
+            val resources = page.resources
+            for (name in resources.xObjectNames) {
+                val xobject = resources.getXObject(name)
+                if (xobject is PDImageXObject) {
+                    val bitmap = xobject.image
+                    val grayBitmap = toGrayscaleBitmap(bitmap)
+                    val grayImage = JPEGFactory.createFromImage(document, grayBitmap, 0.75f)
+                    resources.put(name, grayImage)
+                    bitmap.recycle()
+                    grayBitmap.recycle()
+                }
+            }
+        }
+        
+        saveAndFlush(context, document, outputUri)
+    }
+}
+
+suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?, level: String) = withContext(Dispatchers.IO) {
+    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
+        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        
+        val quality = if (level == "Extreme") 0.3f else 0.7f
+        val scale = if (level == "Extreme") 0.5f else 0.8f
+
+        for (page in document.pages) {
+            val resources = page.resources
+            for (name in resources.xObjectNames) {
+                val xobject = resources.getXObject(name)
+                if (xobject is PDImageXObject) {
+                    val bitmap = xobject.image
+                    val width = (bitmap.width * scale).toInt().coerceAtLeast(1)
+                    val height = (bitmap.height * scale).toInt().coerceAtLeast(1)
+                    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
+                    
+                    val compressedImage = JPEGFactory.createFromImage(document, scaledBitmap, quality)
+                    resources.put(name, compressedImage)
+                    
+                    bitmap.recycle()
+                    scaledBitmap.recycle()
+                }
+            }
+        }
+        
+        saveAndFlush(context, document, outputUri)
+    }
+}
+
+fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
+    // 1. Set Auto-Author if available
+    val autoAuthor = PreferencesManager.getDefaultAuthor(context)
+    if (autoAuthor.isNotEmpty()) {
+        document.documentInformation.author = autoAuthor
+    }
+
+    // 2. Save and flush
+    context.contentResolver.openOutputStream(outputUri, "rwt")?.use { outputStream ->
+        document.save(outputStream)
+        outputStream.flush()
+    }
+    document.close()
+    
+    // 3. Metadata Refresh (Forces File Managers to see real size)
+    try {
+        val values = ContentValues()
+        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+        context.contentResolver.update(outputUri, values, null, null)
+    } catch (e: Exception) { }
 }

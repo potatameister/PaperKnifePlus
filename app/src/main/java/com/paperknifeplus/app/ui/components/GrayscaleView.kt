@@ -52,7 +52,7 @@ fun GrayscaleView(onBack: () -> Unit) {
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var savedFilePath by remember { mutableStateOf("") }
-    var processedFileName by remember { mutableStateOf("") }
+    var resultFileName by remember { mutableStateOf("") }
 
     var pageCount by remember { mutableStateOf(0) }
     var isGrayscalePreview by remember { mutableStateOf(true) }
@@ -73,7 +73,6 @@ fun GrayscaleView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    // Just get page count for the lazy list
                     val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
@@ -91,18 +90,18 @@ fun GrayscaleView(onBack: () -> Unit) {
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    // Attempt real grayscale rewrite
                     performGrayscaleRewrite(context, selectedUri!!, saveUri, if (unlockPassword.isEmpty()) null else unlockPassword)
                     
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
-                        processedFileName = finalName
-                        savedFilePath = "Local Storage / $finalName"
+                        // FIX: Detect real filename from the save URI
+                        val finalDetails = getUriDetails(context, saveUri)
+                        resultFileName = finalDetails.name
+                        savedFilePath = "Local Storage / ${finalDetails.name}"
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Grayscale", "Converted", Icons.Outlined.Palette)
+                        SessionManager.addEntry(finalDetails.name, "Grayscale", "Converted", Icons.Outlined.Palette)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -244,7 +243,7 @@ fun GrayscaleView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = processedFileName,
+                            fileName = resultFileName,
                             path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
@@ -271,11 +270,12 @@ fun PagePreviewItem(
     isGrayscale: Boolean,
     accentColor: Color
 ) {
+    // High Quality Preview: Use 1.0f scale
     var bitmap by remember(uri, pageIndex, password) { mutableStateOf<Bitmap?>(null) }
     
     LaunchedEffect(uri, pageIndex, password) {
         withContext(Dispatchers.IO) {
-            val b = renderPageToBitmap(context, uri, pageIndex, password, 0.5f)
+            val b = renderPageToBitmap(context, uri, pageIndex, password, 1.0f)
             withContext(Dispatchers.Main) { bitmap = b }
         }
     }
@@ -336,21 +336,5 @@ private suspend fun getPageCount(context: android.content.Context, uri: Uri, pas
                 count
             } ?: 0
         } catch (e2: Exception) { 0 }
-    }
-}
-
-private suspend fun performGrayscaleRewrite(context: android.content.Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
-    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        
-        // True grayscale PDF conversion is complex. 
-        // We'll use a trick: If we can't deep-grayscale vector content, we re-save the document
-        // which triggers a rebuild. For Pro Edition, we should eventually add image downsampling.
-        
-        context.contentResolver.openOutputStream(outputUri)?.use { outputStream ->
-            document.save(outputStream)
-            outputStream.flush()
-        }
-        document.close()
     }
 }

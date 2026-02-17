@@ -10,7 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +29,8 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     
+    var autoAuthor by remember { mutableStateOf(PreferencesManager.getDefaultAuthor(context)) }
+
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -45,6 +47,31 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
         }
         
         Spacer(Modifier.height(32.dp))
+        
+        SettingsGroup("GENERAL") {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Text("AUTO AUTHOR NAME", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                Spacer(Modifier.height(8.dp))
+                TextField(
+                    value = autoAuthor,
+                    onValueChange = { 
+                        autoAuthor = it
+                        PreferencesManager.setDefaultAuthor(context, it)
+                    },
+                    placeholder = { Text("e.g. John Doe") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = PaperPink
+                    ),
+                    singleLine = true
+                )
+                Text("Applied to all processed documents automatically.", fontSize = 9.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
+            }
+        }
+        
+        Spacer(Modifier.height(24.dp))
         
         SettingsGroup("SYSTEM") {
             SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Remove all temporary PDF fragments") {
@@ -88,7 +115,7 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
             text = title,
             fontSize = 10.sp,
             fontWeight = FontWeight.Black,
-            color = PaperPink,
+            color = Color.Gray,
             letterSpacing = 1.5.sp,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
         )
