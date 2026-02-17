@@ -211,15 +211,6 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                     modifier = Modifier.padding(12.dp)
                 )
             }
-            
-            // Iconic Red Glow behind button
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 40.dp, y = (-40).dp)
-                    .size(180.dp)
-                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.5f), Color.Transparent)))
-            )
 
             Surface(
                 modifier = Modifier

@@ -52,22 +52,31 @@ fun ProtectView(onBack: () -> Unit) {
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
+    var isFileLoading by remember { mutableStateOf(false) }
+    var processingTime by remember { mutableStateOf("") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
-            fileName = it.lastPathSegment?.substringAfterLast("/") ?: "Document.pdf"
-            if (!fileName.endsWith(".pdf", true)) fileName += ".pdf"
+            val details = getUriDetails(context, it)
+            fileName = details.name
+            fileSize = details.size
             
+            isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
-                    currentState = ToolState.UNLOCKING
+                    withContext(Dispatchers.Main) {
+                        currentState = ToolState.UNLOCKING
+                        isFileLoading = false
+                    }
                 } else {
                     val bitmap = loadPreview(context, it, null)
                     withContext(Dispatchers.Main) {
                         previewBitmap = bitmap
                         currentState = ToolState.CONFIGURING
+                        isFileLoading = false
                     }
                 }
             }
@@ -77,6 +86,7 @@ fun ProtectView(onBack: () -> Unit) {
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
             currentState = ToolState.PROCESSING
+            val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
@@ -97,9 +107,13 @@ fun ProtectView(onBack: () -> Unit) {
                         }
                         document.close()
                     }
+                    val endTime = System.currentTimeMillis()
+                    val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    
                     withContext(Dispatchers.Main) {
                         val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
                         savedFilePath = "Local Storage / $finalName"
+                        processingTime = timeStr
                         SessionManager.addEntry(finalName, "Protect", "Encrypted", Icons.Outlined.Lock)
                         currentState = ToolState.SUCCESS
                     }
@@ -135,72 +149,102 @@ fun ProtectView(onBack: () -> Unit) {
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
-            when (currentState) {
-                ToolState.SELECTING -> {
-                    SelectionGrid(
-                        onSelect = { pickLauncher.launch("application/pdf") }, 
-                        isDark = isDark,
-                        icon = Icons.Outlined.Security,
-                        title = "Tap to enter file",
-                        subtitle = "PROTECT ANY PDF DOCUMENT",
-                        accentColor = accentColor,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                ToolState.UNLOCKING -> {
-                    LockedFilePrompt(
-                        fileName = fileName,
-                        password = unlockPassword,
-                        onPasswordChange = { unlockPassword = it },
-                        onUnlock = {
-                            scope.launch(Dispatchers.IO) {
-                                val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
-                                if (bitmap != null) {
-                                    previewBitmap = bitmap
-                                    withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
-                                } else {
-                                    val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
-                                    if (isValid) {
-                                        withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
-                                    } else {
-                                        withContext(Dispatchers.Main) { Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show() }
-                                    }
-                                }
-                            }
-                        },
-                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
-                        accentColor = accentColor
-                    )
-                }
-                ToolState.CONFIGURING -> {
-                    ProtectConfiguringView(
-                        preview = previewBitmap,
-                        password = protectPassword,
-                        onPasswordChange = { protectPassword = it },
-                        onProtect = { saveLauncher.launch(fileName.replace(".pdf", "_protected.pdf")) },
-                        onChangeFile = { selectedUri = null; currentState = ToolState.SELECTING },
-                        accentColor = accentColor
-                    )
-                }
-                ToolState.PROCESSING -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            if (isFileLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = accentColor)
+                        Spacer(Modifier.height(16.dp))
+                        Text("Preparing file...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                     }
                 }
-                ToolState.SUCCESS -> {
-                    SuccessView(
-                        fileName = fileName,
-                        path = savedFilePath,
-                        onDone = onBack,
-                        onProcessMore = { 
-                            selectedUri = null
-                            unlockPassword = ""
-                            protectPassword = ""
-                            previewBitmap = null
-                            currentState = ToolState.SELECTING 
-                        },
-                        accentColor = accentColor
-                    )
+            } else {
+                when (currentState) {
+                    ToolState.SELECTING -> {
+                        SelectionGrid(
+                            onSelect = { pickLauncher.launch("application/pdf") }, 
+                            isDark = isDark,
+                            icon = Icons.Outlined.Security,
+                            title = "Tap to enter file",
+                            subtitle = "PROTECT ANY PDF DOCUMENT",
+                            accentColor = accentColor,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    ToolState.UNLOCKING -> {
+                        LockedFilePrompt(
+                            fileName = fileName,
+                            password = unlockPassword,
+                            onPasswordChange = { unlockPassword = it },
+                            onUnlock = {
+                                isFileLoading = true
+                                scope.launch(Dispatchers.IO) {
+                                    val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
+                                    if (bitmap != null) {
+                                        previewBitmap = bitmap
+                                        withContext(Dispatchers.Main) { 
+                                            currentState = ToolState.CONFIGURING
+                                            isFileLoading = false 
+                                        }
+                                    } else {
+                                        val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
+                                        if (isValid) {
+                                            withContext(Dispatchers.Main) { 
+                                                currentState = ToolState.CONFIGURING
+                                                isFileLoading = false 
+                                            }
+                                        } else {
+                                            withContext(Dispatchers.Main) { 
+                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                                isFileLoading = false 
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
+                            accentColor = accentColor
+                        )
+                    }
+                    ToolState.CONFIGURING -> {
+                        ProtectConfiguringView(
+                            preview = previewBitmap,
+                            fileName = fileName,
+                            fileSize = fileSize,
+                            password = protectPassword,
+                            onPasswordChange = { protectPassword = it },
+                            onProtect = { 
+                                val defaultName = fileName.replace(".pdf", "", true) + "-protected.pdf"
+                                saveLauncher.launch(defaultName) 
+                            },
+                            onChangeFile = { selectedUri = null; currentState = ToolState.SELECTING },
+                            accentColor = accentColor
+                        )
+                    }
+                    ToolState.PROCESSING -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(color = accentColor)
+                                Spacer(Modifier.height(16.dp))
+                                Text("Encrypting...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                    ToolState.SUCCESS -> {
+                        SuccessView(
+                            fileName = fileName,
+                            path = savedFilePath,
+                            processingTime = processingTime,
+                            onDone = onBack,
+                            onProcessMore = { 
+                                selectedUri = null
+                                unlockPassword = ""
+                                protectPassword = ""
+                                previewBitmap = null
+                                currentState = ToolState.SELECTING 
+                            },
+                            accentColor = accentColor
+                        )
+                    }
                 }
             }
         }
@@ -208,7 +252,16 @@ fun ProtectView(onBack: () -> Unit) {
 }
 
 @Composable
-fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange: (String) -> Unit, onProtect: () -> Unit, onChangeFile: () -> Unit, accentColor: Color) {
+fun ProtectConfiguringView(
+    preview: Bitmap?, 
+    fileName: String,
+    fileSize: String,
+    password: String, 
+    onPasswordChange: (String) -> Unit, 
+    onProtect: () -> Unit, 
+    onChangeFile: () -> Unit, 
+    accentColor: Color
+) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Spacer(Modifier.height(16.dp))
         Card(
@@ -224,6 +277,10 @@ fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange:
                 }
             }
         }
+        
+        Spacer(Modifier.height(12.dp))
+        Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
         
         Spacer(Modifier.height(24.dp))
         Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)

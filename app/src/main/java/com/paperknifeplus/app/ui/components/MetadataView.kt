@@ -1,10 +1,12 @@
 package com.paperknifeplus.app.ui.components
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,19 +56,35 @@ fun MetadataView(onBack: () -> Unit) {
     
     var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
+    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isFileLoading by remember { mutableStateOf(false) }
+    var processingTime by remember { mutableStateOf("") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
-            fileName = it.lastPathSegment ?: "Document.pdf"
+            val details = getUriDetails(context, it)
+            fileName = details.name
+            fileSize = details.size
+            
+            isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
-                    currentState = ToolState.UNLOCKING
+                    withContext(Dispatchers.Main) {
+                        currentState = ToolState.UNLOCKING
+                        isFileLoading = false
+                    }
                 } else {
-                    loadMetadata(context, it, null) { t, a, s, k, c, p ->
-                        title = t; author = a; subject = s; keywords = k; creator = c; producer = p
-                        currentState = ToolState.CONFIGURING
+                    val bitmap = loadPreview(context, it, null)
+                    withContext(Dispatchers.Main) {
+                        previewBitmap = bitmap
+                        loadMetadata(context, it, null) { t, a, s, k, c, p ->
+                            title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                            currentState = ToolState.CONFIGURING
+                            isFileLoading = false
+                        }
                     }
                 }
             }
@@ -74,10 +94,22 @@ fun MetadataView(onBack: () -> Unit) {
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
             currentState = ToolState.PROCESSING
+            val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                        val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
+                        val document = if (unlockPassword.isNotEmpty()) {
+                            PDDocument.load(inputStream, unlockPassword)
+                        } else {
+                            PDDocument.load(inputStream)
+                        }
+                        
+                        // Fix for Task 8: If it was encrypted, we should probably strip it or handle it.
+                        // For Metadata tool, stripping encryption makes it easiest to save.
+                        if (document.isEncrypted) {
+                            document.isAllSecurityToBeRemoved = true
+                        }
+                        
                         val info = document.documentInformation
                         info.title = title
                         info.author = author
@@ -92,9 +124,13 @@ fun MetadataView(onBack: () -> Unit) {
                         }
                         document.close()
                     }
+                    val endTime = System.currentTimeMillis()
+                    val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.path?.substringAfterLast("/") ?: fileName
+                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
                         savedFilePath = "Local Storage / $finalName"
+                        processingTime = timeStr
                         SessionManager.addEntry(finalName, "Metadata", "Edited", Icons.Outlined.Fingerprint)
                         currentState = ToolState.SUCCESS
                     }
@@ -130,85 +166,129 @@ fun MetadataView(onBack: () -> Unit) {
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
-            when (currentState) {
-                ToolState.SELECTING -> {
-                    SelectionGrid(
-                        onSelect = { pickLauncher.launch("application/pdf") }, 
-                        isDark = isDark,
-                        icon = Icons.Outlined.Fingerprint,
-                        title = "Tap to enter file",
-                        subtitle = "EDIT PDF PROPERTIES",
-                        accentColor = accentColor,
-                        modifier = Modifier.weight(1f)
-                    )
+            if (isFileLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = accentColor)
+                        Spacer(Modifier.height(16.dp))
+                        Text("Loading metadata...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    }
                 }
-                ToolState.UNLOCKING -> {
-                    LockedFilePrompt(
-                        fileName = fileName,
-                        password = unlockPassword,
-                        onPasswordChange = { unlockPassword = it },
-                        onUnlock = {
-                            scope.launch(Dispatchers.IO) {
-                                loadMetadata(context, selectedUri!!, unlockPassword) { t, a, s, k, c, p ->
-                                    title = t; author = a; subject = s; keywords = k; creator = c; producer = p
-                                    currentState = ToolState.CONFIGURING
+            } else {
+                when (currentState) {
+                    ToolState.SELECTING -> {
+                        SelectionGrid(
+                            onSelect = { pickLauncher.launch("application/pdf") }, 
+                            isDark = isDark,
+                            icon = Icons.Outlined.Fingerprint,
+                            title = "Tap to enter file",
+                            subtitle = "EDIT PDF PROPERTIES",
+                            accentColor = accentColor,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    ToolState.UNLOCKING -> {
+                        LockedFilePrompt(
+                            fileName = fileName,
+                            password = unlockPassword,
+                            onPasswordChange = { unlockPassword = it },
+                            onUnlock = {
+                                isFileLoading = true
+                                scope.launch(Dispatchers.IO) {
+                                    val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
+                                    previewBitmap = bitmap
+                                    loadMetadata(context, selectedUri!!, unlockPassword) { t, a, s, k, c, p ->
+                                        title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                                        withContext(Dispatchers.Main) {
+                                            currentState = ToolState.CONFIGURING
+                                            isFileLoading = false
+                                        }
+                                    }
+                                }
+                            },
+                            onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
+                            accentColor = accentColor
+                        )
+                    }
+                    ToolState.CONFIGURING -> {
+                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                            Spacer(Modifier.height(16.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth().height(180.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                            ) {
+                                if (previewBitmap != null) {
+                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                } else {
+                                    Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Outlined.Fingerprint, null, modifier = Modifier.size(48.dp).alpha(0.2f))
+                                    }
                                 }
                             }
-                        },
-                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
-                        accentColor = accentColor
-                    )
-                }
-                ToolState.CONFIGURING -> {
-                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                        SettingsGroup("DOCUMENT CORE") {
-                            MetadataEditField("Title", title, accentColor) { title = it }
-                            MetadataEditField("Author", author, accentColor) { author = it }
-                            MetadataEditField("Subject", subject, accentColor) { subject = it }
+                            Spacer(Modifier.height(12.dp))
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            
+                            Spacer(Modifier.height(24.dp))
+                            
+                            SettingsGroup("DOCUMENT CORE") {
+                                MetadataEditField("Title", title, accentColor) { title = it }
+                                MetadataEditField("Author", author, accentColor) { author = it }
+                                MetadataEditField("Subject", subject, accentColor) { subject = it }
+                            }
+                            
+                            Spacer(Modifier.height(16.dp))
+                            
+                            SettingsGroup("ADDITIONAL INFO") {
+                                MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
+                                MetadataEditField("Creator", creator, accentColor) { creator = it }
+                                MetadataEditField("Producer", producer, accentColor) { producer = it }
+                            }
+                            
+                            Spacer(Modifier.height(32.dp))
+                            
+                            Button(
+                                onClick = { 
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
+                                    saveLauncher.launch(defaultName) 
+                                }, 
+                                modifier = Modifier.fillMaxWidth().height(60.dp), 
+                                shape = RoundedCornerShape(20.dp), 
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text("Save Metadata", fontWeight = FontWeight.Black, color = Color.White)
+                            }
+                            
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                                Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.height(100.dp))
                         }
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
-                        SettingsGroup("ADDITIONAL INFO") {
-                            MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
-                            MetadataEditField("Creator", creator, accentColor) { creator = it }
-                            MetadataEditField("Producer", producer, accentColor) { producer = it }
-                        }
-                        
-                        Spacer(Modifier.height(32.dp))
-                        
-                        Button(
-                            onClick = { saveLauncher.launch(fileName.replace(".pdf", "_meta.pdf")) }, 
-                            modifier = Modifier.fillMaxWidth().height(60.dp), 
-                            shape = RoundedCornerShape(20.dp), 
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                        ) {
-                            Text("Save Metadata", fontWeight = FontWeight.Black, color = Color.White)
-                        }
-                        
-                        TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(Modifier.height(100.dp))
                     }
-                }
-                ToolState.PROCESSING -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = accentColor)
+                    ToolState.PROCESSING -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(color = accentColor)
+                                Spacer(Modifier.height(16.dp))
+                                Text("Saving properties...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
-                }
-                ToolState.SUCCESS -> {
-                    SuccessView(
-                        fileName = fileName,
-                        path = savedFilePath,
-                        onDone = onBack,
-                        onProcessMore = { 
-                            selectedUri = null
-                            unlockPassword = ""
-                            currentState = ToolState.SELECTING 
-                        },
-                        accentColor = accentColor
-                    )
+                    ToolState.SUCCESS -> {
+                        SuccessView(
+                            fileName = fileName,
+                            path = savedFilePath,
+                            processingTime = processingTime,
+                            onDone = onBack,
+                            onProcessMore = { 
+                                selectedUri = null
+                                unlockPassword = ""
+                                currentState = ToolState.SELECTING 
+                            },
+                            accentColor = accentColor
+                        )
+                    }
                 }
             }
         }

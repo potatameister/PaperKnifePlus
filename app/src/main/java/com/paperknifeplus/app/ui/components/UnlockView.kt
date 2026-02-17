@@ -47,20 +47,29 @@ fun UnlockView(onBack: () -> Unit) {
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
+    var isFileLoading by remember { mutableStateOf(false) }
+    var processingTime by remember { mutableStateOf("") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
-            fileName = it.lastPathSegment?.substringAfterLast("/") ?: "Document.pdf"
-            if (!fileName.endsWith(".pdf", true)) fileName += ".pdf"
+            val details = getUriDetails(context, it)
+            fileName = details.name
+            fileSize = details.size
             
+            isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
-                    currentState = ToolState.UNLOCKING
+                    withContext(Dispatchers.Main) {
+                        currentState = ToolState.UNLOCKING
+                        isFileLoading = false
+                    }
                 } else {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "File is not encrypted", Toast.LENGTH_SHORT).show()
+                        isFileLoading = false
                     }
                 }
             }
@@ -70,6 +79,7 @@ fun UnlockView(onBack: () -> Unit) {
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
             currentState = ToolState.PROCESSING
+            val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
@@ -81,9 +91,13 @@ fun UnlockView(onBack: () -> Unit) {
                         }
                         document.close()
                     }
+                    val endTime = System.currentTimeMillis()
+                    val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    
                     withContext(Dispatchers.Main) {
                         val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
                         savedFilePath = "Local Storage / $finalName"
+                        processingTime = timeStr
                         SessionManager.addEntry(finalName, "Unlock", "Decrypted", Icons.Outlined.LockOpen)
                         currentState = ToolState.SUCCESS
                     }
@@ -119,93 +133,125 @@ fun UnlockView(onBack: () -> Unit) {
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
-            when (currentState) {
-                ToolState.SELECTING -> {
-                    SelectionGrid(
-                        onSelect = { pickLauncher.launch("application/pdf") }, 
-                        isDark = isDark,
-                        icon = Icons.Outlined.LockOpen,
-                        title = "Tap to select locked file",
-                        subtitle = "REMOVE PASSWORD PROTECTION",
-                        accentColor = accentColor,
-                        modifier = Modifier.weight(1f)
-                    )
+            if (isFileLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = accentColor)
+                        Spacer(Modifier.height(16.dp))
+                        Text("Unlocking...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    }
                 }
-                ToolState.UNLOCKING -> {
-                    LockedFilePrompt(
-                        fileName = fileName,
-                        password = password,
-                        onPasswordChange = { password = it },
-                        onUnlock = {
-                            scope.launch(Dispatchers.IO) {
-                                val bitmap = loadPreview(context, selectedUri!!, password)
-                                if (bitmap != null) {
-                                    previewBitmap = bitmap
-                                    withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
-                                } else {
-                                    val isValid = verifyPasswordLocal(context, selectedUri!!, password)
-                                    if (isValid) {
-                                        withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
+            } else {
+                when (currentState) {
+                    ToolState.SELECTING -> {
+                        SelectionGrid(
+                            onSelect = { pickLauncher.launch("application/pdf") }, 
+                            isDark = isDark,
+                            icon = Icons.Outlined.LockOpen,
+                            title = "Tap to select locked file",
+                            subtitle = "REMOVE PASSWORD PROTECTION",
+                            accentColor = accentColor,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    ToolState.UNLOCKING -> {
+                        LockedFilePrompt(
+                            fileName = fileName,
+                            password = password,
+                            onPasswordChange = { password = it },
+                            onUnlock = {
+                                isFileLoading = true
+                                scope.launch(Dispatchers.IO) {
+                                    val bitmap = loadPreview(context, selectedUri!!, password)
+                                    if (bitmap != null) {
+                                        previewBitmap = bitmap
+                                        withContext(Dispatchers.Main) { 
+                                            currentState = ToolState.CONFIGURING
+                                            isFileLoading = false 
+                                        }
                                     } else {
-                                        withContext(Dispatchers.Main) { Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show() }
+                                        val isValid = verifyPasswordLocal(context, selectedUri!!, password)
+                                        if (isValid) {
+                                            withContext(Dispatchers.Main) { 
+                                                currentState = ToolState.CONFIGURING
+                                                isFileLoading = false 
+                                            }
+                                        } else {
+                                            withContext(Dispatchers.Main) { 
+                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                                isFileLoading = false 
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
+                            accentColor = accentColor
+                        )
+                    }
+                    ToolState.CONFIGURING -> {
+                        Column(Modifier.fillMaxSize()) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().height(240.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                            ) {
+                                if (previewBitmap != null) {
+                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                } else {
+                                    Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Outlined.LockOpen, null, modifier = Modifier.size(48.dp).alpha(0.2f))
                                     }
                                 }
                             }
-                        },
-                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
-                        accentColor = accentColor
-                    )
-                }
-                ToolState.CONFIGURING -> {
-                    Column(Modifier.fillMaxSize()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().height(240.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-                        ) {
-                            if (previewBitmap != null) {
-                                Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                            } else {
-                                Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Outlined.LockOpen, null, modifier = Modifier.size(48.dp).alpha(0.2f))
-                                }
+                            Spacer(Modifier.height(12.dp))
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            
+                            Spacer(Modifier.height(24.dp))
+                            Text("File Unlocked", fontWeight = FontWeight.Black, fontSize = 20.sp)
+                            Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 14.sp)
+                            Spacer(Modifier.height(32.dp))
+                            Button(
+                                onClick = { 
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-unlocked.pdf"
+                                    saveLauncher.launch(defaultName) 
+                                }, 
+                                modifier = Modifier.fillMaxWidth().height(60.dp), 
+                                shape = RoundedCornerShape(20.dp), 
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text("SAVE UNRESTRICTED PDF", fontWeight = FontWeight.Black, color = Color.White)
+                            }
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                                Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
                             }
                         }
-                        Spacer(Modifier.height(24.dp))
-                        Text("File Unlocked", fontWeight = FontWeight.Black, fontSize = 20.sp)
-                        Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 14.sp)
-                        Spacer(Modifier.height(32.dp))
-                        Button(
-                            onClick = { saveLauncher.launch(fileName.replace(".pdf", "_unlocked.pdf")) }, 
-                            modifier = Modifier.fillMaxWidth().height(60.dp), 
-                            shape = RoundedCornerShape(20.dp), 
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                        ) {
-                            Text("SAVE UNRESTRICTED PDF", fontWeight = FontWeight.Black, color = Color.White)
-                        }
-                        TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+                    }
+                    ToolState.PROCESSING -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(color = accentColor)
+                                Spacer(Modifier.height(16.dp))
+                                Text("Removing restrictions...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
-                }
-                ToolState.PROCESSING -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = accentColor)
+                    ToolState.SUCCESS -> {
+                        SuccessView(
+                            fileName = fileName,
+                            path = savedFilePath,
+                            processingTime = processingTime,
+                            onDone = onBack,
+                            onProcessMore = { 
+                                selectedUri = null
+                                password = ""
+                                previewBitmap = null
+                                currentState = ToolState.SELECTING 
+                            },
+                            accentColor = accentColor
+                        )
                     }
-                }
-                ToolState.SUCCESS -> {
-                    SuccessView(
-                        fileName = fileName,
-                        path = savedFilePath,
-                        onDone = onBack,
-                        onProcessMore = { 
-                            selectedUri = null
-                            password = ""
-                            previewBitmap = null
-                            currentState = ToolState.SELECTING 
-                        },
-                        accentColor = accentColor
-                    )
                 }
             }
         }

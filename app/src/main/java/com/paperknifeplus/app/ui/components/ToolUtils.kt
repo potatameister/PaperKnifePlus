@@ -1,12 +1,62 @@
 package com.paperknifeplus.app.ui.components
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.provider.OpenableColumns
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceGray
+import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
+import com.tom_roush.pdfbox.rendering.PDFRenderer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
-suspend fun checkIsEncryptedLocal(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+data class UriDetails(
+    val name: String,
+    val size: String
+)
+
+@SuppressLint("Range")
+fun getUriDetails(context: Context, uri: Uri): UriDetails {
+    var name = "Document.pdf"
+    var size = "Unknown size"
+    
+    try {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                
+                if (nameIndex != -1) {
+                    val rawName = cursor.getString(nameIndex)
+                    if (rawName != null) name = rawName
+                }
+                if (sizeIndex != -1) {
+                    val sizeBytes = cursor.getLong(sizeIndex)
+                    size = formatSize(sizeBytes)
+                }
+            }
+        }
+    } catch (e: Exception) {
+        // Fallback to last path segment if query fails
+        uri.lastPathSegment?.let { name = it }
+    }
+    
+    if (!name.endsWith(".pdf", true) && !name.contains(".")) name += ".pdf"
+    return UriDetails(name, size)
+}
+
+private fun formatSize(bytes: Long): String {
+    if (bytes <= 0) return "0 B"
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
+    return String.format("%.1f %s", bytes / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
+}
+
+suspend fun checkIsEncryptedLocal(context: Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             val doc = PDDocument.load(inputStream)
@@ -21,7 +71,7 @@ suspend fun checkIsEncryptedLocal(context: android.content.Context, uri: Uri): B
     }
 }
 
-suspend fun verifyPasswordLocal(context: android.content.Context, uri: Uri, password: String): Boolean = withContext(Dispatchers.IO) {
+suspend fun verifyPasswordLocal(context: Context, uri: Uri, password: String): Boolean = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             PDDocument.load(inputStream, password).use { doc -> !doc.isEncrypted || true }
@@ -31,7 +81,7 @@ suspend fun verifyPasswordLocal(context: android.content.Context, uri: Uri, pass
     }
 }
 
-suspend fun loadPreview(context: android.content.Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
+suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
             val renderer = android.graphics.pdf.PdfRenderer(pfd)
@@ -43,6 +93,42 @@ suspend fun loadPreview(context: android.content.Context, uri: Uri, password: St
             bitmap
         }
     } catch (e: Exception) {
-        null
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+                val renderer = PDFRenderer(document)
+                val bitmap = renderer.renderImage(0, 0.5f)
+                document.close()
+                bitmap
+            }
+        } catch (e2: Exception) {
+            null
+        }
+    }
+}
+
+fun createTempPdfFile(context: Context): File {
+    return File.createTempFile("paperknife_proc", ".pdf", context.cacheDir)
+}
+
+suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
+    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
+        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        context.contentResolver.openOutputStream(outputUri)?.use { outputStream ->
+            document.save(outputStream)
+            outputStream.flush()
+        }
+        document.close()
+    }
+}
+
+suspend fun convertToGrayscale(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
+    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
+        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        context.contentResolver.openOutputStream(outputUri)?.use { outputStream ->
+            document.save(outputStream)
+            outputStream.flush()
+        }
+        document.close()
     }
 }

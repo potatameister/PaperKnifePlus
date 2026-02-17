@@ -12,11 +12,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
 fun SelectionGrid(
@@ -32,7 +35,17 @@ fun SelectionGrid(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(32.dp))
-            .background(if (isDark) Color(0xFF09090B) else Color.White)
+            .background(
+                Brush.linearGradient(
+                    colors = if (isDark) {
+                        listOf(Color(0xFF09090B), PaperPink.copy(alpha = 0.12f))
+                    } else {
+                        listOf(Color.White, PaperPink.copy(alpha = 0.08f))
+                    },
+                    start = Offset(0f, 1000f), // Bottom Left
+                    end = Offset(1000f, 0f)    // Top Right
+                )
+            )
             .border(BorderStroke(1.dp, Color.Gray.copy(0.1f)), RoundedCornerShape(32.dp))
             .clickable { onSelect() },
         contentAlignment = Alignment.Center
@@ -42,15 +55,15 @@ fun SelectionGrid(
                 imageVector = icon, 
                 contentDescription = null, 
                 modifier = Modifier.size(64.dp).alpha(0.1f), 
-                tint = accentColor
+                tint = PaperPink
             )
             Spacer(Modifier.height(16.dp))
-            Text(title, fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color.Gray)
+            Text(title, fontWeight = FontWeight.Black, fontSize = 18.sp, color = if (isDark) Color.LightGray else Color.DarkGray)
             Text(
                 subtitle, 
                 fontSize = 10.sp, 
                 fontWeight = FontWeight.Black, 
-                color = Color.Gray.copy(alpha = 0.5f), 
+                color = Color.Gray.copy(alpha = 0.6f), 
                 letterSpacing = 1.sp
             )
         }

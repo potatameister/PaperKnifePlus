@@ -40,9 +40,14 @@ import kotlinx.coroutines.withContext
 fun MergeView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    var isProcessing by remember { mutableStateOf(false) }
     val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val accentColor = Color(0xFFF43F5E)
+
+    var currentState by remember { mutableStateOf<ToolState>(ToolState.CONFIGURING) }
+    var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var savedFilePath by remember { mutableStateOf("") }
+    var resultFileName by remember { mutableStateOf("") }
+    var processingTime by remember { mutableStateOf("") }
     
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris -> 
         selectedUris = selectedUris + uris 
@@ -50,7 +55,8 @@ fun MergeView(onBack: () -> Unit) {
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
-            isProcessing = true
+            currentState = ToolState.PROCESSING
+            val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
                     val merger = PDFMergerUtility()
@@ -61,20 +67,25 @@ fun MergeView(onBack: () -> Unit) {
                             }
                         }
                         merger.destinationStream = outputStream
-                        // setupMainMemoryOnly is critical for Android to avoid temp file permission issues
                         merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly())
                         outputStream.flush()
                     }
+                    val endTime = System.currentTimeMillis()
+                    val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Merged successfully!", Toast.LENGTH_LONG).show()
-                        onBack()
+                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: "merged.pdf"
+                        savedFilePath = "Local Storage / $finalName"
+                        resultFileName = finalName
+                        processingTime = timeStr
+                        SessionManager.addEntry(finalName, "Merge", "${selectedUris.size} files", Icons.Default.Layers)
+                        currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        currentState = ToolState.CONFIGURING
                     }
-                } finally {
-                    isProcessing = false
                 }
             }
         }
@@ -84,87 +95,116 @@ fun MergeView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)
+            if (currentState != ToolState.SUCCESS) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                }
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text("Merge PDFs", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                    Text("COMBINE MULTIPLE DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("Merge PDFs", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+                        Text("COMBINE MULTIPLE DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    }
                 }
             }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { pickLauncher.launch("application/pdf") },
-                containerColor = PaperPink,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) { Icon(Icons.Default.Add, "Add") }
+            if (currentState == ToolState.CONFIGURING) {
+                FloatingActionButton(
+                    onClick = { pickLauncher.launch("application/pdf") },
+                    containerColor = accentColor,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.padding(bottom = 16.dp)
+                ) { Icon(Icons.Default.Add, "Add") }
+            }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp)
-        ) {
-            if (selectedUris.isEmpty()) {
-                Box(Modifier.weight(1f).fillMaxWidth(), Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Layers, null, modifier = Modifier.size(64.dp).alpha(0.1f))
-                        Spacer(Modifier.height(16.dp))
-                        Text("No PDFs selected.", fontWeight = FontWeight.Bold, color = Color.Gray)
-                        Text("TAP THE + BUTTON TO START", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
-                    }
-                }
-            } else {
-                LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(selectedUris) { uri ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                            border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
-                        ) {
-                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Surface(Modifier.size(36.dp), shape = RoundedCornerShape(8.dp), color = PaperPink.copy(alpha = 0.1f)) {
-                                    Icon(Icons.Default.PictureAsPdf, null, tint = PaperPink, modifier = Modifier.padding(8.dp))
-                                }
-                                Spacer(Modifier.width(16.dp))
-                                Text(uri.lastPathSegment ?: "PDF Document", Modifier.weight(1f), maxLines = 1, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                IconButton(onClick = { selectedUris = selectedUris - uri }) { 
-                                    Icon(Icons.Default.DeleteOutline, null, tint = Color.Gray, modifier = Modifier.size(20.dp)) 
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+            when (currentState) {
+                ToolState.CONFIGURING -> {
+                    if (selectedUris.isEmpty()) {
+                        Box(Modifier.weight(1f).fillMaxWidth(), Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.Layers, null, modifier = Modifier.size(64.dp).alpha(0.1f))
+                                Spacer(Modifier.height(16.dp))
+                                Text("No PDFs selected.", fontWeight = FontWeight.Bold, color = Color.Gray)
+                                Text("TAP THE + BUTTON TO START", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
+                            }
+                        }
+                    } else {
+                        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            item { Spacer(Modifier.height(16.dp)) }
+                            items(selectedUris) { uri ->
+                                val details = getUriDetails(context, uri)
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
+                                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
+                                ) {
+                                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Surface(Modifier.size(36.dp), shape = RoundedCornerShape(8.dp), color = accentColor.copy(alpha = 0.1f)) {
+                                            Icon(Icons.Default.PictureAsPdf, null, tint = accentColor, modifier = Modifier.padding(8.dp))
+                                        }
+                                        Spacer(Modifier.width(16.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Text(details.name, maxLines = 1, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                            Text(details.size, fontSize = 10.sp, color = Color.Gray)
+                                        }
+                                        IconButton(onClick = { selectedUris = selectedUris - uri }) { 
+                                            Icon(Icons.Default.DeleteOutline, null, tint = Color.Gray, modifier = Modifier.size(20.dp)) 
+                                        }
+                                    }
                                 }
                             }
+                            item { Spacer(Modifier.height(100.dp)) }
+                        }
+                        
+                        Button(
+                            onClick = { 
+                                val firstDetails = getUriDetails(context, selectedUris[0])
+                                val defaultName = firstDetails.name.replace(".pdf", "", true) + "-merged.pdf"
+                                saveLauncher.launch(defaultName) 
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp)
+                                .height(56.dp),
+                            enabled = selectedUris.size > 1,
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text("Merge ${selectedUris.size} Files", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
                         }
                     }
                 }
-                
-                Button(
-                    onClick = { saveLauncher.launch("merged.pdf") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp)
-                        .height(56.dp),
-                    enabled = selectedUris.size > 1 && !isProcessing,
-                    colors = ButtonDefaults.buttonColors(containerColor = PaperPink),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
-                    else Text("Merge ${selectedUris.size} Files", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
+                ToolState.PROCESSING -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = accentColor)
+                            Spacer(Modifier.height(16.dp))
+                            Text("Merging documents...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
+                ToolState.SUCCESS -> {
+                    SuccessView(
+                        fileName = resultFileName,
+                        path = savedFilePath,
+                        processingTime = processingTime,
+                        onDone = onBack,
+                        onProcessMore = { 
+                            selectedUris = emptyList()
+                            currentState = ToolState.CONFIGURING 
+                        },
+                        accentColor = accentColor
+                    )
+                }
+                else -> {}
             }
         }
     }

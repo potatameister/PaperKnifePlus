@@ -1,13 +1,18 @@
 package com.paperknifeplus.app.ui.components
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -18,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,33 +45,56 @@ fun GrayscaleView(onBack: () -> Unit) {
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
-    var savedFilePath by remember { mutableStateOf("") }
+    var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
+    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isFileLoading by remember { mutableStateOf(false) }
+    var processingTime by remember { mutableStateOf("") }
+    var savedFilePath by remember { mutableStateOf("") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
-            fileName = it.lastPathSegment ?: "Document.pdf"
-            currentState = ToolState.CONFIGURING
+            val details = getUriDetails(context, it)
+            fileName = details.name
+            fileSize = details.size
+            
+            isFileLoading = true
+            scope.launch(Dispatchers.IO) {
+                val isEncrypted = checkIsEncryptedLocal(context, it)
+                if (isEncrypted) {
+                    withContext(Dispatchers.Main) {
+                        currentState = ToolState.UNLOCKING
+                        isFileLoading = false
+                    }
+                } else {
+                    val bitmap = loadPreview(context, it, null)
+                    withContext(Dispatchers.Main) {
+                        previewBitmap = bitmap
+                        currentState = ToolState.CONFIGURING
+                        isFileLoading = false
+                    }
+                }
+            }
         }
     }
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
             currentState = ToolState.PROCESSING
+            val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                        val document = PDDocument.load(inputStream)
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
-                            document.save(outputStream)
-                            outputStream.flush()
-                        }
-                        document.close()
-                    }
+                    convertToGrayscale(context, selectedUri!!, saveUri, if (unlockPassword.isEmpty()) null else unlockPassword)
+                    
+                    val endTime = System.currentTimeMillis()
+                    val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    
                     withContext(Dispatchers.Main) {
                         val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
                         savedFilePath = "Local Storage / $finalName"
+                        processingTime = timeStr
                         SessionManager.addEntry(finalName, "Grayscale", "Converted", Icons.Outlined.Palette)
                         currentState = ToolState.SUCCESS
                     }
@@ -100,53 +130,126 @@ fun GrayscaleView(onBack: () -> Unit) {
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
-            when (currentState) {
-                ToolState.SELECTING -> {
-                    SelectionGrid(
-                        onSelect = { pickLauncher.launch("application/pdf") }, 
-                        isDark = isDark,
-                        icon = Icons.Outlined.Palette,
-                        title = "Tap to enter file",
-                        subtitle = "GRAYSCALE ANY PDF DOCUMENT",
-                        accentColor = accentColor,
-                        modifier = Modifier.weight(1f)
-                    )
+            if (isFileLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = accentColor)
                 }
-                ToolState.UNLOCKING -> {
-                    // Grayscale doesn't support locked files yet, but we must handle the state
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Encrypted files not supported for grayscale yet.")
+            } else {
+                when (currentState) {
+                    ToolState.SELECTING -> {
+                        SelectionGrid(
+                            onSelect = { pickLauncher.launch("application/pdf") }, 
+                            isDark = isDark,
+                            icon = Icons.Outlined.Palette,
+                            title = "Tap to enter file",
+                            subtitle = "GRAYSCALE ANY PDF DOCUMENT",
+                            accentColor = accentColor,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
-                }
-                ToolState.CONFIGURING -> {
-                    Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
-                        Text("Grayscale Conversion", fontWeight = FontWeight.Black, fontSize = 24.sp)
-                        Text(fileName, color = Color.Gray, fontSize = 14.sp)
-                        Spacer(Modifier.height(32.dp))
-                        Button(onClick = { saveLauncher.launch(fileName.replace(".pdf", "_grayscale.pdf")) }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) {
-                            Text("Convert & Save", fontWeight = FontWeight.Black, color = Color.White)
+                    ToolState.UNLOCKING -> {
+                        LockedFilePrompt(
+                            fileName = fileName,
+                            password = unlockPassword,
+                            onPasswordChange = { unlockPassword = it },
+                            onUnlock = {
+                                isFileLoading = true
+                                scope.launch(Dispatchers.IO) {
+                                    val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
+                                    if (bitmap != null) {
+                                        previewBitmap = bitmap
+                                        withContext(Dispatchers.Main) { 
+                                            currentState = ToolState.CONFIGURING
+                                            isFileLoading = false 
+                                        }
+                                    } else {
+                                        val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
+                                        if (isValid) {
+                                            withContext(Dispatchers.Main) { 
+                                                currentState = ToolState.CONFIGURING
+                                                isFileLoading = false 
+                                            }
+                                        } else {
+                                            withContext(Dispatchers.Main) { 
+                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                                isFileLoading = false 
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
+                            accentColor = accentColor
+                        )
+                    }
+                    ToolState.CONFIGURING -> {
+                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                            Spacer(Modifier.height(16.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth().height(240.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                            ) {
+                                if (previewBitmap != null) {
+                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                } else {
+                                    Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Outlined.Palette, null, modifier = Modifier.size(48.dp).alpha(0.2f))
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            
+                            Spacer(Modifier.height(32.dp))
+                            
+                            Text("READY TO CONVERT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Text("This will rewrite the PDF structure and attempt to unify color profiles to grayscale.", fontSize = 12.sp, color = Color.Gray)
+                            
+                            Spacer(Modifier.height(32.dp))
+                            
+                            Button(
+                                onClick = { 
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-grayscale.pdf"
+                                    saveLauncher.launch(defaultName) 
+                                }, 
+                                modifier = Modifier.fillMaxWidth().height(60.dp), 
+                                shape = RoundedCornerShape(20.dp), 
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text("CONVERT TO GRAYSCALE", fontWeight = FontWeight.Black, color = Color.White)
+                            }
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                                Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.height(100.dp))
                         }
-                        TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+                    }
+                    ToolState.PROCESSING -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(color = accentColor)
+                                Spacer(Modifier.height(16.dp))
+                                Text("Converting...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
-                }
-                ToolState.PROCESSING -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = accentColor)
+                    ToolState.SUCCESS -> {
+                        SuccessView(
+                            fileName = fileName,
+                            path = savedFilePath,
+                            processingTime = processingTime,
+                            onDone = onBack,
+                            onProcessMore = { 
+                                selectedUri = null
+                                unlockPassword = ""
+                                previewBitmap = null
+                                currentState = ToolState.SELECTING 
+                            },
+                            accentColor = accentColor
+                        )
                     }
-                }
-                ToolState.SUCCESS -> {
-                    SuccessView(
-                        fileName = fileName,
-                        path = savedFilePath,
-                        onDone = onBack,
-                        onProcessMore = { 
-                            selectedUri = null
-                            currentState = ToolState.SELECTING 
-                        },
-                        accentColor = accentColor
-                    )
                 }
             }
         }
