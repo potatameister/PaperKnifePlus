@@ -50,7 +50,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
     val categories = listOf("Edit", "Optimize", "Secure", "Convert")
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().statusBarsPadding(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -59,6 +59,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
                 text = "All Tools",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onBackground,
                 letterSpacing = (-1.5).sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )

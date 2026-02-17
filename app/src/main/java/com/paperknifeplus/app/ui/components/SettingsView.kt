@@ -20,11 +20,12 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
 fun SettingsView(onNavigateToAbout: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 8.dp)) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 8.dp)) {
         Text(
             text = "Settings",
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 32.dp)
         )
         

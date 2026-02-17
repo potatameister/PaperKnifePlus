@@ -20,10 +20,10 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 @Composable
 fun AboutView() {
     val scrollState = rememberScrollState()
-    Column(Modifier.fillMaxSize().verticalScroll(scrollState).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        PaperKnifeLogo(size = 64)
+    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(scrollState).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        PaperKnifeLogo(size = 64, partColor = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(16.dp))
-        Text("PaperKnife+", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+        Text("PaperKnife+", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
         Text("Privacy-First PDF Toolkit", style = MaterialTheme.typography.bodyMedium, color = PaperPink, fontWeight = FontWeight.Black)
         
         Spacer(Modifier.height(32.dp))
