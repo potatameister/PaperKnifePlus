@@ -38,6 +38,7 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,6 +48,7 @@ fun ProtectView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val accentColor = Color(0xFF6366F1)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
@@ -59,7 +61,9 @@ fun ProtectView(onBack: () -> Unit) {
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
-            fileName = it.lastPathSegment ?: "Document.pdf"
+            fileName = it.lastPathSegment?.substringAfterLast("/") ?: "Document.pdf"
+            if (!fileName.endsWith(".pdf", true)) fileName += ".pdf"
+            
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncrypted(context, it)
                 if (isEncrypted) {
@@ -99,8 +103,9 @@ fun ProtectView(onBack: () -> Unit) {
                         document.close()
                     }
                     withContext(Dispatchers.Main) {
-                        savedFilePath = saveUri.path ?: "Local Storage"
-                        SessionManager.addEntry(fileName, "Protect", "Encrypted", Icons.Outlined.Lock)
+                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
+                        savedFilePath = "Local Storage / $finalName"
+                        SessionManager.addEntry(finalName, "Protect", "Encrypted", Icons.Outlined.Lock)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -128,7 +133,7 @@ fun ProtectView(onBack: () -> Unit) {
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("Protect", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("ENCRYPT YOUR DOCUMENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1), letterSpacing = 1.sp)
+                        Text("ENCRYPT YOUR DOCUMENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
@@ -143,12 +148,12 @@ fun ProtectView(onBack: () -> Unit) {
                         icon = Icons.Outlined.Security,
                         title = "Tap to enter file",
                         subtitle = "PROTECT ANY PDF DOCUMENT",
-                        accentColor = Color(0xFF6366F1),
+                        accentColor = accentColor,
                         modifier = Modifier.weight(1f)
                     )
                 }
                 ToolState.UNLOCKING -> {
-                    ProtectUnlockPrompt(
+                    LockedFilePrompt(
                         fileName = fileName,
                         password = unlockPassword,
                         onPasswordChange = { unlockPassword = it },
@@ -163,7 +168,8 @@ fun ProtectView(onBack: () -> Unit) {
                                 }
                             }
                         },
-                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING }
+                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
+                        accentColor = accentColor
                     )
                 }
                 ToolState.CONFIGURING -> {
@@ -172,12 +178,13 @@ fun ProtectView(onBack: () -> Unit) {
                         password = protectPassword,
                         onPasswordChange = { protectPassword = it },
                         onProtect = { saveLauncher.launch(fileName.replace(".pdf", "_protected.pdf")) },
-                        onChangeFile = { selectedUri = null; currentState = ToolState.SELECTING }
+                        onChangeFile = { selectedUri = null; currentState = ToolState.SELECTING },
+                        accentColor = accentColor
                     )
                 }
                 ToolState.PROCESSING -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF6366F1))
+                        CircularProgressIndicator(color = accentColor)
                     }
                 }
                 ToolState.SUCCESS -> {
@@ -191,7 +198,8 @@ fun ProtectView(onBack: () -> Unit) {
                             protectPassword = ""
                             previewBitmap = null
                             currentState = ToolState.SELECTING 
-                        }
+                        },
+                        accentColor = accentColor
                     )
                 }
             }
@@ -200,30 +208,7 @@ fun ProtectView(onBack: () -> Unit) {
 }
 
 @Composable
-fun ProtectUnlockPrompt(fileName: String, password: String, onPasswordChange: (String) -> Unit, onUnlock: () -> Unit, onCancel: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
-        Text("Encrypted File", fontWeight = FontWeight.Black, fontSize = 24.sp)
-        Text(fileName, color = Color.Gray, fontSize = 14.sp)
-        Spacer(Modifier.height(32.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("Enter current password") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
-            Text("Unlock to Proceed", fontWeight = FontWeight.Black)
-        }
-        TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("CANCEL", color = Color.Gray, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange: (String) -> Unit, onProtect: () -> Unit, onChangeFile: () -> Unit) {
+fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange: (String) -> Unit, onProtect: () -> Unit, onChangeFile: () -> Unit, accentColor: Color) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Spacer(Modifier.height(16.dp))
         Card(
@@ -241,15 +226,21 @@ fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange:
         }
         
         Spacer(Modifier.height(24.dp))
-        Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1), letterSpacing = 1.5.sp)
+        Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
+        
         OutlinedTextField(
             value = password,
             onValueChange = onPasswordChange,
             label = { Text("New Password", fontWeight = FontWeight.Bold) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color(0xFF6366F1), cursorColor = Color(0xFF6366F1))
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = accentColor,
+                cursorColor = accentColor,
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent
+            )
         )
         
         Spacer(Modifier.height(16.dp))
@@ -262,8 +253,8 @@ fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange:
         }
         
         Spacer(Modifier.height(32.dp))
-        Button(onClick = onProtect, modifier = Modifier.fillMaxWidth().height(60.dp), enabled = password.isNotBlank(), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
-            Text("Protect & Save", fontWeight = FontWeight.Black)
+        Button(onClick = onProtect, modifier = Modifier.fillMaxWidth().height(60.dp), enabled = password.isNotBlank(), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) {
+            Text("Protect & Save", fontWeight = FontWeight.Black, color = Color.White)
         }
         TextButton(onClick = onChangeFile, modifier = Modifier.align(Alignment.CenterHorizontally)) {
             Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
@@ -275,22 +266,28 @@ fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange:
 private suspend fun checkIsEncrypted(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            PDDocument.load(inputStream).use { doc -> doc.isEncrypted }
+            val doc = PDDocument.load(inputStream)
+            val isEnc = doc.isEncrypted
+            doc.close()
+            isEnc
         } ?: false
     } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) {
         true
     } catch (e: Exception) {
-        false
+        if (e.message?.contains("encrypted", ignoreCase = true) == true) true else false
     }
 }
 
 private suspend fun loadPreview(context: android.content.Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
     try {
+        // PDFRenderer needs a password if the file is encrypted
+        // But PdfRenderer from android.graphics.pdf doesn't support passwords easily
+        // We might need to use PDFBox to render or just accept no preview for locked files until unlocked
         context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            val renderer = PdfRenderer(pfd)
+            val renderer = android.graphics.pdf.PdfRenderer(pfd)
             val page = renderer.openPage(0)
             val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
             renderer.close()
             bitmap

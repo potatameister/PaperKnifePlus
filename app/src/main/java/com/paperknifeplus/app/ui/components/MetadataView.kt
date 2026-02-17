@@ -40,33 +40,36 @@ fun MetadataView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val accentColor = Color(0xFF6366F1)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var unlockPassword by remember { mutableStateOf("") }
+    
     var title by remember { mutableStateOf("") }
     var author by remember { mutableStateOf("") }
     var subject by remember { mutableStateOf("") }
+    var keywords by remember { mutableStateOf("") }
+    var creator by remember { mutableStateOf("") }
+    var producer by remember { mutableStateOf("") }
+    
     var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        selectedUri = uri
         uri?.let {
+            selectedUri = it
             fileName = it.lastPathSegment ?: "Document.pdf"
             scope.launch(Dispatchers.IO) {
-                try {
-                    context.contentResolver.openInputStream(it)?.use { inputStream ->
-                        val document = PDDocument.load(inputStream)
-                        val info = document.documentInformation
-                        withContext(Dispatchers.Main) {
-                            title = info.title ?: ""
-                            author = info.author ?: ""
-                            subject = info.subject ?: ""
-                            currentState = ToolState.CONFIGURING
-                        }
-                        document.close()
+                val isEncrypted = checkIsEncrypted(context, it)
+                if (isEncrypted) {
+                    currentState = ToolState.UNLOCKING
+                } else {
+                    loadMetadata(context, it, null) { t, a, s, k, c, p ->
+                        title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                        currentState = ToolState.CONFIGURING
                     }
-                } catch (e: Exception) { }
+                }
             }
         }
     }
@@ -77,11 +80,15 @@ fun MetadataView(onBack: () -> Unit) {
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                        val document = PDDocument.load(inputStream)
+                        val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                         val info = document.documentInformation
                         info.title = title
                         info.author = author
                         info.subject = subject
+                        info.keywords = keywords
+                        info.creator = creator
+                        info.producer = producer
+                        
                         context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
                             document.save(outputStream)
                             outputStream.flush()
@@ -89,8 +96,9 @@ fun MetadataView(onBack: () -> Unit) {
                         document.close()
                     }
                     withContext(Dispatchers.Main) {
+                        val finalName = saveUri.path?.substringAfterLast("/") ?: fileName
                         savedFilePath = saveUri.path ?: "Local Storage"
-                        SessionManager.addEntry(fileName, "Metadata", "Edited", Icons.Outlined.Fingerprint)
+                        SessionManager.addEntry(finalName, "Metadata", "Edited", Icons.Outlined.Fingerprint)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -118,13 +126,13 @@ fun MetadataView(onBack: () -> Unit) {
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("Metadata", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("EDIT DOCUMENT PROPERTIES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1), letterSpacing = 1.sp)
+                        Text("EDIT DOCUMENT PROPERTIES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -133,21 +141,54 @@ fun MetadataView(onBack: () -> Unit) {
                         icon = Icons.Outlined.Fingerprint,
                         title = "Tap to enter file",
                         subtitle = "EDIT PDF PROPERTIES",
-                        accentColor = Color(0xFF6366F1),
+                        accentColor = accentColor,
                         modifier = Modifier.weight(1f)
+                    )
+                }
+                ToolState.UNLOCKING -> {
+                    LockedFilePrompt(
+                        fileName = fileName,
+                        password = unlockPassword,
+                        onPasswordChange = { unlockPassword = it },
+                        onUnlock = {
+                            scope.launch(Dispatchers.IO) {
+                                loadMetadata(context, selectedUri!!, unlockPassword) { t, a, s, k, c, p ->
+                                    title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                                    currentState = ToolState.CONFIGURING
+                                }
+                            }
+                        },
+                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
+                        accentColor = accentColor
                     )
                 }
                 ToolState.CONFIGURING -> {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                        SettingsGroup("PROPERTIES") {
-                            MetadataField("Title", title) { title = it }
-                            MetadataField("Author", author) { author = it }
-                            MetadataField("Subject", subject) { subject = it }
+                        SettingsGroup("DOCUMENT CORE") {
+                            MetadataField("Title", title, accentColor) { title = it }
+                            MetadataField("Author", author, accentColor) { author = it }
+                            MetadataField("Subject", subject, accentColor) { subject = it }
                         }
-                        Spacer(Modifier.height(24.dp))
-                        Button(onClick = { saveLauncher.launch(fileName.replace(".pdf", "_meta.pdf")) }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
-                            Text("Save Changes", fontWeight = FontWeight.Black)
+                        
+                        Spacer(Modifier.height(16.dp))
+                        
+                        SettingsGroup("ADDITIONAL INFO") {
+                            MetadataField("Keywords", keywords, accentColor) { keywords = it }
+                            MetadataField("Creator", creator, accentColor) { creator = it }
+                            MetadataField("Producer", producer, accentColor) { producer = it }
                         }
+                        
+                        Spacer(Modifier.height(32.dp))
+                        
+                        Button(
+                            onClick = { saveLauncher.launch(fileName.replace(".pdf", "_meta.pdf")) }, 
+                            modifier = Modifier.fillMaxWidth().height(60.dp), 
+                            shape = RoundedCornerShape(20.dp), 
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                        ) {
+                            Text("Save Metadata", fontWeight = FontWeight.Black, color = Color.White)
+                        }
+                        
                         TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                             Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
                         }
@@ -156,7 +197,7 @@ fun MetadataView(onBack: () -> Unit) {
                 }
                 ToolState.PROCESSING -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF6366F1))
+                        CircularProgressIndicator(color = accentColor)
                     }
                 }
                 ToolState.SUCCESS -> {
@@ -166,18 +207,19 @@ fun MetadataView(onBack: () -> Unit) {
                         onDone = onBack,
                         onProcessMore = { 
                             selectedUri = null
+                            unlockPassword = ""
                             currentState = ToolState.SELECTING 
-                        }
+                        },
+                        accentColor = accentColor
                     )
                 }
-                else -> {}
             }
         }
     }
 }
 
 @Composable
-fun MetadataField(label: String, value: String, onValueChange: (String) -> Unit) {
+fun MetadataField(label: String, value: String, accentColor: Color, onValueChange: (String) -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(label, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
         TextField(
@@ -186,9 +228,37 @@ fun MetadataField(label: String, value: String, onValueChange: (String) -> Unit)
             modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
                 unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Transparent
+                focusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = accentColor,
+                cursorColor = accentColor
             ),
             singleLine = true
         )
+    }
+}
+
+private suspend fun loadMetadata(
+    context: android.content.Context, 
+    uri: Uri, 
+    password: String?, 
+    onSuccess: suspend (String, String, String, String, String, String) -> Unit
+) = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val info = document.documentInformation
+            val t = info.title ?: ""
+            val a = info.author ?: ""
+            val s = info.subject ?: ""
+            val k = info.keywords ?: ""
+            val c = info.creator ?: ""
+            val p = info.producer ?: ""
+            document.close()
+            onSuccess(t, a, s, k, c, p)
+        }
+    } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+            Toast.makeText(context, "Incorrect password or error", Toast.LENGTH_SHORT).show()
+        }
     }
 }

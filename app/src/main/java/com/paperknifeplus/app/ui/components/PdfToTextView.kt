@@ -41,19 +41,30 @@ fun PdfToTextView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
+    val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val accentColor = Color(0xFF14B8A6)
     
+    var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var unlockPassword by remember { mutableStateOf("") }
     var extractedText by remember { mutableStateOf("") }
-    var isProcessing by remember { mutableStateOf(false) }
+    var fileName by remember { mutableStateOf("") }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        selectedUri = uri
         uri?.let {
-            isProcessing = true
-            scope.launch {
-                val text = extractTextFromPdf(context, it)
-                extractedText = text
-                isProcessing = false
+            selectedUri = it
+            fileName = it.lastPathSegment ?: "Document.pdf"
+            scope.launch(Dispatchers.IO) {
+                val isEncrypted = checkIsEncrypted(context, it)
+                if (isEncrypted) {
+                    currentState = ToolState.UNLOCKING
+                } else {
+                    val text = extractTextFromPdf(context, it, null)
+                    withContext(Dispatchers.Main) {
+                        extractedText = text
+                        currentState = ToolState.CONFIGURING
+                    }
+                }
             }
         }
     }
@@ -63,19 +74,24 @@ fun PdfToTextView(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PDF to Text", fontWeight = FontWeight.Black) },
+                title = { 
+                    Column {
+                        Text("PDF to Text", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        if (currentState == ToolState.CONFIGURING) Text(fileName, fontSize = 10.sp, color = Color.Gray, maxLines = 1)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
                 actions = {
-                    if (extractedText.isNotBlank()) {
+                    if (extractedText.isNotBlank() && currentState == ToolState.CONFIGURING) {
                         IconButton(onClick = {
                             clipboardManager.setText(AnnotatedString(extractedText))
                             Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                         }) {
-                            Icon(Icons.Outlined.ContentCopy, "Copy")
+                            Icon(Icons.Outlined.ContentCopy, "Copy", tint = accentColor)
                         }
                     }
                 },
@@ -89,30 +105,37 @@ fun PdfToTextView(onBack: () -> Unit) {
                 .padding(padding)
                 .padding(horizontal = 20.dp)
         ) {
-            if (selectedUri == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .clickable { launcher.launch("application/pdf") },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.Description,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp).alpha(0.1f)
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text("TAP TO SELECT PDF", fontWeight = FontWeight.Bold, color = Color.Gray)
-                    }
+            when (currentState) {
+                ToolState.SELECTING -> {
+                    SelectionGrid(
+                        onSelect = { launcher.launch("application/pdf") }, 
+                        isDark = isDark,
+                        icon = Icons.Outlined.Description,
+                        title = "Tap to select PDF",
+                        subtitle = "EXTRACT PLAIN TEXT CONTENT",
+                        accentColor = accentColor,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-            } else {
-                if (isProcessing) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = PaperPink)
-                    }
-                } else {
+                ToolState.UNLOCKING -> {
+                    LockedFilePrompt(
+                        fileName = fileName,
+                        password = unlockPassword,
+                        onPasswordChange = { unlockPassword = it },
+                        onUnlock = {
+                            scope.launch(Dispatchers.IO) {
+                                val text = extractTextFromPdf(context, selectedUri!!, unlockPassword)
+                                withContext(Dispatchers.Main) {
+                                    extractedText = text
+                                    currentState = ToolState.CONFIGURING
+                                }
+                            }
+                        },
+                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
+                        accentColor = accentColor
+                    )
+                }
+                ToolState.CONFIGURING -> {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -125,7 +148,7 @@ fun PdfToTextView(onBack: () -> Unit) {
                             )
                             if (extractedText.isBlank()) {
                                 Text(
-                                    "NO TEXT FOUND (NEED OCR?)",
+                                    "NO TEXT FOUND",
                                     fontSize = 8.sp,
                                     fontWeight = FontWeight.Black,
                                     color = PaperPink
@@ -139,14 +162,15 @@ fun PdfToTextView(onBack: () -> Unit) {
                                 .fillMaxWidth()
                                 .padding(vertical = 12.dp)
                                 .background(
-                                    if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF09090B) else Color(0xFFF8F9FA),
+                                    if (isDark) Color(0xFF09090B) else Color(0xFFF8F9FA),
                                     RoundedCornerShape(16.dp)
                                 )
+                                .border(BorderStroke(1.dp, Color.Gray.copy(0.1f)), RoundedCornerShape(16.dp))
                                 .padding(16.dp)
                         ) {
                             val scrollState = rememberScrollState()
                             Text(
-                                text = extractedText.ifBlank { "No text found in PDF. This document likely contains only images/scans and requires OCR to extract text." },
+                                text = extractedText.ifBlank { "This PDF contains no extractable text. It might be a scanned image. Use OCR tool (coming soon) for these files." },
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 13.sp,
                                 modifier = Modifier.verticalScroll(scrollState),
@@ -155,28 +179,35 @@ fun PdfToTextView(onBack: () -> Unit) {
                         }
                         
                         Button(
-                            onClick = { selectedUri = null; extractedText = "" },
+                            onClick = { selectedUri = null; extractedText = ""; currentState = ToolState.SELECTING },
                             modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PaperPink)
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                         ) {
-                            Text("SELECT ANOTHER", fontWeight = FontWeight.Black)
+                            Text("SELECT ANOTHER", fontWeight = FontWeight.Black, color = Color.White)
                         }
                     }
                 }
+                ToolState.PROCESSING -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = accentColor)
+                    }
+                }
+                else -> {}
             }
         }
     }
 }
 
-private suspend fun extractTextFromPdf(context: android.content.Context, uri: Uri): String = withContext(Dispatchers.IO) {
+private suspend fun extractTextFromPdf(context: android.content.Context, uri: Uri, password: String?): String = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            PDDocument.load(inputStream).use { document ->
-                val stripper = PDFTextStripper()
-                stripper.sortByPosition = true
-                stripper.getText(document) ?: ""
-            }
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val stripper = PDFTextStripper()
+            stripper.sortByPosition = true
+            val text = stripper.getText(document) ?: ""
+            document.close()
+            text
         } ?: "Error opening file"
     } catch (e: Exception) {
         e.printStackTrace()

@@ -43,6 +43,7 @@ fun UnlockView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val accentColor = Color(0xFF6366F1)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
@@ -54,7 +55,9 @@ fun UnlockView(onBack: () -> Unit) {
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
-            fileName = it.lastPathSegment ?: "Document.pdf"
+            fileName = it.lastPathSegment?.substringAfterLast("/") ?: "Document.pdf"
+            if (!fileName.endsWith(".pdf", true)) fileName += ".pdf"
+            
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncrypted(context, it)
                 if (isEncrypted) {
@@ -83,8 +86,9 @@ fun UnlockView(onBack: () -> Unit) {
                         document.close()
                     }
                     withContext(Dispatchers.Main) {
-                        savedFilePath = saveUri.path ?: "Local Storage"
-                        SessionManager.addEntry(fileName, "Unlock", "Decrypted", Icons.Outlined.LockOpen)
+                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
+                        savedFilePath = "Local Storage / $finalName"
+                        SessionManager.addEntry(finalName, "Unlock", "Decrypted", Icons.Outlined.LockOpen)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -112,7 +116,7 @@ fun UnlockView(onBack: () -> Unit) {
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("Unlock", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("REMOVE PDF RESTRICTIONS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1), letterSpacing = 1.sp)
+                        Text("REMOVE PDF RESTRICTIONS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
@@ -127,11 +131,12 @@ fun UnlockView(onBack: () -> Unit) {
                         icon = Icons.Outlined.LockOpen,
                         title = "Tap to select locked file",
                         subtitle = "REMOVE PASSWORD PROTECTION",
+                        accentColor = accentColor,
                         modifier = Modifier.weight(1f)
                     )
                 }
                 ToolState.UNLOCKING -> {
-                    UnlockConfigView(
+                    LockedFilePrompt(
                         fileName = fileName,
                         password = password,
                         onPasswordChange = { password = it },
@@ -142,11 +147,19 @@ fun UnlockView(onBack: () -> Unit) {
                                     previewBitmap = bitmap
                                     withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
                                 } else {
-                                    withContext(Dispatchers.Main) { Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show() }
+                                    // PDFRenderer might fail even with right password if it's a specific encryption
+                                    // Let's try to load with PDFBox to verify password
+                                    val isValid = verifyPassword(context, selectedUri!!, password)
+                                    if (isValid) {
+                                        withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
+                                    } else {
+                                        withContext(Dispatchers.Main) { Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show() }
+                                    }
                                 }
                             }
                         },
-                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING }
+                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
+                        accentColor = accentColor
                     )
                 }
                 ToolState.CONFIGURING -> {
@@ -156,14 +169,25 @@ fun UnlockView(onBack: () -> Unit) {
                             shape = RoundedCornerShape(24.dp),
                             border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
                         ) {
-                            previewBitmap?.let { Image(bitmap = it.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+                            if (previewBitmap != null) {
+                                Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            } else {
+                                Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Outlined.LockOpen, null, modifier = Modifier.size(48.dp).alpha(0.2f))
+                                }
+                            }
                         }
                         Spacer(Modifier.height(24.dp))
                         Text("File Unlocked", fontWeight = FontWeight.Black, fontSize = 20.sp)
                         Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 14.sp)
                         Spacer(Modifier.height(32.dp))
-                        Button(onClick = { saveLauncher.launch(fileName.replace(".pdf", "_unlocked.pdf")) }, modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
-                            Text("SAVE UNRESTRICTED PDF", fontWeight = FontWeight.Black)
+                        Button(
+                            onClick = { saveLauncher.launch(fileName.replace(".pdf", "_unlocked.pdf")) }, 
+                            modifier = Modifier.fillMaxWidth().height(60.dp), 
+                            shape = RoundedCornerShape(20.dp), 
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                        ) {
+                            Text("SAVE UNRESTRICTED PDF", fontWeight = FontWeight.Black, color = Color.White)
                         }
                         TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                             Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
@@ -172,7 +196,7 @@ fun UnlockView(onBack: () -> Unit) {
                 }
                 ToolState.PROCESSING -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF6366F1))
+                        CircularProgressIndicator(color = accentColor)
                     }
                 }
                 ToolState.SUCCESS -> {
@@ -185,7 +209,8 @@ fun UnlockView(onBack: () -> Unit) {
                             password = ""
                             previewBitmap = null
                             currentState = ToolState.SELECTING 
-                        }
+                        },
+                        accentColor = accentColor
                     )
                 }
             }
@@ -193,58 +218,38 @@ fun UnlockView(onBack: () -> Unit) {
     }
 }
 
-@Composable
-fun UnlockConfigView(fileName: String, password: String, onPasswordChange: (String) -> Unit, onUnlock: () -> Unit, onCancel: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
-        Surface(Modifier.size(48.dp), shape = RoundedCornerShape(14.dp), color = Color(0xFF6366F1).copy(alpha = 0.1f)) {
-            Icon(Icons.Outlined.LockOpen, null, tint = Color(0xFF6366F1), modifier = Modifier.padding(12.dp))
-        }
-        Spacer(Modifier.height(24.dp))
-        Text("Decrypt File", fontWeight = FontWeight.Black, fontSize = 24.sp)
-        Text(fileName, color = Color.Gray, fontSize = 14.sp)
-        
-        Spacer(Modifier.height(32.dp))
-        
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("Enter current password") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color(0xFF6366F1), cursorColor = Color(0xFF6366F1))
-        )
-        
-        Spacer(Modifier.height(32.dp))
-        
-        Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
-            Text("Unlock to Preview", fontWeight = FontWeight.Black)
-        }
-        
-        TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("CANCEL", color = Color.Gray, fontWeight = FontWeight.Bold)
-        }
+private suspend fun verifyPassword(context: android.content.Context, uri: Uri, password: String): Boolean = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            PDDocument.load(inputStream, password).use { doc -> !doc.isEncrypted || true } // If it loads, it's valid
+        } ?: false
+    } catch (e: Exception) {
+        false
     }
 }
 
 private suspend fun checkIsEncrypted(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            PDDocument.load(inputStream).use { doc -> doc.isEncrypted }
+            val doc = PDDocument.load(inputStream)
+            val isEnc = doc.isEncrypted
+            doc.close()
+            isEnc
         } ?: false
     } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) {
         true
     } catch (e: Exception) {
-        false
+        if (e.message?.contains("encrypted", ignoreCase = true) == true) true else false
     }
 }
 
 private suspend fun loadPreview(context: android.content.Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            val renderer = PdfRenderer(pfd)
+            val renderer = android.graphics.pdf.PdfRenderer(pfd)
             val page = renderer.openPage(0)
             val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
             renderer.close()
             bitmap

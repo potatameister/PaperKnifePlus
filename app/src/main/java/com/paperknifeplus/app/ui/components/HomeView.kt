@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -36,14 +35,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
-
-data class ActivityEntry(
-    val id: String,
-    val name: String,
-    val tool: String,
-    val size: String,
-    val icon: ImageVector
-)
 
 @Composable
 fun HomeView(
@@ -73,14 +64,11 @@ fun HomeView(
             }
 
             item(span = { GridItemSpan(2) }) {
-                HeroCard(onSelectPdf = { /* Action */ })
+                HeroCard(onSelectPdf = { onToolClick("tools") })
             }
 
-            // Mini History Bar
-            if (history.isNotEmpty()) {
-                item(span = { GridItemSpan(2) }) {
-                    MiniHistoryBar(history, onHistoryClick = { onToolClick("history") })
-                }
+            item(span = { GridItemSpan(2) }) {
+                MiniHistoryBar(history, onHistoryClick = { onToolClick("history") })
             }
 
             item(span = { GridItemSpan(2) }) {
@@ -124,17 +112,6 @@ fun HomeView(
 
 @Composable
 fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val dotAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
-    )
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,43 +123,25 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Logo(
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(24.dp), // Increased size
                 partColor = if (isDarkMode) Color.White else Color(0xFF18181B)
             )
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = buildAnnotatedString {
-                            append("PaperKnife")
-                            withStyle(SpanStyle(color = PaperPink)) { append(".") }
-                        },
-                        fontWeight = FontWeight.Black,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        letterSpacing = (-0.8).sp
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .graphicsLayer { alpha = dotAlpha }
-                            .background(Color(0xFF06D6A0), CircleShape)
-                    )
-                }
-                Text(
-                    text = "SECURE ENGINE",
-                    fontSize = 7.sp,
-                    fontWeight = FontWeight.Black,
-                    color = PaperPink,
-                    letterSpacing = 1.2.sp
-                )
-            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = buildAnnotatedString {
+                    append("PaperKnife")
+                    withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                },
+                fontWeight = FontWeight.Black,
+                fontSize = 20.sp, // Slightly bigger
+                color = MaterialTheme.colorScheme.onBackground,
+                letterSpacing = (-0.8).sp
+            )
         }
         
         Surface(
             onClick = onThemeToggle,
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(40.dp),
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(0.4f)
         ) {
@@ -190,7 +149,7 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
                 Icon(
                     imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
                     contentDescription = "Toggle Theme",
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -253,13 +212,13 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 )
             }
             
-            // Iconic Red Glow behind button
+            // Iconic Red Glow behind button - Even bigger
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = 20.dp, y = (-20).dp)
-                    .size(120.dp)
-                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.4f), Color.Transparent)))
+                    .offset(x = 40.dp, y = (-40).dp)
+                    .size(180.dp)
+                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.5f), Color.Transparent)))
             )
 
             Surface(
@@ -291,7 +250,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(if (isDark) Color(0xFF09090B) else Color.White)
-            .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)), RoundedCornerShape(24.dp))
+            .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(24.dp))
             .clickable(onClick = onHistoryClick)
             .padding(16.dp)
     ) {
@@ -314,7 +273,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
         
         if (history.isEmpty()) {
             Text(
-                "NO RECENT SESSIONS",
+                "NO RECENT SESSIONS (EMPTY)",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Gray.copy(alpha = 0.4f),
@@ -328,7 +287,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
                 ) {
                     Icon(entry.icon, null, modifier = Modifier.size(14.dp), tint = PaperPink)
                     Spacer(Modifier.width(10.dp))
-                    Text(entry.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    Text(entry.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f), maxLines = 1)
                     Text(entry.tool.uppercase(), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink.copy(alpha = 0.7f))
                 }
             }
@@ -348,7 +307,7 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) Color(0xFF0A0A0A) else Color.White
         ),
-        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
+        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
     ) {
         Column(
             modifier = Modifier
