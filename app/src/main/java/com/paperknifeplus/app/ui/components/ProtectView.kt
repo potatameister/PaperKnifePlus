@@ -52,6 +52,7 @@ fun ProtectView(onBack: () -> Unit) {
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var processedFileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
@@ -112,6 +113,7 @@ fun ProtectView(onBack: () -> Unit) {
                     
                     withContext(Dispatchers.Main) {
                         val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
+                        processedFileName = finalName
                         savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
                         SessionManager.addEntry(finalName, "Protect", "Encrypted", Icons.Outlined.Lock)
@@ -151,11 +153,7 @@ fun ProtectView(onBack: () -> Unit) {
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = accentColor)
-                        Spacer(Modifier.height(16.dp))
-                        Text("Preparing file...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    }
+                    CircularProgressIndicator(color = accentColor)
                 }
             } else {
                 when (currentState) {
@@ -231,7 +229,7 @@ fun ProtectView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = fileName,
+                            fileName = processedFileName,
                             path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,

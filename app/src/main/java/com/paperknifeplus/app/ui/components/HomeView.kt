@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -176,6 +177,17 @@ fun HeroCard(onSelectPdf: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        colors = if (isDark) {
+                            listOf(Color.White, Color.White, PaperPink.copy(alpha = 0.15f))
+                        } else {
+                            listOf(Color(0xFF121212), Color(0xFF121212), PaperPink.copy(alpha = 0.25f))
+                        },
+                        start = Offset(0f, 1000f),
+                        end = Offset(1000f, 0f)
+                    )
+                )
                 .padding(24.dp)
         ) {
             Column(modifier = Modifier.align(Alignment.BottomStart)) {

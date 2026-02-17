@@ -3,6 +3,10 @@ package com.paperknifeplus.app.ui.components
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import android.net.Uri
 import android.provider.OpenableColumns
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -41,7 +45,6 @@ fun getUriDetails(context: Context, uri: Uri): UriDetails {
             }
         }
     } catch (e: Exception) {
-        // Fallback to last path segment if query fails
         uri.lastPathSegment?.let { name = it }
     }
     
@@ -107,24 +110,54 @@ suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? 
     }
 }
 
-fun createTempPdfFile(context: Context): File {
-    return File.createTempFile("paperknife_proc", ".pdf", context.cacheDir)
+suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, password: String?, scale: Float = 1f): Bitmap? = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+            val renderer = android.graphics.pdf.PdfRenderer(pfd)
+            if (pageIndex < renderer.pageCount) {
+                val page = renderer.openPage(pageIndex)
+                val bitmap = Bitmap.createBitmap((page.width * scale).toInt(), (page.height * scale).toInt(), Bitmap.Config.ARGB_8888)
+                page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                page.close()
+                renderer.close()
+                return@withContext bitmap
+            }
+            renderer.close()
+        }
+    } catch (e: Exception) {
+        // Fallback to PDFBox for encrypted or complex files
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+                val renderer = PDFRenderer(document)
+                val bitmap = renderer.renderImage(pageIndex, scale)
+                document.close()
+                return@withContext bitmap
+            }
+        } catch (e2: Exception) { }
+    }
+    null
+}
+
+fun toGrayscaleBitmap(src: Bitmap): Bitmap {
+    val height = src.height
+    val width = src.width
+    val bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmpGrayscale)
+    val paint = Paint()
+    val cm = ColorMatrix()
+    cm.setSaturation(0f)
+    val f = ColorMatrixColorFilter(cm)
+    paint.colorFilter = f
+    c.drawBitmap(src, 0f, 0f, paint)
+    return bmpGrayscale
 }
 
 suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
         val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        context.contentResolver.openOutputStream(outputUri)?.use { outputStream ->
-            document.save(outputStream)
-            outputStream.flush()
-        }
-        document.close()
-    }
-}
-
-suspend fun convertToGrayscale(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
-    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        // Enabling this removes corruption in structure
+        document.isAllSecurityToBeRemoved = true 
         context.contentResolver.openOutputStream(outputUri)?.use { outputStream ->
             document.save(outputStream)
             outputStream.flush()

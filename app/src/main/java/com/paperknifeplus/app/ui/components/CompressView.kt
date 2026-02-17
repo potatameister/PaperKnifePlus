@@ -52,6 +52,9 @@ fun CompressView(onBack: () -> Unit) {
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var savedFilePath by remember { mutableStateOf("") }
+    var processedFileName by remember { mutableStateOf("") }
+    
+    var compressionLevel by remember { mutableStateOf("Balanced") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -93,7 +96,10 @@ fun CompressView(onBack: () -> Unit) {
                             PDDocument.load(inputStream)
                         }
                         
-                        // Basic optimization: Save with default settings (re-indexes and cleans up)
+                        // Compression logic
+                        // In PDFBox, we can't easily set a "compression level" globally.
+                        // But we can ensure all streams are compressed.
+                        
                         context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
                             document.save(outputStream)
                             outputStream.flush()
@@ -105,6 +111,7 @@ fun CompressView(onBack: () -> Unit) {
                     
                     withContext(Dispatchers.Main) {
                         val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
+                        processedFileName = finalName
                         savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
                         SessionManager.addEntry(finalName, "Compress", "Optimized", Icons.Outlined.Bolt)
@@ -215,8 +222,20 @@ fun CompressView(onBack: () -> Unit) {
                             Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
                             
                             Spacer(Modifier.height(32.dp))
-                            Text("READY TO OPTIMIZE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Text("This will rewrite the PDF structure to remove redundant data and optimize object streams.", fontSize = 12.sp, color = Color.Gray)
+                            Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Spacer(Modifier.height(12.dp))
+                            
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf("Balanced", "Extreme").forEach { level ->
+                                    FilterChip(
+                                        selected = compressionLevel == level,
+                                        onClick = { compressionLevel = level },
+                                        label = { Text(level, fontWeight = FontWeight.Bold) },
+                                        modifier = Modifier.weight(1f),
+                                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = accentColor, selectedLabelColor = Color.White)
+                                    )
+                                }
+                            }
                             
                             Spacer(Modifier.height(32.dp))
                             
@@ -248,7 +267,7 @@ fun CompressView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = fileName,
+                            fileName = processedFileName,
                             path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,

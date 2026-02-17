@@ -55,46 +55,28 @@ fun SuccessView(
             )
         }
         
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(32.dp))
         
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
-        ) {
-            Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Outlined.FileOpen, null, modifier = Modifier.size(32.dp).alpha(0.3f))
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = fileName, 
-                    fontWeight = FontWeight.Bold, 
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 15.sp,
-                    maxLines = 1
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(6.dp).background(Color(0xFF06D6A0), CircleShape))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Saved successfully", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.height(12.dp))
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = path, 
-                        fontSize = 10.sp, 
-                        color = Color.Gray, 
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Outlined.FileOpen, null, modifier = Modifier.size(32.dp).alpha(0.3f))
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = fileName, 
+                fontWeight = FontWeight.Bold, 
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 15.sp,
+                maxLines = 2,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(6.dp).background(Color(0xFF06D6A0), CircleShape))
+                Spacer(Modifier.width(8.dp))
+                Text("Saved successfully", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
             }
         }
         
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(64.dp))
         
         Button(
             onClick = onProcessMore, 

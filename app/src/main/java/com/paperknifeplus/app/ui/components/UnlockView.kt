@@ -9,8 +9,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -47,6 +49,7 @@ fun UnlockView(onBack: () -> Unit) {
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var processedFileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
@@ -96,6 +99,7 @@ fun UnlockView(onBack: () -> Unit) {
                     
                     withContext(Dispatchers.Main) {
                         val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
+                        processedFileName = finalName
                         savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
                         SessionManager.addEntry(finalName, "Unlock", "Decrypted", Icons.Outlined.LockOpen)
@@ -135,11 +139,7 @@ fun UnlockView(onBack: () -> Unit) {
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = accentColor)
-                        Spacer(Modifier.height(16.dp))
-                        Text("Unlocking...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    }
+                    CircularProgressIndicator(color = accentColor)
                 }
             } else {
                 when (currentState) {
@@ -190,7 +190,8 @@ fun UnlockView(onBack: () -> Unit) {
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize()) {
+                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                            Spacer(Modifier.height(16.dp))
                             Card(
                                 modifier = Modifier.fillMaxWidth().height(240.dp),
                                 shape = RoundedCornerShape(24.dp),
@@ -226,6 +227,7 @@ fun UnlockView(onBack: () -> Unit) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                                 Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
                             }
+                            Spacer(Modifier.height(100.dp))
                         }
                     }
                     ToolState.PROCESSING -> {
@@ -239,7 +241,7 @@ fun UnlockView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = fileName,
+                            fileName = processedFileName,
                             path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
