@@ -112,6 +112,12 @@ fun GrayscaleView(onBack: () -> Unit) {
                         modifier = Modifier.weight(1f)
                     )
                 }
+                ToolState.UNLOCKING -> {
+                    // Grayscale doesn't support locked files yet, but we must handle the state
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Encrypted files not supported for grayscale yet.")
+                    }
+                }
                 ToolState.CONFIGURING -> {
                     Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
                         Text("Grayscale Conversion", fontWeight = FontWeight.Black, fontSize = 24.sp)

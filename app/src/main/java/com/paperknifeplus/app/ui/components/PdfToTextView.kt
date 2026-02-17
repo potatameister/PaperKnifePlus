@@ -7,7 +7,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -190,6 +189,11 @@ fun PdfToTextView(onBack: () -> Unit) {
                         }
                     }
                 }
+                ToolState.PROCESSING -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = accentColor)
+                    }
+                }
                 else -> {}
             }
         }
@@ -209,20 +213,5 @@ private suspend fun extractTextFromPdf(context: android.content.Context, uri: Ur
     } catch (e: Exception) {
         e.printStackTrace()
         "Error extracting text: ${e.localizedMessage}"
-    }
-}
-
-private suspend fun checkIsEncryptedLocal(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val doc = PDDocument.load(inputStream)
-            val isEnc = doc.isEncrypted
-            doc.close()
-            isEnc
-        } ?: false
-    } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) {
-        true
-    } catch (e: Exception) {
-        if (e.message?.contains("encrypted", ignoreCase = true) == true) true else false
     }
 }

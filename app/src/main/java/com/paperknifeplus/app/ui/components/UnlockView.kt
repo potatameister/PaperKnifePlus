@@ -1,7 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
 import android.graphics.Bitmap
-import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -9,8 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -213,46 +209,5 @@ fun UnlockView(onBack: () -> Unit) {
                 }
             }
         }
-    }
-}
-
-private suspend fun verifyPasswordLocal(context: android.content.Context, uri: Uri, password: String): Boolean = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            PDDocument.load(inputStream, password).use { doc -> !doc.isEncrypted || true }
-        } ?: false
-    } catch (e: Exception) {
-        false
-    }
-}
-
-private suspend fun checkIsEncryptedLocal(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val doc = PDDocument.load(inputStream)
-            val isEnc = doc.isEncrypted
-            doc.close()
-            isEnc
-        } ?: false
-    } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) {
-        true
-    } catch (e: Exception) {
-        if (e.message?.contains("encrypted", ignoreCase = true) == true) true else false
-    }
-}
-
-private suspend fun loadPreview(context: android.content.Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            val renderer = android.graphics.pdf.PdfRenderer(pfd)
-            val page = renderer.openPage(0)
-            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-            page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            page.close()
-            renderer.close()
-            bitmap
-        }
-    } catch (e: Exception) {
-        null
     }
 }

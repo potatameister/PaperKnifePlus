@@ -6,8 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -132,7 +129,7 @@ fun MetadataView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -142,7 +139,7 @@ fun MetadataView(onBack: () -> Unit) {
                         title = "Tap to enter file",
                         subtitle = "EDIT PDF PROPERTIES",
                         accentColor = accentColor,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.weight(1f)
                     )
                 }
                 ToolState.UNLOCKING -> {
@@ -260,20 +257,5 @@ private suspend fun loadMetadata(
         withContext(Dispatchers.Main) {
             Toast.makeText(context, "Incorrect password or error", Toast.LENGTH_SHORT).show()
         }
-    }
-}
-
-private suspend fun checkIsEncryptedLocal(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val doc = PDDocument.load(inputStream)
-            val isEnc = doc.isEncrypted
-            doc.close()
-            isEnc
-        } ?: false
-    } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) {
-        true
-    } catch (e: Exception) {
-        if (e.message?.contains("encrypted", ignoreCase = true) == true) true else false
     }
 }
