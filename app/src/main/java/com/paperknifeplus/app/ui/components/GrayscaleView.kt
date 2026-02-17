@@ -5,6 +5,9 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Compare
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,12 +32,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -51,11 +57,21 @@ fun GrayscaleView(onBack: () -> Unit) {
     var fileSize by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var savedFilePath by remember { mutableStateOf("") }
     var resultFileName by remember { mutableStateOf("") }
 
     var pageCount by remember { mutableStateOf(0) }
     var isGrayscalePreview by remember { mutableStateOf(true) }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+
+    // Loading Hint Logic
+    LaunchedEffect(isFileLoading, currentState) {
+        if (isFileLoading || currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -96,10 +112,8 @@ fun GrayscaleView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     
                     withContext(Dispatchers.Main) {
-                        // FIX: Detect real filename from the save URI
                         val finalDetails = getUriDetails(context, saveUri)
                         resultFileName = finalDetails.name
-                        savedFilePath = "Local Storage / ${finalDetails.name}"
                         processingTime = timeStr
                         SessionManager.addEntry(finalDetails.name, "Grayscale", "Converted", Icons.Outlined.Palette)
                         currentState = ToolState.SUCCESS
@@ -161,9 +175,7 @@ fun GrayscaleView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = accentColor)
-                }
+                LoadingStateView(accentColor, showLoadingWarning, "Preparing document...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -233,18 +245,11 @@ fun GrayscaleView(onBack: () -> Unit) {
                         }
                     }
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = accentColor)
-                                Spacer(Modifier.height(16.dp))
-                                Text("Converting to grayscale...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        LoadingStateView(accentColor, showLoadingWarning, "Rebuilding as grayscale...")
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
                             fileName = resultFileName,
-                            path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -262,6 +267,39 @@ fun GrayscaleView(onBack: () -> Unit) {
 }
 
 @Composable
+fun LoadingStateView(accentColor: Color, showWarning: Boolean, text: String) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+            CircularProgressIndicator(color = accentColor)
+            Spacer(Modifier.height(24.dp))
+            Text(text, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            
+            AnimatedVisibility(visible = showWarning, enter = fadeIn(), exit = fadeOut()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Spacer(Modifier.height(16.dp))
+                    Surface(
+                        color = accentColor.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Info, null, tint = accentColor, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Large files may take a moment to process on your device.",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = accentColor,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun PagePreviewItem(
     context: android.content.Context,
     uri: Uri,
@@ -270,12 +308,12 @@ fun PagePreviewItem(
     isGrayscale: Boolean,
     accentColor: Color
 ) {
-    // High Quality Preview: Use 1.0f scale
+    // Balanced quality preview: 0.5f scale
     var bitmap by remember(uri, pageIndex, password) { mutableStateOf<Bitmap?>(null) }
     
     LaunchedEffect(uri, pageIndex, password) {
         withContext(Dispatchers.IO) {
-            val b = renderPageToBitmap(context, uri, pageIndex, password, 1.0f)
+            val b = renderPageToBitmap(context, uri, pageIndex, password, 0.5f)
             withContext(Dispatchers.Main) { bitmap = b }
         }
     }
@@ -321,20 +359,11 @@ fun PagePreviewItem(
 
 private suspend fun getPageCount(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
     try {
-        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            val renderer = android.graphics.pdf.PdfRenderer(pfd)
-            val count = renderer.pageCount
-            renderer.close()
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val count = document.numberOfPages
+            document.close()
             count
         } ?: 0
-    } catch (e: Exception) {
-        try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-                val count = document.numberOfPages
-                document.close()
-                count
-            } ?: 0
-        } catch (e2: Exception) { 0 }
-    }
+    } catch (e: Exception) { 0 }
 }

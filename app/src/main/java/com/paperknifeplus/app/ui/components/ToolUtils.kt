@@ -8,10 +8,10 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.pdmodel.PDResources
-import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceGray
+import com.tom_roush.pdfbox.pdmodel.PDPage
+import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
+import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
-import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.rendering.PDFRenderer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -78,11 +78,7 @@ suspend fun checkIsEncryptedLocal(context: Context, uri: Uri): Boolean = withCon
             doc.close()
             isEnc
         } ?: false
-    } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) {
-        true
-    } catch (e: Exception) {
-        if (e.message?.contains("encrypted", ignoreCase = true) == true) true else false
-    }
+    } catch (e: Exception) { true }
 }
 
 suspend fun verifyPasswordLocal(context: Context, uri: Uri, password: String): Boolean = withContext(Dispatchers.IO) {
@@ -90,67 +86,30 @@ suspend fun verifyPasswordLocal(context: Context, uri: Uri, password: String): B
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             PDDocument.load(inputStream, password).use { doc -> !doc.isEncrypted || true }
         } ?: false
-    } catch (e: Exception) {
-        false
-    }
+    } catch (e: Exception) { false }
 }
 
 suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            val renderer = android.graphics.pdf.PdfRenderer(pfd)
-            val page = renderer.openPage(0)
-            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-            page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            page.close()
-            renderer.close()
-            bitmap
-        }
-    } catch (e: Exception) {
-        try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-                val renderer = PDFRenderer(document)
-                val bitmap = renderer.renderImage(0, 1.0f)
-                document.close()
-                bitmap
-            }
-        } catch (e2: Exception) {
-            null
-        }
-    }
+    // Low resolution for general previews to prevent crashes
+    renderPageToBitmap(context, uri, 0, password, 0.4f)
 }
 
 suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, password: String?, scale: Float = 1f): Bitmap? = withContext(Dispatchers.IO) {
     try {
-        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            val renderer = android.graphics.pdf.PdfRenderer(pfd)
-            if (pageIndex < renderer.pageCount) {
-                val page = renderer.openPage(pageIndex)
-                val bitmap = Bitmap.createBitmap((page.width * scale).toInt(), (page.height * scale).toInt(), Bitmap.Config.ARGB_8888)
-                page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                page.close()
-                renderer.close()
-                return@withContext bitmap
-            }
-            renderer.close()
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val renderer = PDFRenderer(document)
+            // Use RGB_565 for previews to save 50% memory and prevent crashes
+            val bitmap = renderer.renderImage(pageIndex, scale, Bitmap.Config.RGB_565)
+            document.close()
+            return@withContext bitmap
         }
-    } catch (e: Exception) {
-        try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-                val renderer = PDFRenderer(document)
-                val bitmap = renderer.renderImage(pageIndex, scale)
-                document.close()
-                return@withContext bitmap
-            }
-        } catch (e2: Exception) { }
-    }
+    } catch (e: Exception) { }
     null
 }
 
 fun toGrayscaleBitmap(src: Bitmap): Bitmap {
-    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.RGB_565)
     val canvas = Canvas(bmpGrayscale)
     val paint = Paint()
     val cm = ColorMatrix().apply { setSaturation(0f) }
@@ -169,28 +128,28 @@ suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password:
 
 suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        val targetDoc = PDDocument()
+        val renderer = PDFRenderer(sourceDoc)
         
-        for (page in document.pages) {
-            val resources = page.resources
-            for (name in resources.xObjectNames) {
-                try {
-                    val xobject = resources.getXObject(name)
-                    if (xobject is PDImageXObject) {
-                        val bitmap = xobject.image
-                        val grayBitmap = toGrayscaleBitmap(bitmap)
-                        val grayImage = JPEGFactory.createFromImage(document, grayBitmap, 0.75f)
-                        resources.put(name, grayImage)
-                        bitmap.recycle()
-                        grayBitmap.recycle()
-                    }
-                } catch (e: Exception) {
-                    // Soft-fail for JPX or unsupported formats
-                }
+        for (i in 0 until sourceDoc.numberOfPages) {
+            // Render at 1.5x for good quality vs performance balance
+            val rgbBitmap = renderer.renderImage(i, 1.5f, Bitmap.Config.RGB_565)
+            val grayBitmap = toGrayscaleBitmap(rgbBitmap)
+            rgbBitmap.recycle()
+            
+            val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.75f)
+            val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
+            targetDoc.addPage(page)
+            
+            PDPageContentStream(targetDoc, page).use { contentStream ->
+                contentStream.drawImage(pdImage, 0f, 0f)
             }
+            grayBitmap.recycle()
         }
         
-        saveAndFlush(context, document, outputUri)
+        saveAndFlush(context, targetDoc, outputUri)
+        sourceDoc.close()
     }
 }
 
@@ -206,7 +165,7 @@ suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, passwor
             for (name in resources.xObjectNames) {
                 try {
                     val xobject = resources.getXObject(name)
-                    if (xobject is PDImageXObject) {
+                    if (xobject is com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject) {
                         val bitmap = xobject.image
                         val width = (bitmap.width * scale).toInt().coerceAtLeast(1)
                         val height = (bitmap.height * scale).toInt().coerceAtLeast(1)
@@ -227,25 +186,25 @@ suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, passwor
 }
 
 fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
-    // 1. Force Clean Metadata (Remove pdf-lib etc)
     val info = document.documentInformation
     info.creator = "PaperKnife+"
     info.producer = "PaperKnife+ Native Engine"
     
-    // 2. Set Auto-Author (Verify preference access)
     val autoAuthor = PreferencesManager.getDefaultAuthor(context)
     if (autoAuthor.isNotEmpty()) {
         info.author = autoAuthor
     }
 
-    // 3. Save and flush
     context.contentResolver.openOutputStream(outputUri, "rwt")?.use { outputStream ->
         document.save(outputStream)
         outputStream.flush()
+        // Force file descriptor sync to fix 0-byte issue
+        try {
+            outputStream.getFD().sync()
+        } catch (e: Exception) { }
     }
     document.close()
     
-    // 4. Metadata Refresh (Forces File Managers to see real size)
     try {
         val values = ContentValues()
         values.put(MediaStore.MediaColumns.IS_PENDING, 0)
