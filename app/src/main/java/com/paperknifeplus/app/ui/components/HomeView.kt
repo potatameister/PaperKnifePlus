@@ -51,17 +51,15 @@ fun HomeView(onToolClick: (String) -> Unit) {
         // Section Title
         item(span = { GridItemSpan(2) }) {
             Row(
-                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp, start = 4.dp),
+                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Layers, null, modifier = Modifier.size(10.dp), tint = Color.Gray)
-                Spacer(Modifier.width(6.dp))
                 Text(
                     text = "CORE ENGINES",
-                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.Gray,
-                    letterSpacing = 2.sp
+                    letterSpacing = 1.5.sp
                 )
             }
         }
@@ -77,17 +75,16 @@ fun HomeView(onToolClick: (String) -> Unit) {
         }
         
         item(span = { GridItemSpan(2) }) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "PaperKnife v1.0.0 (Kotlin)",
-                modifier = Modifier.fillMaxWidth(),
+                text = "PaperKnife v1.0.0",
+                modifier = Modifier.fillMaxWidth().alpha(0.2f),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.Gray.copy(alpha = 0.3f),
-                letterSpacing = 3.sp
+                letterSpacing = 2.sp
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
@@ -97,53 +94,53 @@ fun HeroCard(onSelectPdf: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
-            .shadow(elevation = 20.dp, shape = RoundedCornerShape(36.dp), spotColor = Color.Black.copy(alpha = 0.2f))
+            .height(200.dp)
+            .shadow(elevation = 16.dp, shape = RoundedCornerShape(32.dp), spotColor = Color.Black.copy(alpha = 0.3f))
             .clickable(onClick = onSelectPdf),
-        shape = RoundedCornerShape(36.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181B))
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF121212))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(Color(0xFF27272A), Color(0xFF09090B))
+                        colors = listOf(Color(0xFF222222), Color(0xFF000000))
                     )
                 )
-                .padding(28.dp)
+                .padding(24.dp)
         ) {
-            // Background Glow
+            // Premium Glow Dot
             Box(
                 modifier = Modifier
-                    .size(150.dp)
+                    .size(120.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 40.dp, y = (-40).dp)
+                    .offset(x = 30.dp, y = (-30).dp)
                     .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.15f), Color.Transparent)))
             )
 
             Column(modifier = Modifier.align(Alignment.BottomStart)) {
                 Text(
                     text = "Select PDF",
-                    fontSize = 32.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
-                    letterSpacing = (-1).sp
+                    letterSpacing = (-0.5).sp
                 )
                 Text(
                     text = "TAP TO LOAD FROM DEVICE STORAGE",
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.Gray,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.5.sp
                 )
             }
             
             Surface(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(48.dp)
                     .align(Alignment.TopStart),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(14.dp),
                 color = Color.White.copy(alpha = 0.08f),
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
             ) {
@@ -151,7 +148,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                     Icons.Default.FileUpload,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.padding(14.dp)
+                    modifier = Modifier.padding(12.dp)
                 )
             }
             
@@ -165,11 +162,11 @@ fun HeroCard(onSelectPdf: () -> Unit) {
             ) {
                 Text(
                     text = "START SESSION",
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.5.sp
                 )
             }
         }
@@ -182,48 +179,47 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .height(130.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color(0xFF09090B) else Color.White
+            containerColor = if (isDark) Color(0xFF0A0A0A) else Color.White
         ),
-        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp),
+                .padding(18.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Surface(
-                modifier = Modifier.size(42.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = if (isDark) tool.color.copy(alpha = 0.15f) else tool.bgColor
+                modifier = Modifier.size(38.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor
             ) {
                 Icon(
                     imageVector = tool.icon ?: Icons.Default.Build,
                     contentDescription = null,
                     tint = tool.color,
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(9.dp)
                 )
             }
             
             Column {
                 Text(
                     text = tool.name,
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface,
-                    letterSpacing = (-0.5).sp
+                    letterSpacing = (-0.3).sp
                 )
                 Text(
                     text = tool.description,
-                    fontSize = 9.sp,
+                    fontSize = 8.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Gray,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.2.sp
                 )
             }
         }
@@ -235,73 +231,56 @@ fun MoreEnginesCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(90.dp)
-            .shadow(elevation = 12.dp, shape = RoundedCornerShape(28.dp), spotColor = PaperPink.copy(alpha = 0.3f))
+            .height(84.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = PaperPink)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Subtle Pattern
-            Icon(
-                Icons.Default.GridView,
-                null,
-                modifier = Modifier.size(120.dp).align(Alignment.CenterEnd).offset(x = 20.dp).alpha(0.1f),
-                tint = Color.White
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        modifier = Modifier.size(44.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color.White.copy(alpha = 0.2f)
-                    ) {
-                        Icon(
-                            Icons.Default.GridView,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.padding(10.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = "More Engines",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White,
-                            letterSpacing = (-0.5).sp
-                        )
-                        Text(
-                            text = "FULL CATALOG",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White.copy(alpha = 0.7f),
-                            letterSpacing = 1.sp
-                        )
-                    }
-                }
-                
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
-                    modifier = Modifier.size(32.dp),
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.15f)
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.2f)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
+                        Icons.Default.GridView,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "More Engines",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        letterSpacing = (-0.5).sp
+                    )
+                    Text(
+                        text = "FULL CATALOG",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White.copy(alpha = 0.7f),
+                        letterSpacing = 1.sp
                     )
                 }
             }
+            
+            Icon(
+                Icons.AutoMirrored.Filled.ChevronRight,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }

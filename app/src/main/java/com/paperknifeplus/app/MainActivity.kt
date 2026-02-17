@@ -103,10 +103,10 @@ class MainActivity : ComponentActivity() {
 fun Header(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val dotAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
+        initialValue = 0.3f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(1500, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "alpha"
@@ -116,52 +116,50 @@ fun Header(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .height(64.dp)
+            .padding(horizontal = 24.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Logo(modifier = Modifier.size(22.dp))
+            Logo(modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "PaperKnife",
                         fontWeight = FontWeight.Black,
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.onBackground,
-                        letterSpacing = (-1).sp
+                        letterSpacing = (-0.8).sp
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .size(7.dp)
+                            .size(6.dp)
                             .graphicsLayer { alpha = dotAlpha }
-                            .shadow(elevation = 4.dp, shape = CircleShape, spotColor = Color(0xFF06D6A0))
                             .background(Color(0xFF06D6A0), CircleShape)
                     )
                 }
                 Text(
                     text = "SECURE ENGINE",
-                    fontSize = 8.sp,
+                    fontSize = 7.sp,
                     fontWeight = FontWeight.Black,
                     color = PaperPink,
-                    letterSpacing = 1.5.sp
+                    letterSpacing = 1.2.sp
                 )
             }
         }
         
         IconButton(
             onClick = onThemeToggle,
-            modifier = Modifier
-                .size(40.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)
+            modifier = Modifier.size(36.dp)
         ) {
             Icon(
                 imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
                 contentDescription = "Toggle Theme",
                 modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurface
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }
@@ -175,7 +173,7 @@ fun FixedTitanBottomBar(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
         tonalElevation = 0.dp
     ) {
         Column {
@@ -184,34 +182,36 @@ fun FixedTitanBottomBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .height(84.dp),
+                    .height(72.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
-                    modifier = Modifier.fillMaxSize().padding(bottom = 8.dp),
+                    modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     NavItem(Icons.Default.Home, "Home", currentScreen == "home") { onNavigate("home") }
                     NavItem(Icons.Default.GridView, "Tools", currentScreen == "tools") { onNavigate("tools") }
                     
-                    Spacer(modifier = Modifier.width(80.dp))
+                    Spacer(modifier = Modifier.width(72.dp))
                     
                     NavItem(Icons.Default.History, "History", currentScreen == "history") { onNavigate("history") }
                     NavItem(Icons.Default.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
                 }
 
-                // Centered Elevated FAB
-                Box(
+                // FAB
+                Surface(
                     modifier = Modifier
-                        .offset(y = (-24).dp)
-                        .size(60.dp)
-                        .shadow(elevation = 8.dp, shape = CircleShape, spotColor = PaperPink)
-                        .background(PaperPink, CircleShape)
+                        .offset(y = (-20).dp)
+                        .size(56.dp)
+                        .shadow(elevation = 8.dp, shape = RoundedCornerShape(18.dp), spotColor = PaperPink)
                         .clickable { /* Action */ },
-                    contentAlignment = Alignment.Center
+                    shape = RoundedCornerShape(18.dp),
+                    color = PaperPink
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(30.dp))
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(28.dp))
+                    }
                 }
             }
         }

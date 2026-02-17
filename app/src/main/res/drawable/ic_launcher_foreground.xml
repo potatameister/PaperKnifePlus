@@ -3,7 +3,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Centered Sharp Arrow Logo (Scale adjusted for 108dp viewport) -->
     <path
         android:fillColor="#FF3355"
-        android:pathData="M30,30 L78,54 L30,78 L44,54 Z" />
+        android:pathData="M25,35 L83,54 L25,73 L45,54 Z" />
 </vector>
