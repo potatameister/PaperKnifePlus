@@ -1,6 +1,5 @@
 package com.paperknifeplus.app.ui.components
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -39,6 +38,7 @@ fun GrayscaleView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val accentColor = Color(0xFFF59E0B)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
@@ -69,8 +69,9 @@ fun GrayscaleView(onBack: () -> Unit) {
                         document.close()
                     }
                     withContext(Dispatchers.Main) {
-                        savedFilePath = saveUri.path ?: "Local Storage"
-                        SessionManager.addEntry(fileName, "Grayscale", "Converted", Icons.Outlined.Palette)
+                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
+                        savedFilePath = "Local Storage / $finalName"
+                        SessionManager.addEntry(finalName, "Grayscale", "Converted", Icons.Outlined.Palette)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -100,13 +101,13 @@ fun GrayscaleView(onBack: () -> Unit) {
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("Grayscale", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("REMOVE DOCUMENT COLORS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFFF59E0B), letterSpacing = 1.sp)
+                        Text("REMOVE DOCUMENT COLORS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -115,7 +116,7 @@ fun GrayscaleView(onBack: () -> Unit) {
                         icon = Icons.Outlined.Palette,
                         title = "Tap to enter file",
                         subtitle = "GRAYSCALE ANY PDF DOCUMENT",
-                        accentColor = Color(0xFFF59E0B),
+                        accentColor = accentColor,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -124,8 +125,8 @@ fun GrayscaleView(onBack: () -> Unit) {
                         Text("Grayscale Conversion", fontWeight = FontWeight.Black, fontSize = 24.sp)
                         Text(fileName, color = Color.Gray, fontSize = 14.sp)
                         Spacer(Modifier.height(32.dp))
-                        Button(onClick = { saveLauncher.launch(fileName.replace(".pdf", "_grayscale.pdf")) }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))) {
-                            Text("Convert & Save", fontWeight = FontWeight.Black)
+                        Button(onClick = { saveLauncher.launch(fileName.replace(".pdf", "_grayscale.pdf")) }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) {
+                            Text("Convert & Save", fontWeight = FontWeight.Black, color = Color.White)
                         }
                         TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                             Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
@@ -134,7 +135,7 @@ fun GrayscaleView(onBack: () -> Unit) {
                 }
                 ToolState.PROCESSING -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFFF59E0B))
+                        CircularProgressIndicator(color = accentColor)
                     }
                 }
                 ToolState.SUCCESS -> {
@@ -145,7 +146,8 @@ fun GrayscaleView(onBack: () -> Unit) {
                         onProcessMore = { 
                             selectedUri = null
                             currentState = ToolState.SELECTING 
-                        }
+                        },
+                        accentColor = accentColor
                     )
                 }
                 else -> {}

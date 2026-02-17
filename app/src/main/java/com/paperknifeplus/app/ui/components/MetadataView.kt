@@ -61,7 +61,7 @@ fun MetadataView(onBack: () -> Unit) {
             selectedUri = it
             fileName = it.lastPathSegment ?: "Document.pdf"
             scope.launch(Dispatchers.IO) {
-                val isEncrypted = checkIsEncrypted(context, it)
+                val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     currentState = ToolState.UNLOCKING
                 } else {
@@ -97,7 +97,7 @@ fun MetadataView(onBack: () -> Unit) {
                     }
                     withContext(Dispatchers.Main) {
                         val finalName = saveUri.path?.substringAfterLast("/") ?: fileName
-                        savedFilePath = saveUri.path ?: "Local Storage"
+                        savedFilePath = "Local Storage / $finalName"
                         SessionManager.addEntry(finalName, "Metadata", "Edited", Icons.Outlined.Fingerprint)
                         currentState = ToolState.SUCCESS
                     }
@@ -165,17 +165,17 @@ fun MetadataView(onBack: () -> Unit) {
                 ToolState.CONFIGURING -> {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                         SettingsGroup("DOCUMENT CORE") {
-                            MetadataField("Title", title, accentColor) { title = it }
-                            MetadataField("Author", author, accentColor) { author = it }
-                            MetadataField("Subject", subject, accentColor) { subject = it }
+                            MetadataEditField("Title", title, accentColor) { title = it }
+                            MetadataEditField("Author", author, accentColor) { author = it }
+                            MetadataEditField("Subject", subject, accentColor) { subject = it }
                         }
                         
                         Spacer(Modifier.height(16.dp))
                         
                         SettingsGroup("ADDITIONAL INFO") {
-                            MetadataField("Keywords", keywords, accentColor) { keywords = it }
-                            MetadataField("Creator", creator, accentColor) { creator = it }
-                            MetadataField("Producer", producer, accentColor) { producer = it }
+                            MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
+                            MetadataEditField("Creator", creator, accentColor) { creator = it }
+                            MetadataEditField("Producer", producer, accentColor) { producer = it }
                         }
                         
                         Spacer(Modifier.height(32.dp))
@@ -219,7 +219,7 @@ fun MetadataView(onBack: () -> Unit) {
 }
 
 @Composable
-fun MetadataField(label: String, value: String, accentColor: Color, onValueChange: (String) -> Unit) {
+fun MetadataEditField(label: String, value: String, accentColor: Color, onValueChange: (String) -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(label, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
         TextField(
@@ -260,5 +260,20 @@ private suspend fun loadMetadata(
         withContext(Dispatchers.Main) {
             Toast.makeText(context, "Incorrect password or error", Toast.LENGTH_SHORT).show()
         }
+    }
+}
+
+private suspend fun checkIsEncryptedLocal(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val doc = PDDocument.load(inputStream)
+            val isEnc = doc.isEncrypted
+            doc.close()
+            isEnc
+        } ?: false
+    } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) {
+        true
+    } catch (e: Exception) {
+        if (e.message?.contains("encrypted", ignoreCase = true) == true) true else false
     }
 }

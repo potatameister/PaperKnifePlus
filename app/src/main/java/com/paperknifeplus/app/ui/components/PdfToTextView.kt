@@ -5,6 +5,8 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -55,7 +58,7 @@ fun PdfToTextView(onBack: () -> Unit) {
             selectedUri = it
             fileName = it.lastPathSegment ?: "Document.pdf"
             scope.launch(Dispatchers.IO) {
-                val isEncrypted = checkIsEncrypted(context, it)
+                val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     currentState = ToolState.UNLOCKING
                 } else {
@@ -212,5 +215,20 @@ private suspend fun extractTextFromPdf(context: android.content.Context, uri: Ur
     } catch (e: Exception) {
         e.printStackTrace()
         "Error extracting text: ${e.localizedMessage}"
+    }
+}
+
+private suspend fun checkIsEncryptedLocal(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val doc = PDDocument.load(inputStream)
+            val isEnc = doc.isEncrypted
+            doc.close()
+            isEnc
+        } ?: false
+    } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) {
+        true
+    } catch (e: Exception) {
+        if (e.message?.contains("encrypted", ignoreCase = true) == true) true else false
     }
 }

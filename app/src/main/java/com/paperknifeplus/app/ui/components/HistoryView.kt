@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,16 +52,18 @@ fun HistoryView() {
                     Icon(Icons.Outlined.History, null, tint = PaperPink, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = buildAnnotatedString {
-                        append("History")
-                        withStyle(SpanStyle(color = PaperPink)) { append(".") }
-                    },
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    letterSpacing = (-1.5).sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = buildAnnotatedString {
+                            append("History")
+                            withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                        },
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        letterSpacing = (-1.5).sp
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -148,7 +149,7 @@ fun HistoryItem(entry: ActivityEntry) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(entry.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(entry.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
                 Text("${entry.tool} • ${entry.size}", fontSize = 11.sp, color = Color.Gray)
             }
             Text(
