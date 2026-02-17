@@ -16,24 +16,45 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.paperknifeplus.app.ui.theme.PaperPink
+
 @Composable
 fun SettingsView(onNavigateToAbout: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(24.dp)) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 32.dp))
+    Column(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 8.dp)) {
+        Text(
+            text = "Settings",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.padding(bottom = 32.dp)
+        )
         
-        Text("APPEARANCE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-        SettingsItem(Icons.Default.Palette, "Theme", "System Default")
+        Text(
+            text = "SYSTEM",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Black,
+            color = PaperPink,
+            letterSpacing = 1.sp
+        )
+        SettingsItem(Icons.Default.DeleteForever, "Clear Cache", "Remove all temporary PDF fragments")
         
-        Spacer(Modifier.height(24.dp))
-        Text("SYSTEM", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-        SettingsItem(Icons.Default.DeleteForever, "Clear Cache", "Remove temp files")
-        
-        Spacer(Modifier.height(24.dp))
-        Text("PROJECT", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-        SettingsItem(Icons.Default.Info, "About PaperKnife+", "Credits and License", onClick = onNavigateToAbout)
+        Spacer(Modifier.height(32.dp))
+        Text(
+            text = "PROJECT",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Black,
+            color = PaperPink,
+            letterSpacing = 1.sp
+        )
+        SettingsItem(Icons.Default.Info, "About PaperKnife+", "Credits, License, and Privacy Policy", onClick = onNavigateToAbout)
         
         Spacer(Modifier.weight(1f))
-        Text("Version 1.0.0", Modifier.align(Alignment.CenterHorizontally), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+        Text(
+            text = "Version 1.0.0 (Kotlin Edition)",
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 24.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
