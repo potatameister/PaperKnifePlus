@@ -8,7 +8,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,14 +26,14 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         // EDIT - Red/Pink
         Tool("merge", "Merge PDF", "Combine multiple PDFs", Icons.Default.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("split", "Split PDF", "Extract specific pages", Icons.Default.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("rotate", "Rotate PDF", "Fix orientation", Icons.Default.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("rearrange", "Rearrange", "Reorder pages", Icons.AutoMirrored.Filled.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("page-numbers", "Page Numbers", "Add numbering", Icons.AutoMirrored.Filled.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("rotate", "Rotate PDF", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("rearrange", "Rearrange", "Reorder pages", Icons.AutoMirrored.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("page-numbers", "Page Numbers", "Add numbering", Icons.AutoMirrored.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("watermark", "Watermark", "Add text overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("signature", "Signature", "Sign documents", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         
         // OPTIMIZE - Amber/Orange
-        Tool("compress", "Compress", "Optimize size", Icons.Default.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+        Tool("compress", "Compress", "Optimize size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
         Tool("grayscale", "Grayscale", "Remove colors", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
         Tool("repair", "Repair PDF", "Fix corrupted files", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
         
