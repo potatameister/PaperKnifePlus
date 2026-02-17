@@ -67,13 +67,18 @@ class MainActivity : ComponentActivity() {
                                 
                                 "merge" -> MergeView(onBack = { currentScreen = "home" })
                                 "split" -> SplitView(onBack = { currentScreen = "home" })
+                                "compress" -> CompressView(onBack = { currentScreen = "home" })
+                                "repair" -> RepairView(onBack = { currentScreen = "home" })
                                 "rotate" -> RotateView(onBack = { currentScreen = "home" })
                                 "rearrange" -> RearrangeView(onBack = { currentScreen = "home" })
                                 "protect" -> ProtectView(onBack = { currentScreen = "home" })
                                 "unlock" -> UnlockView(onBack = { currentScreen = "home" })
+                                "grayscale" -> GrayscaleView(onBack = { currentScreen = "home" })
+                                "metadata" -> MetadataView(onBack = { currentScreen = "home" })
                                 "img2pdf" -> ImageToPdfView(onBack = { currentScreen = "home" })
                                 "pdf2img" -> PdfToImageView(onBack = { currentScreen = "home" })
                                 "pdf2text" -> PdfToTextView(onBack = { currentScreen = "home" })
+                                "extract-images" -> ExtractImagesView(onBack = { currentScreen = "home" })
                                 
                                 else -> HomeView(
                                     isDarkMode = isDarkMode,

@@ -22,12 +22,13 @@ jobs:
       uses: gradle/actions/setup-gradle@v3
       with:
         gradle-version: 8.7
+        cache-disabled: true
 
-    # - name: Build Debug APK
-    #   run: gradle clean assembleDebug --stacktrace --no-daemon --console=plain
+    - name: Build Debug APK
+      run: gradle clean assembleDebug --stacktrace --no-daemon --console=plain
 
-    # - name: Upload Debug APK
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: PaperKnifePlus-Debug
-    #     path: app/build/outputs/apk/debug/app-debug.apk
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: PaperKnifePlus-Debug
+        path: app/build/outputs/apk/debug/app-debug.apk
