@@ -34,6 +34,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             var isDarkMode by remember { mutableStateOf(false) }
