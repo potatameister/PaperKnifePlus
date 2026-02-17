@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -230,7 +231,7 @@ fun MetadataView(onBack: () -> Unit) {
                             
                             Spacer(Modifier.height(24.dp))
                             
-                            SettingsGroup("DOCUMENT CORE") {
+                            MetadataGroup("DOCUMENT CORE") {
                                 MetadataEditField("Title", title, accentColor) { title = it }
                                 MetadataEditField("Author", author, accentColor) { author = it }
                                 MetadataEditField("Subject", subject, accentColor) { subject = it }
@@ -238,7 +239,7 @@ fun MetadataView(onBack: () -> Unit) {
                             
                             Spacer(Modifier.height(16.dp))
                             
-                            SettingsGroup("ADDITIONAL INFO") {
+                            MetadataGroup("ADDITIONAL INFO") {
                                 MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
                                 MetadataEditField("Creator", creator, accentColor) { creator = it }
                                 MetadataEditField("Producer", producer, accentColor) { producer = it }
@@ -294,7 +295,7 @@ fun MetadataView(onBack: () -> Unit) {
 }
 
 @Composable
-fun SettingsGroup(title: String, content: @Composable () -> Unit) {
+fun MetadataGroup(title: String, content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
