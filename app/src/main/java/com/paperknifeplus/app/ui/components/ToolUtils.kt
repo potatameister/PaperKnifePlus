@@ -29,7 +29,8 @@ object PreferencesManager {
         prefs.edit().putString("default_author", name).apply()
     }
     fun getDefaultAuthor(context: Context): String {
-        return context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE).getString("default_author", "") ?: ""
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        return prefs.getString("default_author", "") ?: ""
     }
 }
 
@@ -110,7 +111,7 @@ suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? 
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
                 val renderer = PDFRenderer(document)
-                val bitmap = renderer.renderImage(0, 1.0f) // Higher quality
+                val bitmap = renderer.renderImage(0, 1.0f)
                 document.close()
                 bitmap
             }
@@ -173,14 +174,18 @@ suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: 
         for (page in document.pages) {
             val resources = page.resources
             for (name in resources.xObjectNames) {
-                val xobject = resources.getXObject(name)
-                if (xobject is PDImageXObject) {
-                    val bitmap = xobject.image
-                    val grayBitmap = toGrayscaleBitmap(bitmap)
-                    val grayImage = JPEGFactory.createFromImage(document, grayBitmap, 0.75f)
-                    resources.put(name, grayImage)
-                    bitmap.recycle()
-                    grayBitmap.recycle()
+                try {
+                    val xobject = resources.getXObject(name)
+                    if (xobject is PDImageXObject) {
+                        val bitmap = xobject.image
+                        val grayBitmap = toGrayscaleBitmap(bitmap)
+                        val grayImage = JPEGFactory.createFromImage(document, grayBitmap, 0.75f)
+                        resources.put(name, grayImage)
+                        bitmap.recycle()
+                        grayBitmap.recycle()
+                    }
+                } catch (e: Exception) {
+                    // Soft-fail for JPX or unsupported formats
                 }
             }
         }
@@ -199,19 +204,21 @@ suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, passwor
         for (page in document.pages) {
             val resources = page.resources
             for (name in resources.xObjectNames) {
-                val xobject = resources.getXObject(name)
-                if (xobject is PDImageXObject) {
-                    val bitmap = xobject.image
-                    val width = (bitmap.width * scale).toInt().coerceAtLeast(1)
-                    val height = (bitmap.height * scale).toInt().coerceAtLeast(1)
-                    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
-                    
-                    val compressedImage = JPEGFactory.createFromImage(document, scaledBitmap, quality)
-                    resources.put(name, compressedImage)
-                    
-                    bitmap.recycle()
-                    scaledBitmap.recycle()
-                }
+                try {
+                    val xobject = resources.getXObject(name)
+                    if (xobject is PDImageXObject) {
+                        val bitmap = xobject.image
+                        val width = (bitmap.width * scale).toInt().coerceAtLeast(1)
+                        val height = (bitmap.height * scale).toInt().coerceAtLeast(1)
+                        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
+                        
+                        val compressedImage = JPEGFactory.createFromImage(document, scaledBitmap, quality)
+                        resources.put(name, compressedImage)
+                        
+                        bitmap.recycle()
+                        scaledBitmap.recycle()
+                    }
+                } catch (e: Exception) { }
             }
         }
         
@@ -225,7 +232,7 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
     info.creator = "PaperKnife+"
     info.producer = "PaperKnife+ Native Engine"
     
-    // 2. Set Auto-Author
+    // 2. Set Auto-Author (Verify preference access)
     val autoAuthor = PreferencesManager.getDefaultAuthor(context)
     if (autoAuthor.isNotEmpty()) {
         info.author = autoAuthor
