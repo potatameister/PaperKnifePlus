@@ -17,7 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -50,17 +53,16 @@ fun HistoryView() {
                     Icon(Icons.Outlined.History, null, tint = PaperPink, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "History",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        letterSpacing = (-1.5).sp
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Box(Modifier.size(8.dp).background(PaperPink, CircleShape))
-                }
+                Text(
+                    text = buildAnnotatedString {
+                        append("History")
+                        withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                    },
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = (-1.5).sp
+                )
             }
             
             Spacer(modifier = Modifier.height(24.dp))

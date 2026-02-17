@@ -18,7 +18,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -73,17 +76,16 @@ fun ToolsView(onToolClick: (String) -> Unit) {
                     Icon(Icons.Outlined.GridView, null, tint = PaperPink, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "All Tools",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        letterSpacing = (-1.5).sp
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Box(Modifier.size(8.dp).background(PaperPink, CircleShape))
-                }
+                Text(
+                    text = buildAnnotatedString {
+                        append("All Tools")
+                        withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                    },
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = (-1.5).sp
+                )
             }
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -108,7 +110,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp) // More compact spacing
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             categories.forEach { category ->
                 val categoryTools = filteredTools.filter { it.category == category }
@@ -120,7 +122,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
                             fontWeight = FontWeight.Black,
                             color = Color.Gray,
                             letterSpacing = 2.sp,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp)
+                            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp)
                         )
                     }
                     
@@ -143,9 +145,9 @@ fun ListToolItem(tool: Tool, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp) // More compact height
+            .height(64.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp), // Slightly smaller corner radius for compact look
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) Color(0xFF09090B) else Color.White
         ),
@@ -158,7 +160,7 @@ fun ListToolItem(tool: Tool, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                modifier = Modifier.size(36.dp), // Smaller icon surface
+                modifier = Modifier.size(36.dp),
                 shape = RoundedCornerShape(10.dp),
                 color = if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor
             ) {
@@ -175,7 +177,7 @@ fun ListToolItem(tool: Tool, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = tool.name,
-                    fontSize = 13.sp, // Slightly smaller font
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.3).sp

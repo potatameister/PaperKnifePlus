@@ -39,16 +39,20 @@ import kotlinx.coroutines.withContext
 fun MetadataView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val isDark = MaterialTheme.colorScheme.background == Color.Black
+
+    var currentState by remember { mutableStateOf(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var title by remember { mutableStateOf("") }
     var author by remember { mutableStateOf("") }
     var subject by remember { mutableStateOf("") }
-    var isProcessing by remember { mutableStateOf(false) }
-    val isDark = MaterialTheme.colorScheme.background == Color.Black
+    var savedFilePath by remember { mutableStateOf("") }
+    var fileName by remember { mutableStateOf("") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         selectedUri = uri
         uri?.let {
+            fileName = it.lastPathSegment ?: "Document.pdf"
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(it)?.use { inputStream ->
@@ -58,6 +62,7 @@ fun MetadataView(onBack: () -> Unit) {
                             title = info.title ?: ""
                             author = info.author ?: ""
                             subject = info.subject ?: ""
+                            currentState = ToolState.CONFIGURING
                         }
                         document.close()
                     }
@@ -68,7 +73,7 @@ fun MetadataView(onBack: () -> Unit) {
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
-            isProcessing = true
+            currentState = ToolState.PROCESSING
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
@@ -77,13 +82,23 @@ fun MetadataView(onBack: () -> Unit) {
                         info.title = title
                         info.author = author
                         info.subject = subject
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> document.save(outputStream) }
+                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
+                            document.save(outputStream)
+                            outputStream.flush()
+                        }
                         document.close()
                     }
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Metadata Updated!", Toast.LENGTH_LONG).show(); onBack() }
+                    withContext(Dispatchers.Main) {
+                        savedFilePath = saveUri.path ?: "Local Storage"
+                        SessionManager.addEntry(fileName, "Metadata", "Edited", Icons.Outlined.Fingerprint)
+                        currentState = ToolState.SUCCESS
+                    }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
-                } finally { isProcessing = false }
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        currentState = ToolState.CONFIGURING
+                    }
+                }
             }
         }
     }
@@ -92,63 +107,69 @@ fun MetadataView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                }
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text("Metadata", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                    Text("EDIT DOCUMENT PROPERTIES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1), letterSpacing = 1.sp)
+            if (currentState != ToolState.SUCCESS) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("Metadata", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+                        Text("EDIT DOCUMENT PROPERTIES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1), letterSpacing = 1.sp)
+                    }
                 }
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp).verticalScroll(rememberScrollState())) {
-            if (selectedUri == null) {
-                Box(modifier = Modifier.height(400.dp).fillMaxWidth().clip(RoundedCornerShape(32.dp)).background(if (isDark) Color(0xFF09090B) else Color.White).border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(32.dp)).clickable { pickLauncher.launch("application/pdf") }, contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(imageVector = Icons.Outlined.Fingerprint, contentDescription = null, modifier = Modifier.size(64.dp).alpha(0.1f))
-                        Spacer(Modifier.height(16.dp))
-                        Text("Select PDF to Edit", fontWeight = FontWeight.Black, color = Color.Gray)
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+            when (currentState) {
+                ToolState.SELECTING -> {
+                    SelectionGrid(
+                        onSelect = { pickLauncher.launch("application/pdf") }, 
+                        isDark = isDark,
+                        icon = Icons.Outlined.Fingerprint,
+                        title = "Tap to enter file",
+                        subtitle = "EDIT PDF PROPERTIES",
+                        accentColor = Color(0xFF6366F1)
+                    )
+                }
+                ToolState.CONFIGURING -> {
+                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        SettingsGroup("PROPERTIES") {
+                            MetadataField("Title", title) { title = it }
+                            MetadataField("Author", author) { author = it }
+                            MetadataField("Subject", subject) { subject = it }
+                        }
+                        Spacer(Modifier.height(24.dp))
+                        Button(onClick = { saveLauncher.launch(fileName.replace(".pdf", "_meta.pdf")) }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
+                            Text("Save Changes", fontWeight = FontWeight.Black)
+                        }
+                        TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(100.dp))
                     }
                 }
-            } else {
-                SettingsGroup("PROPERTIES") {
-                    MetadataField("Title", title) { title = it }
-                    MetadataField("Author", author) { author = it }
-                    MetadataField("Subject", subject) { subject = it }
+                ToolState.PROCESSING -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF6366F1))
+                    }
                 }
-                Spacer(Modifier.height(24.dp))
-                Button(onClick = { saveLauncher.launch("updated_metadata.pdf") }, modifier = Modifier.fillMaxWidth().height(56.dp), enabled = !isProcessing, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)), shape = RoundedCornerShape(20.dp)) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
-                    else Text("Save Changes", fontWeight = FontWeight.Black)
-                }
-                Spacer(Modifier.height(12.dp))
-                OutlinedButton(onClick = { selectedUri = null }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(20.dp)) {
-                    Text("Cancel", fontWeight = FontWeight.Bold)
+                ToolState.SUCCESS -> {
+                    SuccessView(
+                        fileName = fileName,
+                        path = savedFilePath,
+                        onDone = onBack,
+                        onProcessMore = { 
+                            selectedUri = null
+                            currentState = ToolState.SELECTING 
+                        }
+                    )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun MetadataField(label: String, value: String, onValueChange: (String) -> Unit) {
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Transparent
-            ),
-            singleLine = true
-        )
     }
 }

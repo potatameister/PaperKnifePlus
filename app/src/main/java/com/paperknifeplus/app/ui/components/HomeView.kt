@@ -28,7 +28,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -149,7 +153,10 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "PaperKnife",
+                        text = buildAnnotatedString {
+                            append("PaperKnife")
+                            withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                        },
                         fontWeight = FontWeight.Black,
                         fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -173,16 +180,20 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
             }
         }
         
-        IconButton(
+        Surface(
             onClick = onThemeToggle,
-            modifier = Modifier.size(36.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(0.4f), CircleShape)
+            modifier = Modifier.size(36.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(0.4f)
         ) {
-            Icon(
-                imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
-                contentDescription = "Toggle Theme",
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                    contentDescription = "Toggle Theme",
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
@@ -208,15 +219,6 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 .fillMaxSize()
                 .padding(24.dp)
         ) {
-            // Massive Premium Hue
-            Box(
-                modifier = Modifier
-                    .size(400.dp)
-                    .align(Alignment.TopEnd)
-                    .offset(x = 100.dp, y = (-100).dp)
-                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = if (isDark) 0.35f else 0.25f), Color.Transparent)))
-            )
-
             Column(modifier = Modifier.align(Alignment.BottomStart)) {
                 Text(
                     text = "Select PDF",
@@ -241,16 +243,25 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                     .align(Alignment.TopStart),
                 shape = RoundedCornerShape(14.dp),
                 color = if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.08f),
-                border = BorderStroke(1.dp, if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.05f))
+                border = BorderStroke(1.dp, if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(0.05f))
             ) {
                 Icon(
-                    Icons.Outlined.FileOpen,
+                    Icons.Outlined.Description,
                     contentDescription = null,
                     tint = if (isDark) Color.Black else Color.White,
                     modifier = Modifier.padding(12.dp)
                 )
             }
             
+            // Iconic Red Glow behind button
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 20.dp, y = (-20).dp)
+                    .size(120.dp)
+                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.4f), Color.Transparent)))
+            )
+
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopEnd)

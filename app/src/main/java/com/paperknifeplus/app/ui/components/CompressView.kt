@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,30 +37,47 @@ import kotlinx.coroutines.withContext
 fun CompressView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
-    var isProcessing by remember { mutableStateOf(false) }
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
-    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> selectedUri = uri }
+    var currentState by remember { mutableStateOf(ToolState.SELECTING) }
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var savedFilePath by remember { mutableStateOf("") }
+    var fileName by remember { mutableStateOf("") }
+
+    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            selectedUri = it
+            fileName = it.lastPathSegment ?: "Document.pdf"
+            currentState = ToolState.CONFIGURING
+        }
+    }
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
-            isProcessing = true
+            currentState = ToolState.PROCESSING
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream)
-                        // Simple compression: re-save with incremental=false and use standard saving
-                        // Real compression would involve image downsampling
+                        // Note: For now we re-save with standard options. 
+                        // Real compression would involve image downsampling.
                         context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
                             document.save(outputStream)
+                            outputStream.flush()
                         }
                         document.close()
                     }
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Optimized!", Toast.LENGTH_LONG).show(); onBack() }
+                    withContext(Dispatchers.Main) {
+                        savedFilePath = saveUri.path ?: "Local Storage"
+                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Outlined.Bolt)
+                        currentState = ToolState.SUCCESS
+                    }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
-                } finally { isProcessing = false }
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        currentState = ToolState.CONFIGURING
+                    }
+                }
             }
         }
     }
@@ -68,81 +86,65 @@ fun CompressView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)
+            if (currentState != ToolState.SUCCESS) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                }
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text("Compress", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                    Text("OPTIMIZE DOCUMENT SIZE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFFF59E0B), letterSpacing = 1.sp)
+                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("Compress", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+                        Text("OPTIMIZE DOCUMENT SIZE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFFF59E0B), letterSpacing = 1.sp)
+                    }
                 }
             }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp)
-        ) {
-            if (selectedUri == null) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(32.dp))
-                        .background(if (isDark) Color(0xFF09090B) else Color.White)
-                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)), RoundedCornerShape(32.dp))
-                        .clickable { pickLauncher.launch("application/pdf") },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(imageVector = Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(64.dp).alpha(0.1f))
-                        Spacer(Modifier.height(16.dp))
-                        Text("Select PDF to Compress", fontWeight = FontWeight.Black, color = Color.Gray)
-                        Text("TAP TO BROWSE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+            when (currentState) {
+                ToolState.SELECTING -> {
+                    SelectionGrid(
+                        onSelect = { pickLauncher.launch("application/pdf") }, 
+                        isDark = isDark,
+                        icon = Icons.Outlined.Bolt,
+                        title = "Tap to enter file",
+                        subtitle = "OPTIMIZE ANY PDF DOCUMENT",
+                        accentColor = Color(0xFFF59E0B)
+                    )
+                }
+                ToolState.CONFIGURING -> {
+                    Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
+                        Text("Ready to Optimize", fontWeight = FontWeight.Black, fontSize = 24.sp)
+                        Text(fileName, color = Color.Gray, fontSize = 14.sp)
+                        Spacer(Modifier.height(32.dp))
+                        Button(onClick = { saveLauncher.launch(fileName.replace(".pdf", "_compressed.pdf")) }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))) {
+                            Text("Compress & Save", fontWeight = FontWeight.Black)
+                        }
+                        TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
-            } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
-                ) {
-                    Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color(0xFFF59E0B).copy(alpha = 0.1f)) {
-                            Icon(Icons.Default.PictureAsPdf, null, tint = Color(0xFFF59E0B), modifier = Modifier.padding(10.dp))
-                        }
-                        Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(selectedUri?.lastPathSegment ?: "Document", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Text("Ready for optimization", fontSize = 12.sp, color = Color.Gray)
-                        }
-                        IconButton(onClick = { selectedUri = null }) { Icon(Icons.Default.Close, null, tint = Color.Gray) }
+                ToolState.PROCESSING -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFFF59E0B))
                     }
                 }
-                
-                Button(
-                    onClick = { saveLauncher.launch("compressed.pdf") },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    enabled = !isProcessing,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
-                    else Text("Compress & Save", fontWeight = FontWeight.Black)
+                ToolState.SUCCESS -> {
+                    SuccessView(
+                        fileName = fileName,
+                        path = savedFilePath,
+                        onDone = onBack,
+                        onProcessMore = { 
+                            selectedUri = null
+                            currentState = ToolState.SELECTING 
+                        }
+                    )
                 }
+                else -> {}
             }
         }
     }

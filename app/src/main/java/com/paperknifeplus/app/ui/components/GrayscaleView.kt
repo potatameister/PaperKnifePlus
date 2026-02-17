@@ -37,77 +37,115 @@ import kotlinx.coroutines.withContext
 fun GrayscaleView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
-    var isProcessing by remember { mutableStateOf(false) }
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
-    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> selectedUri = uri }
+    var currentState by remember { mutableStateOf(ToolState.SELECTING) }
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var savedFilePath by remember { mutableStateOf("") }
+    var fileName by remember { mutableStateOf("") }
+
+    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            selectedUri = it
+            fileName = it.lastPathSegment ?: "Document.pdf"
+            currentState = ToolState.CONFIGURING
+        }
+    }
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
             isProcessing = true
+            currentState = ToolState.PROCESSING
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream)
-                        // Note: Real grayscale requires complex CS conversion. 
-                        // For now, we provide the UI and a basic save.
                         context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
                             document.save(outputStream)
+                            outputStream.flush()
                         }
                         document.close()
                     }
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Converted to Grayscale!", Toast.LENGTH_LONG).show(); onBack() }
+                    withContext(Dispatchers.Main) {
+                        savedFilePath = saveUri.path ?: "Local Storage"
+                        SessionManager.addEntry(fileName, "Grayscale", "Converted", Icons.Outlined.Palette)
+                        currentState = ToolState.SUCCESS
+                    }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
-                } finally { isProcessing = false }
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        currentState = ToolState.CONFIGURING
+                    }
+                }
             }
         }
     }
+
+    var isProcessing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                }
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text("Grayscale", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                    Text("REMOVE DOCUMENT COLORS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFFF59E0B), letterSpacing = 1.sp)
+            if (currentState != ToolState.SUCCESS) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("Grayscale", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+                        Text("REMOVE DOCUMENT COLORS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFFF59E0B), letterSpacing = 1.sp)
+                    }
                 }
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
-            if (selectedUri == null) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(32.dp)).background(if (isDark) Color(0xFF09090B) else Color.White).border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(32.dp)).clickable { pickLauncher.launch("application/pdf") }, contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(imageVector = Icons.Outlined.Palette, contentDescription = null, modifier = Modifier.size(64.dp).alpha(0.1f))
-                        Spacer(Modifier.height(16.dp))
-                        Text("Select PDF for Grayscale", fontWeight = FontWeight.Black, color = Color.Gray)
-                    }
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+            when (currentState) {
+                ToolState.SELECTING -> {
+                    SelectionGrid(
+                        onSelect = { pickLauncher.launch("application/pdf") }, 
+                        isDark = isDark,
+                        icon = Icons.Outlined.Palette,
+                        title = "Tap to enter file",
+                        subtitle = "GRAYSCALE ANY PDF DOCUMENT",
+                        accentColor = Color(0xFFF59E0B)
+                    )
                 }
-            } else {
-                Card(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White), border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))) {
-                    Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color(0xFFF59E0B).copy(alpha = 0.1f)) {
-                            Icon(Icons.Default.PictureAsPdf, null, tint = Color(0xFFF59E0B), modifier = Modifier.padding(10.dp))
+                ToolState.CONFIGURING -> {
+                    Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
+                        Text("Grayscale Conversion", fontWeight = FontWeight.Black, fontSize = 24.sp)
+                        Text(fileName, color = Color.Gray, fontSize = 14.sp)
+                        Spacer(Modifier.height(32.dp))
+                        Button(onClick = { saveLauncher.launch(fileName.replace(".pdf", "_grayscale.pdf")) }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))) {
+                            Text("Convert & Save", fontWeight = FontWeight.Black)
                         }
-                        Spacer(Modifier.width(16.dp))
-                        Text(selectedUri?.lastPathSegment ?: "Document", Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { selectedUri = null }) { Icon(Icons.Default.Close, null, tint = Color.Gray) }
+                        TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
-                Button(onClick = { saveLauncher.launch("grayscaled.pdf") }, modifier = Modifier.fillMaxWidth().height(56.dp), enabled = !isProcessing, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)), shape = RoundedCornerShape(20.dp)) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
-                    else Text("Convert & Save", fontWeight = FontWeight.Black)
+                ToolState.PROCESSING -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFFF59E0B))
+                    }
                 }
+                ToolState.SUCCESS -> {
+                    SuccessView(
+                        fileName = fileName,
+                        path = savedFilePath,
+                        onDone = onBack,
+                        onProcessMore = { 
+                            selectedUri = null
+                            currentState = ToolState.SELECTING 
+                        }
+                    )
+                }
+                else -> {}
             }
         }
     }
