@@ -1,5 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -39,10 +40,11 @@ fun GrayscaleView(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
-    var currentState by remember { mutableStateOf(ToolState.SELECTING) }
+    var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var isProcessing by remember { mutableStateOf(false) }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -76,12 +78,12 @@ fun GrayscaleView(onBack: () -> Unit) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                         currentState = ToolState.CONFIGURING
                     }
+                } finally {
+                    isProcessing = false
                 }
             }
         }
     }
-
-    var isProcessing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
 
@@ -104,7 +106,7 @@ fun GrayscaleView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -113,7 +115,8 @@ fun GrayscaleView(onBack: () -> Unit) {
                         icon = Icons.Outlined.Palette,
                         title = "Tap to enter file",
                         subtitle = "GRAYSCALE ANY PDF DOCUMENT",
-                        accentColor = Color(0xFFF59E0B)
+                        accentColor = Color(0xFFF59E0B),
+                        modifier = Modifier.weight(1f)
                     )
                 }
                 ToolState.CONFIGURING -> {

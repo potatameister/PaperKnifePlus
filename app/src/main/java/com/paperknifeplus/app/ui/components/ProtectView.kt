@@ -148,7 +148,7 @@ fun ProtectView(onBack: () -> Unit) {
                     )
                 }
                 ToolState.UNLOCKING -> {
-                    UnlockPrompt(
+                    ProtectUnlockPrompt(
                         fileName = fileName,
                         password = unlockPassword,
                         onPasswordChange = { unlockPassword = it },
@@ -195,6 +195,29 @@ fun ProtectView(onBack: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ProtectUnlockPrompt(fileName: String, password: String, onPasswordChange: (String) -> Unit, onUnlock: () -> Unit, onCancel: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
+        Text("Encrypted File", fontWeight = FontWeight.Black, fontSize = 24.sp)
+        Text(fileName, color = Color.Gray, fontSize = 14.sp)
+        Spacer(Modifier.height(32.dp))
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
+            label = { Text("Enter current password") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        )
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
+            Text("Unlock to Proceed", fontWeight = FontWeight.Black)
+        }
+        TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text("CANCEL", color = Color.Gray, fontWeight = FontWeight.Bold)
         }
     }
 }
