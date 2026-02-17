@@ -295,7 +295,7 @@ fun MoreEnginesCard(onClick: () -> Unit) {
                     color = Color.White.copy(alpha = 0.15f)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ChevronRight,
+                        imageVector = Icons.Default.KeyboardArrowRight,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.padding(8.dp)
