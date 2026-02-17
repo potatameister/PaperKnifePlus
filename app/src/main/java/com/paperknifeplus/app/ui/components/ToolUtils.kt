@@ -13,6 +13,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.rendering.PDFRenderer
+import com.tom_roush.pdfbox.rendering.ImageType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -90,7 +91,6 @@ suspend fun verifyPasswordLocal(context: Context, uri: Uri, password: String): B
 }
 
 suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
-    // Low resolution for general previews to prevent crashes
     renderPageToBitmap(context, uri, 0, password, 0.4f)
 }
 
@@ -99,8 +99,8 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
             val renderer = PDFRenderer(document)
-            // Use RGB_565 for previews to save 50% memory and prevent crashes
-            val bitmap = renderer.renderImage(pageIndex, scale, Bitmap.Config.RGB_565)
+            // Fix: Use ImageType.RGB instead of Bitmap.Config
+            val bitmap = renderer.renderImage(pageIndex, scale, ImageType.RGB)
             document.close()
             return@withContext bitmap
         }
@@ -133,8 +133,7 @@ suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: 
         val renderer = PDFRenderer(sourceDoc)
         
         for (i in 0 until sourceDoc.numberOfPages) {
-            // Render at 1.5x for good quality vs performance balance
-            val rgbBitmap = renderer.renderImage(i, 1.5f, Bitmap.Config.RGB_565)
+            val rgbBitmap = renderer.renderImage(i, 1.5f, ImageType.RGB)
             val grayBitmap = toGrayscaleBitmap(rgbBitmap)
             rgbBitmap.recycle()
             
@@ -198,10 +197,12 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
     context.contentResolver.openOutputStream(outputUri, "rwt")?.use { outputStream ->
         document.save(outputStream)
         outputStream.flush()
-        // Force file descriptor sync to fix 0-byte issue
-        try {
-            outputStream.getFD().sync()
-        } catch (e: Exception) { }
+        // Fix: Cast to FileOutputStream to access FD
+        if (outputStream is FileOutputStream) {
+            try {
+                outputStream.fd.sync()
+            } catch (e: Exception) { }
+        }
     }
     document.close()
     
