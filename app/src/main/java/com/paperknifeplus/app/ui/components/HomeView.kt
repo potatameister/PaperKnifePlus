@@ -123,7 +123,7 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Logo(
-                modifier = Modifier.size(24.dp), // Increased size
+                modifier = Modifier.size(24.dp),
                 partColor = if (isDarkMode) Color.White else Color(0xFF18181B)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -133,7 +133,7 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
                     withStyle(SpanStyle(color = PaperPink)) { append(".") }
                 },
                 fontWeight = FontWeight.Black,
-                fontSize = 20.sp, // Slightly bigger
+                fontSize = 20.sp,
                 color = MaterialTheme.colorScheme.onBackground,
                 letterSpacing = (-0.8).sp
             )
@@ -212,7 +212,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 )
             }
             
-            // Iconic Red Glow behind button - Even bigger
+            // Iconic Red Glow behind button
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)

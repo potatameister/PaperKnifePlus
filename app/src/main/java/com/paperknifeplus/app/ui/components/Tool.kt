@@ -1,8 +1,15 @@
 package com.paperknifeplus.app.ui.components
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.graphics.vector.ImageVector
 
-import androidx.compose.runtime.mutableStateListOf
+data class ActivityEntry(
+    val id: String,
+    val name: String,
+    val tool: String,
+    val size: String,
+    val icon: ImageVector
+)
 
 data class Tool(
     val id: String,

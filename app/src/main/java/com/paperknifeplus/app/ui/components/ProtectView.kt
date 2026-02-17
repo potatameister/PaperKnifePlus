@@ -164,7 +164,13 @@ fun ProtectView(onBack: () -> Unit) {
                                     previewBitmap = bitmap
                                     withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
                                 } else {
-                                    withContext(Dispatchers.Main) { Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show() }
+                                    // Verify password with PDFBox if PDFRenderer fails
+                                    val isValid = verifyPassword(context, selectedUri!!, unlockPassword)
+                                    if (isValid) {
+                                        withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
+                                    } else {
+                                        withContext(Dispatchers.Main) { Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show() }
+                                    }
                                 }
                             }
                         },
@@ -263,6 +269,16 @@ fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange:
     }
 }
 
+private suspend fun verifyPassword(context: android.content.Context, uri: Uri, password: String): Boolean = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            PDDocument.load(inputStream, password).use { doc -> !doc.isEncrypted || true } // If it loads, it's valid
+        } ?: false
+    } catch (e: Exception) {
+        false
+    }
+}
+
 private suspend fun checkIsEncrypted(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -280,9 +296,6 @@ private suspend fun checkIsEncrypted(context: android.content.Context, uri: Uri)
 
 private suspend fun loadPreview(context: android.content.Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
     try {
-        // PDFRenderer needs a password if the file is encrypted
-        // But PdfRenderer from android.graphics.pdf doesn't support passwords easily
-        // We might need to use PDFBox to render or just accept no preview for locked files until unlocked
         context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
             val renderer = android.graphics.pdf.PdfRenderer(pfd)
             val page = renderer.openPage(0)
