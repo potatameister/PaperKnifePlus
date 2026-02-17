@@ -110,7 +110,7 @@ suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? 
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
                 val renderer = PDFRenderer(document)
-                val bitmap = renderer.renderImage(0, 0.5f)
+                val bitmap = renderer.renderImage(0, 1.0f) // Higher quality
                 document.close()
                 bitmap
             }
@@ -220,20 +220,25 @@ suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, passwor
 }
 
 fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
-    // 1. Set Auto-Author if available
+    // 1. Force Clean Metadata (Remove pdf-lib etc)
+    val info = document.documentInformation
+    info.creator = "PaperKnife+"
+    info.producer = "PaperKnife+ Native Engine"
+    
+    // 2. Set Auto-Author
     val autoAuthor = PreferencesManager.getDefaultAuthor(context)
     if (autoAuthor.isNotEmpty()) {
-        document.documentInformation.author = autoAuthor
+        info.author = autoAuthor
     }
 
-    // 2. Save and flush
+    // 3. Save and flush
     context.contentResolver.openOutputStream(outputUri, "rwt")?.use { outputStream ->
         document.save(outputStream)
         outputStream.flush()
     }
     document.close()
     
-    // 3. Metadata Refresh (Forces File Managers to see real size)
+    // 4. Metadata Refresh (Forces File Managers to see real size)
     try {
         val values = ContentValues()
         values.put(MediaStore.MediaColumns.IS_PENDING, 0)

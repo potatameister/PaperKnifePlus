@@ -6,12 +6,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.FileOpen
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,7 +20,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 @Composable
 fun SuccessView(
     fileName: String, 
-    path: String, 
+    path: String = "", 
     processingTime: String = "", 
     onDone: () -> Unit, 
     onProcessMore: () -> Unit,
@@ -55,28 +54,40 @@ fun SuccessView(
             )
         }
         
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(48.dp))
         
+        // Minimal Display of Processed File
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Outlined.FileOpen, null, modifier = Modifier.size(32.dp).alpha(0.3f))
-            Spacer(Modifier.height(12.dp))
             Text(
                 text = fileName, 
                 fontWeight = FontWeight.Bold, 
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 15.sp,
-                maxLines = 2,
+                maxLines = 1,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(6.dp).background(Color(0xFF06D6A0), CircleShape))
-                Spacer(Modifier.width(8.dp))
-                Text("Saved successfully", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                Box(Modifier.size(4.dp).background(Color(0xFF06D6A0), CircleShape))
+                Spacer(Modifier.width(6.dp))
+                Text("Saved to Storage", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
             }
         }
         
         Spacer(Modifier.height(64.dp))
+
+        // New Future Button
+        OutlinedButton(
+            onClick = { /* Future functionality */ },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(0.2f))
+        ) {
+            Icon(Icons.Default.Visibility, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(12.dp))
+            Text("PREVIEW (COMING SOON)", fontWeight = FontWeight.Bold, color = Color.Gray)
+        }
+        
+        Spacer(Modifier.height(12.dp))
         
         Button(
             onClick = onProcessMore, 
@@ -89,13 +100,8 @@ fun SuccessView(
         
         Spacer(Modifier.height(12.dp))
         
-        OutlinedButton(
-            onClick = onDone, 
-            modifier = Modifier.fillMaxWidth().height(56.dp), 
-            shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
-        ) {
-            Text("DONE", fontWeight = FontWeight.Bold, color = accentColor)
+        TextButton(onClick = onDone) {
+            Text("BACK TO TOOLS", fontWeight = FontWeight.Bold, color = Color.Gray)
         }
     }
 }
