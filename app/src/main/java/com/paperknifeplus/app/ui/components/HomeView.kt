@@ -34,9 +34,9 @@ fun HomeView(onToolClick: (String) -> Unit) {
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
         modifier = Modifier.fillMaxSize()
     ) {
         // Hero Card
@@ -48,10 +48,10 @@ fun HomeView(onToolClick: (String) -> Unit) {
         item(span = { GridItemSpan(2) }) {
             Text(
                 text = "CORE ENGINES",
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 12.dp, start = 4.dp)
             )
         }
 
@@ -65,9 +65,9 @@ fun HomeView(onToolClick: (String) -> Unit) {
             MoreEnginesCard(onClick = { onToolClick("tools") })
         }
         
-        // Bottom padding to avoid navigation bar overlap
+        // Bottom padding to avoid navigation bar overlap (Fixed bar is 80dp + nav padding)
         item(span = { GridItemSpan(2) }) {
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 }
@@ -77,9 +77,9 @@ fun HeroCard(onSelectPdf: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(260.dp)
+            .height(240.dp)
             .clickable(onClick = onSelectPdf),
-        shape = RoundedCornerShape(48.dp),
+        shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Black)
     ) {
         Box(
@@ -87,55 +87,53 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color(0xFF2D2D2D), Color(0xFF000000))
+                        colors = listOf(Color(0xFF333333), Color(0xFF000000))
                     )
                 )
-                .padding(32.dp)
+                .padding(28.dp)
         ) {
             Column(modifier = Modifier.align(Alignment.BottomStart)) {
                 Text(
                     text = "Select PDF",
-                    fontSize = 42.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black,
                     color = Color.White,
-                    lineHeight = 44.sp
+                    letterSpacing = (-1).sp
                 )
                 Text(
                     text = "TAP TO LOAD FROM DEVICE STORAGE",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = 0.6f),
-                    letterSpacing = 0.5.sp
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White.copy(alpha = 0.5f),
+                    letterSpacing = 1.sp
                 )
             }
             
             Surface(
                 modifier = Modifier
-                    .size(64.dp)
+                    .size(56.dp)
                     .align(Alignment.TopStart),
-                shape = RoundedCornerShape(18.dp),
-                color = Color.White.copy(alpha = 0.1f)
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White.copy(alpha = 0.12f)
             ) {
                 Icon(
                     Icons.Default.FileUpload,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(14.dp)
                 )
             }
             
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .clip(CircleShape)
-                    .clickable { onSelectPdf() },
-                color = PaperPink,
-                shape = CircleShape
+            Button(
+                onClick = onSelectPdf,
+                modifier = Modifier.align(Alignment.TopEnd),
+                colors = ButtonDefaults.buttonColors(containerColor = PaperPink),
+                shape = CircleShape,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
             ) {
                 Text(
                     text = "START SESSION",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White
                 )
@@ -149,44 +147,45 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
+            .height(150.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(40.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(20.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Surface(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = tool.color.copy(alpha = 0.7f)
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = tool.color.copy(alpha = 0.5f)
             ) {
                 Icon(
                     imageVector = tool.icon ?: Icons.Default.Build,
                     contentDescription = null,
                     tint = PaperPink,
-                    modifier = Modifier.padding(12.dp)
+                    modifier = Modifier.padding(10.dp)
                 )
             }
             
             Column {
                 Text(
                     text = tool.name,
-                    fontSize = 18.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    letterSpacing = (-0.3).sp
                 )
                 Text(
                     text = tool.description,
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     letterSpacing = 0.5.sp
                 )

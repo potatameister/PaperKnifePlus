@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
 
                     // Bottom Bar
                     if (isMainView) {
-                        TitanBottomBar(
+                        FixedTitanBottomBar(
                             modifier = Modifier.align(Alignment.BottomCenter),
                             currentScreen = currentScreen,
                             onNavigate = { currentScreen = it }
@@ -95,31 +95,26 @@ fun Header(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .statusBarsPadding()
+            .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Logo(modifier = Modifier.size(24.dp))
+                Logo(modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "PaperKnife",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF06D6A0))
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = (-0.5).sp
                 )
             }
             Text(
                 text = "SECURE ENGINE",
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
                 color = PaperPink,
                 letterSpacing = 1.sp
@@ -128,70 +123,64 @@ fun Header(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
         
         IconButton(
             onClick = onThemeToggle,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+            modifier = Modifier.size(48.dp)
         ) {
             Icon(
                 imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
                 contentDescription = "Toggle Theme",
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurface
+                modifier = Modifier.size(22.dp),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
         }
     }
 }
 
 @Composable
-fun TitanBottomBar(
+fun FixedTitanBottomBar(
     modifier: Modifier = Modifier,
     currentScreen: String,
     onNavigate: (String) -> Unit
 ) {
-    Box(
+    Surface(
         modifier = modifier
-            .padding(bottom = 24.dp)
             .fillMaxWidth()
-            .height(70.dp),
-        contentAlignment = Alignment.Center
+            .navigationBarsPadding(),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+        shadowElevation = 16.dp
     ) {
-        // Rounded bar background
-        Surface(
+        Box(
             modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .fillMaxSize(),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 12.dp
+                .fillMaxWidth()
+                .height(80.dp),
+            contentAlignment = Alignment.Center
         ) {
             Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 NavItem(Icons.Default.Home, "Home", currentScreen == "home") { onNavigate("home") }
                 NavItem(Icons.Default.GridView, "Tools", currentScreen == "tools") { onNavigate("tools") }
                 
-                Spacer(modifier = Modifier.width(56.dp)) // Space for FAB
+                Spacer(modifier = Modifier.width(72.dp)) // Space for anchored FAB
                 
                 NavItem(Icons.Default.History, "History", currentScreen == "history") { onNavigate("history") }
                 NavItem(Icons.Default.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
             }
-        }
-        
-        // Floating Center FAB
-        FloatingActionButton(
-            onClick = { /* Action for FAB */ },
-            modifier = Modifier
-                .offset(y = (-30).dp)
-                .size(64.dp)
-                .clip(RoundedCornerShape(20.dp)),
-            containerColor = PaperPink,
-            contentColor = Color.White,
-            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(32.dp))
+
+            // Anchored FAB (Integrated, not floating)
+            Box(
+                modifier = Modifier
+                    .offset(y = (-20).dp)
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(PaperPink)
+                    .clickable { /* Action */ },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(30.dp))
+            }
         }
     }
 }
