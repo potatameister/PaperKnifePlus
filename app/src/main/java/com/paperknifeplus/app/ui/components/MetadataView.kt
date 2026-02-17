@@ -142,7 +142,7 @@ fun MetadataView(onBack: () -> Unit) {
                         title = "Tap to enter file",
                         subtitle = "EDIT PDF PROPERTIES",
                         accentColor = accentColor,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
                 ToolState.UNLOCKING -> {

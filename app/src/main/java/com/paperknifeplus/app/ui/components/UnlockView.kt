@@ -59,7 +59,7 @@ fun UnlockView(onBack: () -> Unit) {
             if (!fileName.endsWith(".pdf", true)) fileName += ".pdf"
             
             scope.launch(Dispatchers.IO) {
-                val isEncrypted = checkIsEncrypted(context, it)
+                val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     currentState = ToolState.UNLOCKING
                 } else {
@@ -147,9 +147,7 @@ fun UnlockView(onBack: () -> Unit) {
                                     previewBitmap = bitmap
                                     withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
                                 } else {
-                                    // PDFRenderer might fail even with right password if it's a specific encryption
-                                    // Let's try to load with PDFBox to verify password
-                                    val isValid = verifyPassword(context, selectedUri!!, password)
+                                    val isValid = verifyPasswordLocal(context, selectedUri!!, password)
                                     if (isValid) {
                                         withContext(Dispatchers.Main) { currentState = ToolState.CONFIGURING }
                                     } else {
@@ -218,17 +216,17 @@ fun UnlockView(onBack: () -> Unit) {
     }
 }
 
-private suspend fun verifyPassword(context: android.content.Context, uri: Uri, password: String): Boolean = withContext(Dispatchers.IO) {
+private suspend fun verifyPasswordLocal(context: android.content.Context, uri: Uri, password: String): Boolean = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            PDDocument.load(inputStream, password).use { doc -> !doc.isEncrypted || true } // If it loads, it's valid
+            PDDocument.load(inputStream, password).use { doc -> !doc.isEncrypted || true }
         } ?: false
     } catch (e: Exception) {
         false
     }
 }
 
-private suspend fun checkIsEncrypted(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+private suspend fun checkIsEncryptedLocal(context: android.content.Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             val doc = PDDocument.load(inputStream)
