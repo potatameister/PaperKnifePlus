@@ -2,28 +2,39 @@ package com.paperknifeplus.app.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
-fun Logo(modifier: Modifier = Modifier) {
+fun Logo(modifier: Modifier = Modifier, partColor: Color = MaterialTheme.colorScheme.onBackground) {
     Canvas(modifier = modifier) {
         val width = size.width
         val height = size.height
+        val scale = width / 24f
         
-        // Correct Sharp PaperKnife Arrow Logo
-        val path = Path().apply {
-            moveTo(0f, height * 0.15f)
-            lineTo(width, height * 0.5f)
-            lineTo(0f, height * 0.85f)
-            lineTo(width * 0.35f, height * 0.5f)
+        // Top Part (Iconic Red)
+        val topPath = Path().apply {
+            moveTo(4f * scale, 4f * scale)
+            lineTo(21f * scale, 12f * scale)
+            lineTo(9f * scale, 12f * scale)
             close()
         }
-        drawPath(path, SolidColor(PaperPink))
+        drawPath(topPath, SolidColor(PaperPink))
+
+        // Bottom Part (Contrast Color)
+        val bottomPath = Path().apply {
+            moveTo(4f * scale, 20f * scale)
+            lineTo(21f * scale, 12f * scale)
+            lineTo(9f * scale, 12f * scale)
+            close()
+        }
+        drawPath(bottomPath, SolidColor(partColor))
     }
 }
 

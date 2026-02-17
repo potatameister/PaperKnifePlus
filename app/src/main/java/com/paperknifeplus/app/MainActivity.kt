@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
                         
                         // Spacer for fixed bottom bar
                         if (isMainView) {
-                            Spacer(modifier = Modifier.height(84.dp).navigationBarsPadding())
+                            Spacer(modifier = Modifier.height(72.dp).navigationBarsPadding())
                         }
                     }
 
@@ -199,12 +199,12 @@ fun FixedTitanBottomBar(
                     NavItem(Icons.Default.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
                 }
 
-                // FAB
+                // FAB - Premium Pill shape
                 Surface(
                     modifier = Modifier
                         .offset(y = (-20).dp)
                         .size(56.dp)
-                        .shadow(elevation = 8.dp, shape = RoundedCornerShape(18.dp), spotColor = PaperPink)
+                        .shadow(elevation = 12.dp, shape = RoundedCornerShape(18.dp), spotColor = PaperPink)
                         .clickable { /* Action */ },
                     shape = RoundedCornerShape(18.dp),
                     color = PaperPink

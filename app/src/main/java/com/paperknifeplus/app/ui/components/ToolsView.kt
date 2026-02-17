@@ -1,7 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -31,10 +30,13 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         Tool("unlock", "Unlock PDF", "Remove PDF password", Icons.Default.LockOpen, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
         Tool("rotate", "Rotate PDF", "Fix page orientation", Icons.Default.RotateRight, "Edit", Color(0xFFF97316), Color(0xFFFFF7ED)),
         Tool("rearrange", "Rearrange", "Reorder PDF pages", Icons.AutoMirrored.Filled.List, "Edit", Color(0xFF10B981), Color(0xFFECFDF5)),
+        Tool("page-numbers", "Page Numbers", "Add numbering to PDF", Icons.Default.FormatListNumbered, "Edit", Color(0xFF0EA5E9), Color(0xFFF0F9FF)),
         Tool("watermark", "Watermark", "Add text overlay", Icons.Default.TypeSpecimen, "Edit", Color(0xFFA855F7), Color(0xFFFAF5FF)),
         Tool("metadata", "Metadata", "Edit PDF properties", Icons.Default.Info, "Secure", Color(0xFF06B6D4), Color(0xFFECFEFF)),
         Tool("img2pdf", "Image to PDF", "Convert photos to PDF", Icons.Default.Image, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
         Tool("pdf2img", "PDF to Image", "Export pages as JPG", Icons.Default.PictureAsPdf, "Convert", Color(0xFF84CC16), Color(0xFFF7FEE7)),
+        Tool("extract-images", "Extract Images", "Save all images", Icons.Default.PhotoLibrary, "Convert", Color(0xFFEAB308), Color(0xFFFEFCE8)),
+        Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Default.TextFields, "Convert", Color(0xFF2563EB), Color(0xFFEFF6FF)),
         Tool("signature", "Signature", "Sign your documents", Icons.Default.Edit, "Edit", Color(0xFFEC4899), Color(0xFFFDF2F8)),
         Tool("grayscale", "Grayscale", "Remove PDF colors", Icons.Default.Palette, "Optimize", Color(0xFF71717A), Color(0xFFF4F4F5)),
         Tool("repair", "Repair PDF", "Fix corrupted files", Icons.Default.Build, "Optimize", Color(0xFFEF4444), Color(0xFFFEF2F2))
@@ -55,7 +57,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1).sp,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
         }
 
@@ -63,7 +65,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             item(span = { GridItemSpan(2) }) {
                 Text(
                     text = category.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.Gray,
                     letterSpacing = 2.sp,

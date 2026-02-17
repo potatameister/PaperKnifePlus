@@ -1,10 +1,15 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- Centered Sharp Arrow Logo (Scale adjusted for 108dp viewport) -->
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Center the paths by offsetting them or just using them as is since they are 24x24 -->
+    <!-- Top Part (Iconic Red) -->
     <path
-        android:fillColor="#FF3355"
-        android:pathData="M25,35 L83,54 L25,73 L45,54 Z" />
+        android:fillColor="#F43F5E"
+        android:pathData="M4,4 L21,12 H9 L4,4 Z" />
+    <!-- Bottom Part (Black for white bg) -->
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M4,20 L21,12 H9 L4,20 Z" />
 </vector>
