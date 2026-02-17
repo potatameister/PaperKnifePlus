@@ -134,16 +134,26 @@ fun FixedTitanBottomBar(
                 Divider(modifier = Modifier.fillMaxWidth(), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                 Row(
                     modifier = Modifier.fillMaxSize().padding(bottom = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceAround,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    NavItem(Icons.Default.Home, "Home", currentScreen == "home") { onNavigate("home") }
-                    NavItem(Icons.Default.GridView, "Tools", currentScreen == "tools") { onNavigate("tools") }
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        NavItem(Icons.Outlined.Home, "Home", currentScreen == "home") { onNavigate("home") }
+                        NavItem(Icons.Outlined.GridView, "Tools", currentScreen == "tools") { onNavigate("tools") }
+                    }
                     
                     Spacer(modifier = Modifier.width(72.dp))
                     
-                    NavItem(Icons.Default.History, "History", currentScreen == "history") { onNavigate("history") }
-                    NavItem(Icons.Default.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        NavItem(Icons.Outlined.History, "History", currentScreen == "history") { onNavigate("history") }
+                        NavItem(Icons.Outlined.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
+                    }
                 }
             }
         }

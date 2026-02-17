@@ -21,30 +21,30 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun ToolsView(onToolClick: (String) -> Unit) {
     val allTools = listOf(
-        // EDIT
+        // EDIT - Red/Pink
         Tool("merge", "Merge PDF", "Combine multiple PDFs", Icons.Default.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("split", "Split PDF", "Extract specific pages", Icons.Default.ContentCut, "Edit", Color(0xFF3B82F6), Color(0xFFEFF6FF)),
-        Tool("rotate", "Rotate PDF", "Fix orientation", Icons.Default.RotateRight, "Edit", Color(0xFFF97316), Color(0xFFFFF7ED)),
-        Tool("rearrange", "Rearrange", "Reorder pages", Icons.AutoMirrored.Filled.List, "Edit", Color(0xFF10B981), Color(0xFFECFDF5)),
-        Tool("page-numbers", "Page Numbers", "Add numbering", Icons.Default.FormatListNumbered, "Edit", Color(0xFF0EA5E9), Color(0xFFF0F9FF)),
-        Tool("watermark", "Watermark", "Add text overlay", Icons.Default.TypeSpecimen, "Edit", Color(0xFFA855F7), Color(0xFFFAF5FF)),
-        Tool("signature", "Signature", "Sign documents", Icons.Default.Draw, "Edit", Color(0xFFEC4899), Color(0xFFFDF2F8)),
+        Tool("split", "Split PDF", "Extract specific pages", Icons.Default.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("rotate", "Rotate PDF", "Fix orientation", Icons.Default.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("rearrange", "Rearrange", "Reorder pages", Icons.AutoMirrored.Filled.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("page-numbers", "Page Numbers", "Add numbering", Icons.AutoMirrored.Filled.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("watermark", "Watermark", "Add text overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("signature", "Signature", "Sign documents", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         
-        // OPTIMIZE
+        // OPTIMIZE - Amber/Orange
         Tool("compress", "Compress", "Optimize size", Icons.Default.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-        Tool("grayscale", "Grayscale", "Remove colors", Icons.Default.Palette, "Optimize", Color(0xFF71717A), Color(0xFFF4F4F5)),
-        Tool("repair", "Repair PDF", "Fix corrupted files", Icons.Default.Build, "Optimize", Color(0xFFEF4444), Color(0xFFFEF2F2)),
+        Tool("grayscale", "Grayscale", "Remove colors", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+        Tool("repair", "Repair PDF", "Fix corrupted files", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
         
-        // SECURE
-        Tool("protect", "Protect PDF", "Add password", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-        Tool("unlock", "Unlock PDF", "Remove password", Icons.Default.LockOpen, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-        Tool("metadata", "Metadata", "Edit properties", Icons.Default.Fingerprint, "Secure", Color(0xFF06B6D4), Color(0xFFECFEFF)),
+        // SECURE - Indigo/Violet
+        Tool("protect", "Protect PDF", "Add password", Icons.Outlined.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+        Tool("unlock", "Unlock PDF", "Remove password", Icons.Outlined.LockOpen, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+        Tool("metadata", "Metadata", "Edit properties", Icons.Outlined.Fingerprint, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
         
-        // CONVERT
-        Tool("pdf2img", "PDF to Image", "Export as JPG", Icons.Default.PictureAsPdf, "Convert", Color(0xFF84CC16), Color(0xFFF7FEE7)),
-        Tool("img2pdf", "Image to PDF", "Photos to PDF", Icons.Default.Image, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-        Tool("extract-images", "Extract Images", "Save all images", Icons.Default.PhotoLibrary, "Convert", Color(0xFFEAB308), Color(0xFFFEFCE8)),
-        Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Default.TextFields, "Convert", Color(0xFF2563EB), Color(0xFFEFF6FF))
+        // CONVERT - Teal/Green
+        Tool("pdf2img", "PDF to Image", "Export as JPG", Icons.Outlined.Image, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+        Tool("img2pdf", "Image to PDF", "Photos to PDF", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+        Tool("extract-images", "Extract Images", "Save all images", Icons.Outlined.PhotoLibrary, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+        Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Outlined.Description, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
     )
 
     val categories = listOf("Edit", "Optimize", "Secure", "Convert")

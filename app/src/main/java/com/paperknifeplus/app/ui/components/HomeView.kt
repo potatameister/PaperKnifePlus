@@ -48,13 +48,13 @@ fun HomeView(
     val coreEngines = listOf(
         Tool("merge", "Merge", "COMBINE", Icons.Default.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("compress", "Compress", "OPTIMIZE", Icons.Default.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-        Tool("split", "Split", "EXTRACT", Icons.Default.ContentCut, "Edit", Color(0xFF3B82F6), Color(0xFFEFF6FF)),
+        Tool("split", "Split", "EXTRACT", Icons.Default.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
         Tool("protect", "Protect", "SECURE", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
     )
 
     val history = listOf(
-        ActivityEntry("1", "Resume_Final.pdf", "Compress", "1.2 MB", Icons.Default.PictureAsPdf),
-        ActivityEntry("2", "Invoice_Feb.pdf", "Merge", "0.8 MB", Icons.Default.PictureAsPdf)
+        ActivityEntry("1", "Resume_Final.pdf", "Compress", "1.2 MB", Icons.Outlined.Description),
+        ActivityEntry("2", "Invoice_Feb.pdf", "Merge", "0.8 MB", Icons.Outlined.Description)
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -106,7 +106,7 @@ fun HomeView(
             item(span = { GridItemSpan(2) }) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "PaperKnife v1.0.9",
+                    text = "PaperKnife+ v1.0.0",
                     modifier = Modifier.fillMaxWidth().alpha(0.2f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     fontSize = 8.sp,
@@ -245,7 +245,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 border = BorderStroke(1.dp, if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.05f))
             ) {
                 Icon(
-                    Icons.Default.FileUpload,
+                    Icons.Default.CloudUpload,
                     contentDescription = null,
                     tint = if (isDark) Color.Black else Color.White,
                     modifier = Modifier.padding(12.dp)
@@ -377,15 +377,15 @@ fun MoreEnginesCard(onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = PaperPink)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Subtle Tool Background Icon (Only in More Engines)
+            // Subtle Tool Background Icon
             Icon(
                 imageVector = Icons.Default.GridView,
                 null,
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .align(Alignment.CenterEnd)
-                    .offset(x = 20.dp)
-                    .alpha(0.1f),
+                    .offset(x = 30.dp, y = 10.dp)
+                    .alpha(0.15f),
                 tint = Color.White
             )
 
