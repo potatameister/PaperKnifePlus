@@ -3,10 +3,8 @@ package com.paperknifeplus.app.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,7 +20,6 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun ToolsView(onToolClick: (String) -> Unit) {
-    // Exact 17 Tools with Organized Colors from Reference
     val allTools = listOf(
         // EDIT
         Tool("merge", "Merge PDF", "Combine multiple PDFs", Icons.Default.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
@@ -52,53 +49,51 @@ fun ToolsView(onToolClick: (String) -> Unit) {
 
     val categories = listOf("Edit", "Optimize", "Secure", "Convert")
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-        modifier = Modifier.fillMaxSize()
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item(span = { GridItemSpan(2) }) {
+        item {
             Text(
-                text = "Tool Catalog",
-                style = MaterialTheme.typography.headlineMedium,
+                text = "All Tools",
+                style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Black,
-                letterSpacing = (-1).sp,
+                letterSpacing = (-1.5).sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         }
 
         categories.forEach { category ->
-            item(span = { GridItemSpan(2) }) {
+            item {
                 Text(
-                    text = category.uppercase(),
-                    fontSize = 9.sp,
+                    text = "${category.uppercase()} TOOLS",
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.Gray,
                     letterSpacing = 2.sp,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp, start = 4.dp)
+                    modifier = Modifier.padding(top = 12.dp, bottom = 8.dp, start = 4.dp)
                 )
             }
             
             items(allTools.filter { it.category == category }) { tool ->
-                SmallBentoCard(tool = tool, onClick = { onToolClick(tool.id) })
+                ListToolItem(tool = tool, onClick = { onToolClick(tool.id) })
             }
         }
 
-        item(span = { GridItemSpan(2) }) {
+        item {
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-fun SmallBentoCard(tool: Tool, onClick: () -> Unit) {
+fun ListToolItem(tool: Tool, onClick: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(105.dp)
+            .height(84.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -106,44 +101,50 @@ fun SmallBentoCard(tool: Tool, onClick: () -> Unit) {
         ),
         border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                modifier = Modifier.size(34.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = if (isDark) tool.color.copy(alpha = 0.15f) else tool.bgColor
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor
             ) {
                 Icon(
                     imageVector = tool.icon ?: Icons.Default.Build,
                     contentDescription = null,
                     tint = tool.color,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(12.dp)
                 )
             }
             
-            Column {
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = tool.name,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    letterSpacing = (-0.3).sp,
-                    lineHeight = 14.sp
+                    letterSpacing = (-0.3).sp
                 )
                 Text(
                     text = tool.description,
-                    fontSize = 8.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Gray,
-                    maxLines = 1,
                     letterSpacing = 0.2.sp
                 )
             }
+            
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color.Gray.copy(alpha = 0.3f),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

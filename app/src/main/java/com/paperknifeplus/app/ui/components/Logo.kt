@@ -1,6 +1,7 @@
 package com.paperknifeplus.app.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -12,11 +13,16 @@ import androidx.compose.ui.unit.dp
 import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
-fun Logo(modifier: Modifier = Modifier, partColor: Color = MaterialTheme.colorScheme.onBackground) {
+fun Logo(
+    modifier: Modifier = Modifier,
+    partColor: Color = if (isSystemInDarkTheme()) Color.White else Color(0xFF18181B)
+) {
     Canvas(modifier = modifier) {
         val width = size.width
         val height = size.height
         val scale = width / 24f
+        
+        // Exact PaperKnife Logo Paths from Reference
         
         // Top Part (Iconic Red)
         val topPath = Path().apply {
