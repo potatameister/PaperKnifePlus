@@ -26,9 +26,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 fun HistoryView() {
     var searchQuery by remember { mutableStateOf("") }
     
-    // Real apps would load this from a database. 
-    // Currently using empty list as requested to avoid placeholders.
-    val historyItems = emptyList<ActivityEntry>()
+    val historyItems = SessionManager.history
 
     val filteredItems = historyItems.filter { 
         it.name.contains(searchQuery, ignoreCase = true) || 
@@ -52,13 +50,17 @@ fun HistoryView() {
                     Icon(Icons.Outlined.History, null, tint = PaperPink, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = "History",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    letterSpacing = (-1.5).sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "History",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        letterSpacing = (-1.5).sp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.size(8.dp).background(PaperPink, CircleShape))
+                }
             }
             
             Spacer(modifier = Modifier.height(24.dp))

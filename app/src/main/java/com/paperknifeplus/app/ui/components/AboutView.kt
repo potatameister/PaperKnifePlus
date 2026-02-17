@@ -1,63 +1,115 @@
 package com.paperknifeplus.app.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
 fun AboutView() {
-    val scrollState = rememberScrollState()
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(scrollState).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        PaperKnifeLogo(size = 64, partColor = MaterialTheme.colorScheme.onSurface)
-        Spacer(Modifier.height(16.dp))
-        Text("PaperKnife+", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
-        Text("Privacy-First PDF Toolkit", style = MaterialTheme.typography.bodyMedium, color = PaperPink, fontWeight = FontWeight.Black)
+    val isDark = MaterialTheme.colorScheme.background == Color.Black
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Logo(modifier = Modifier.size(28.dp), partColor = if (isDark) Color.White else Color.Black)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "About",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onBackground,
+                letterSpacing = (-1.5).sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "WHAT IS PAPERKNIFE+ ?",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Black,
+            color = PaperPink,
+            letterSpacing = 1.5.sp
+        )
         
-        Spacer(Modifier.height(32.dp))
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
+            border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color.White.copy(0.05f) else Color.Black.copy(0.03f))
         ) {
             Column(Modifier.padding(20.dp)) {
-                Text("PROTOCOL", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
-                Spacer(Modifier.height(8.dp))
-                Text("All PDF processing happens locally on your device. Zero servers. No data is ever uploaded.", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                Text(
+                    text = "PaperKnife+ is the native Android successor to the original PaperKnife. Built from the ground up with Kotlin and Jetpack Compose, it brings desktop-class PDF manipulation to your thumb.",
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(16.dp))
+                FeatureRow(Icons.Outlined.Security, "100% Offline", "Processing happens entirely on your device. Your data never leaves your hand.")
+                FeatureRow(Icons.Outlined.Update, "Native Performance", "Zero-server architecture powered by the high-performance PDFBox-Android engine.")
             }
         }
 
-        Spacer(Modifier.height(24.dp))
-        Text("HALL OF FAME", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth(), color = Color.Gray, letterSpacing = 1.sp)
-        Text("Thank you to our future supporters and the open-source community.", style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Left, modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(24.dp))
 
-        Spacer(Modifier.height(24.dp))
-        Text("STACK", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth(), color = Color.Gray, letterSpacing = 1.sp)
-        listOf("PdfBox-Android" to "Engine", "Compose" to "UI", "Coil" to "Images").forEach { (n, d) ->
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(n, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text(d, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), fontWeight = FontWeight.Black)
+        Text(
+            text = "HOW IT WORKS",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Black,
+            color = PaperPink,
+            letterSpacing = 1.5.sp
+        )
+
+        val toolGuide = listOf(
+            "Merge" to "Combines multiple PDF files into one continuous document while maintaining layout integrity.",
+            "Protect" to "Applies standard 128-bit AES encryption to your document, requiring a password for any future access.",
+            "Unlock" to "Removes all security restrictions and passwords from a PDF, provided you know the original password.",
+            "Text Extraction" to "Parses the underlying data layer of the PDF to recover raw plain text for easy copying."
+        )
+
+        toolGuide.forEach { (title, desc) ->
+            Column(Modifier.padding(vertical = 12.dp, horizontal = 4.dp)) {
+                Text(title, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                Text(desc, fontSize = 12.sp, color = Color.Gray, lineHeight = 18.sp)
             }
         }
 
-        Spacer(Modifier.height(48.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Made with ", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Icon(Icons.Default.Favorite, null, tint = PaperPink, modifier = Modifier.size(14.dp))
-            Text(" for Privacy", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(120.dp))
+    }
+}
+
+@Composable
+fun FeatureRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, desc: String) {
+    Row(Modifier.padding(vertical = 8.dp)) {
+        Icon(icon, null, tint = PaperPink, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(desc, fontSize = 11.sp, color = Color.Gray, lineHeight = 16.sp)
         }
-        Spacer(Modifier.height(100.dp))
     }
 }

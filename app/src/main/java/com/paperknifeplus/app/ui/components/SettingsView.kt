@@ -27,13 +27,17 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
     
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(16.dp))
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Black,
-            color = MaterialTheme.colorScheme.onBackground,
-            letterSpacing = (-1.5).sp
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onBackground,
+                letterSpacing = (-1.5).sp
+            )
+            Spacer(Modifier.width(8.dp))
+            Box(Modifier.size(8.dp).background(PaperPink, CircleShape))
+        }
         
         Spacer(Modifier.height(32.dp))
         

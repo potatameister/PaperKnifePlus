@@ -47,10 +47,10 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         Tool("metadata", "Metadata", "Edit properties", Icons.Outlined.Fingerprint, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
         
         // CONVERT - Teal
-        Tool("pdf2img", "PDF to Image", "Export as JPG", Icons.Outlined.Image, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-        Tool("img2pdf", "Image to PDF", "Photos to PDF", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-        Tool("extract-images", "Extract Images", "Save all images", Icons.Outlined.PhotoLibrary, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-        Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Outlined.Description, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
+        Tool("pdf2img", "PDF to Image", "Export as JPG", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+        Tool("img2pdf", "Image to PDF", "Photos to PDF", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+        Tool("extract-images", "Extract Images", "Save all images", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+        Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Outlined.Article, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
     )
 
     val filteredTools = allTools.filter { 
@@ -73,13 +73,17 @@ fun ToolsView(onToolClick: (String) -> Unit) {
                     Icon(Icons.Outlined.GridView, null, tint = PaperPink, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = "All Tools",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    letterSpacing = (-1.5).sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "All Tools",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        letterSpacing = (-1.5).sp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.size(8.dp).background(PaperPink, CircleShape))
+                }
             }
             
             Spacer(modifier = Modifier.height(24.dp))

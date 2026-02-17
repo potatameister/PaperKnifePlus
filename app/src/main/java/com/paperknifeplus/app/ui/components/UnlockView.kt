@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,12 +52,21 @@ fun UnlockView(onBack: () -> Unit) {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream, password)
                         document.isAllSecurityToBeRemoved = true
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> document.save(outputStream) }
+                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
+                            document.save(outputStream)
+                            outputStream.flush()
+                        }
                         document.close()
                     }
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Unlocked!", Toast.LENGTH_LONG).show(); onBack() }
+                    withContext(Dispatchers.Main) {
+                        SessionManager.addEntry(selectedUri?.lastPathSegment ?: "Document", "Unlock", "Decrypted", Icons.Outlined.LockOpen)
+                        Toast.makeText(context, "Unlocked successfully!", Toast.LENGTH_LONG).show()
+                        onBack()
+                    }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
                 } finally { isProcessing = false }
             }
         }
@@ -82,7 +92,7 @@ fun UnlockView(onBack: () -> Unit) {
                 Spacer(Modifier.width(16.dp))
                 Column {
                     Text("Unlock", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                    Text("REMOVE PDF PASSWORD", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                    Text("REMOVE PDF RESTRICTIONS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1), letterSpacing = 1.sp)
                 }
             }
         }
@@ -100,37 +110,50 @@ fun UnlockView(onBack: () -> Unit) {
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(32.dp))
                         .background(if (isDark) Color(0xFF09090B) else Color.White)
-                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)), RoundedCornerShape(32.dp))
+                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(32.dp))
                         .clickable { pickLauncher.launch("application/pdf") },
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(imageVector = Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(64.dp).alpha(0.1f))
+                        Icon(imageVector = Icons.Outlined.LockOpen, contentDescription = null, modifier = Modifier.size(64.dp).alpha(0.1f), tint = Color(0xFF6366F1))
                         Spacer(Modifier.height(16.dp))
                         Text("Select PDF to Unlock", fontWeight = FontWeight.Black, color = Color.Gray)
-                        Text("TAP TO BROWSE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
+                        Text("PROVIDE OWNER PASSWORD", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
                     }
                 }
             } else {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(28.dp),
                     colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
+                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
                 ) {
                     Column(Modifier.padding(24.dp)) {
-                        Text("Security", fontWeight = FontWeight.Black, fontSize = 16.sp)
-                        Spacer(Modifier.height(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(Modifier.size(40.dp), shape = RoundedCornerShape(12.dp), color = Color(0xFF6366F1).copy(alpha = 0.1f)) {
+                                Icon(Icons.Outlined.LockOpen, null, tint = Color(0xFF6366F1), modifier = Modifier.padding(10.dp))
+                            }
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text("Decryption", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                                Text("ENTER CURRENT PASSWORD", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 0.5.sp)
+                            }
+                        }
+                        
+                        Spacer(Modifier.height(24.dp))
+                        
                         OutlinedTextField(
                             value = password,
                             onValueChange = { password = it },
-                            label = { Text("Enter Password", fontWeight = FontWeight.Bold) },
+                            label = { Text("Password", fontWeight = FontWeight.Bold) },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(16.dp),
                             singleLine = true,
                             colors = TextFieldDefaults.colors(
-                                focusedIndicatorColor = PaperPink,
-                                cursorColor = PaperPink
+                                focusedIndicatorColor = Color(0xFF6366F1),
+                                cursorColor = Color(0xFF6366F1),
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent
                             )
                         )
                     }
@@ -138,13 +161,22 @@ fun UnlockView(onBack: () -> Unit) {
                 
                 Button(
                     onClick = { saveLauncher.launch("unlocked.pdf") },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    enabled = password.isNotEmpty() && !isProcessing,
-                    colors = ButtonDefaults.buttonColors(containerColor = PaperPink),
+                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    enabled = password.isNotBlank() && !isProcessing,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
-                    else Text("Unlock & Save", fontWeight = FontWeight.Black)
+                    else Text("Unlock & Save", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
+                }
+                
+                Spacer(Modifier.height(12.dp))
+                
+                TextButton(
+                    onClick = { selectedUri = null },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("CHANGE FILE", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 12.sp)
                 }
             }
         }

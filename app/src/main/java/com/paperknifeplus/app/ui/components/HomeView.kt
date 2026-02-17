@@ -54,7 +54,7 @@ fun HomeView(
         Tool("protect", "Protect", "SECURE", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
     )
 
-    val history = emptyList<ActivityEntry>()
+    val history = SessionManager.history
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(
@@ -208,13 +208,13 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 .fillMaxSize()
                 .padding(24.dp)
         ) {
-            // Hue inside Select File grid only
+            // Massive Premium Hue
             Box(
                 modifier = Modifier
-                    .size(320.dp)
+                    .size(400.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 80.dp, y = (-80).dp)
-                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = if (isDark) 0.3f else 0.25f), Color.Transparent)))
+                    .offset(x = 100.dp, y = (-100).dp)
+                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = if (isDark) 0.35f else 0.25f), Color.Transparent)))
             )
 
             Column(modifier = Modifier.align(Alignment.BottomStart)) {
