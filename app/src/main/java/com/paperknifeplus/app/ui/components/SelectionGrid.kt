@@ -25,12 +25,12 @@ fun SelectionGrid(
     icon: ImageVector, 
     title: String, 
     subtitle: String,
-    accentColor: Color = Color.Gray
+    accentColor: Color = Color.Gray,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp)
             .clip(RoundedCornerShape(32.dp))
             .background(if (isDark) Color(0xFF09090B) else Color.White)
             .border(BorderStroke(1.dp, Color.Gray.copy(0.1f)), RoundedCornerShape(32.dp))

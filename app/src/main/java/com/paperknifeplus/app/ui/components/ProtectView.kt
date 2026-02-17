@@ -12,8 +12,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -46,7 +48,7 @@ fun ProtectView(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
-    var currentState by remember { mutableStateOf(ToolState.SELECTING) }
+    var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var protectPassword by remember { mutableStateOf("") }
@@ -132,7 +134,7 @@ fun ProtectView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -141,7 +143,8 @@ fun ProtectView(onBack: () -> Unit) {
                         icon = Icons.Outlined.Security,
                         title = "Tap to enter file",
                         subtitle = "PROTECT ANY PDF DOCUMENT",
-                        accentColor = Color(0xFF6366F1)
+                        accentColor = Color(0xFF6366F1),
+                        modifier = Modifier.weight(1f)
                     )
                 }
                 ToolState.UNLOCKING -> {
@@ -164,7 +167,7 @@ fun ProtectView(onBack: () -> Unit) {
                     )
                 }
                 ToolState.CONFIGURING -> {
-                    ConfiguringView(
+                    ProtectConfiguringView(
                         preview = previewBitmap,
                         password = protectPassword,
                         onPasswordChange = { protectPassword = it },
@@ -197,31 +200,8 @@ fun ProtectView(onBack: () -> Unit) {
 }
 
 @Composable
-fun UnlockPrompt(fileName: String, password: String, onPasswordChange: (String) -> Unit, onUnlock: () -> Unit, onCancel: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
-        Text("Encrypted File", fontWeight = FontWeight.Black, fontSize = 24.sp)
-        Text(fileName, color = Color.Gray, fontSize = 14.sp)
-        Spacer(Modifier.height(32.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("Enter current password") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1))) {
-            Text("Unlock to Proceed", fontWeight = FontWeight.Black)
-        }
-        TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("CANCEL", color = Color.Gray, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun ConfiguringView(preview: Bitmap?, password: String, onPasswordChange: (String) -> Unit, onProtect: () -> Unit, onChangeFile: () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+fun ProtectConfiguringView(preview: Bitmap?, password: String, onPasswordChange: (String) -> Unit, onProtect: () -> Unit, onChangeFile: () -> Unit) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Spacer(Modifier.height(16.dp))
         Card(
             modifier = Modifier.fillMaxWidth().height(240.dp),

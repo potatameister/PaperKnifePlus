@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -45,7 +44,7 @@ fun UnlockView(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
-    var currentState by remember { mutableStateOf(ToolState.SELECTING) }
+    var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var password by remember { mutableStateOf("") }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -62,7 +61,7 @@ fun UnlockView(onBack: () -> Unit) {
                     currentState = ToolState.UNLOCKING
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "File is not encrypted", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "File is not encrypted", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -119,7 +118,7 @@ fun UnlockView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -127,7 +126,8 @@ fun UnlockView(onBack: () -> Unit) {
                         isDark = isDark,
                         icon = Icons.Outlined.LockOpen,
                         title = "Tap to select locked file",
-                        subtitle = "REMOVE PASSWORD PROTECTION"
+                        subtitle = "REMOVE PASSWORD PROTECTION",
+                        modifier = Modifier.weight(1f)
                     )
                 }
                 ToolState.UNLOCKING -> {
@@ -150,14 +150,13 @@ fun UnlockView(onBack: () -> Unit) {
                     )
                 }
                 ToolState.CONFIGURING -> {
-                    // Show preview and final confirmation
                     Column(Modifier.fillMaxSize()) {
                         Card(
                             modifier = Modifier.fillMaxWidth().height(240.dp),
                             shape = RoundedCornerShape(24.dp),
                             border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
                         ) {
-                            Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            previewBitmap?.let { Image(bitmap = it.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                         }
                         Spacer(Modifier.height(24.dp))
                         Text("File Unlocked", fontWeight = FontWeight.Black, fontSize = 20.sp)
@@ -190,28 +189,6 @@ fun UnlockView(onBack: () -> Unit) {
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun SelectionGrid(onSelect: () -> Unit, isDark: Boolean, icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)
-            .padding(vertical = 24.dp)
-            .clip(RoundedCornerShape(32.dp))
-            .background(if (isDark) Color(0xFF09090B) else Color.White)
-            .border(BorderStroke(1.dp, Color.Gray.copy(0.1f)), RoundedCornerShape(32.dp))
-            .clickable { onSelect() },
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(64.dp).alpha(0.1f), tint = Color(0xFF6366F1))
-            Spacer(Modifier.height(16.dp))
-            Text(title, fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color.Gray)
-            Text(subtitle, fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
         }
     }
 }

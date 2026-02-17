@@ -41,7 +41,7 @@ fun MetadataView(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
-    var currentState by remember { mutableStateOf(ToolState.SELECTING) }
+    var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var title by remember { mutableStateOf("") }
     var author by remember { mutableStateOf("") }
@@ -124,7 +124,7 @@ fun MetadataView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -133,7 +133,8 @@ fun MetadataView(onBack: () -> Unit) {
                         icon = Icons.Outlined.Fingerprint,
                         title = "Tap to enter file",
                         subtitle = "EDIT PDF PROPERTIES",
-                        accentColor = Color(0xFF6366F1)
+                        accentColor = Color(0xFF6366F1),
+                        modifier = Modifier.weight(1f)
                     )
                 }
                 ToolState.CONFIGURING -> {
@@ -169,7 +170,25 @@ fun MetadataView(onBack: () -> Unit) {
                         }
                     )
                 }
+                else -> {}
             }
         }
+    }
+}
+
+@Composable
+fun MetadataField(label: String, value: String, onValueChange: (String) -> Unit) {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent
+            ),
+            singleLine = true
+        )
     }
 }
