@@ -79,6 +79,9 @@ class MainActivity : ComponentActivity() {
                                 "pdf2img" -> PdfToImageView(onBack = { currentScreen = "home" })
                                 "pdf2text" -> PdfToTextView(onBack = { currentScreen = "home" })
                                 "extract-images" -> ExtractImagesView(onBack = { currentScreen = "home" })
+                                "page-numbers" -> ComingSoonView("Page Numbers", onBack = { currentScreen = "tools" })
+                                "watermark" -> ComingSoonView("Watermark", onBack = { currentScreen = "tools" })
+                                "signature" -> ComingSoonView("Signature", onBack = { currentScreen = "tools" })
                                 
                                 else -> HomeView(
                                     isDarkMode = isDarkMode,
