@@ -13,7 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,7 +37,7 @@ fun RotateView(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
-    var rotationAngle by remember { mutableStateOf(0) }
+    var rotation by remember { mutableStateOf(90) }
     var isProcessing by remember { mutableStateOf(false) }
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
@@ -50,13 +50,12 @@ fun RotateView(onBack: () -> Unit) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream)
-                        for (i in 0 until document.numberOfPages) {
-                            val page = document.getPage(i)
-                            val currentRotation = page.rotation
-                            page.rotation = (currentRotation + rotationAngle) % 360
+                        for (page in document.pages) {
+                            page.rotation = (page.rotation + rotation) % 360
                         }
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
+                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
                             document.save(outputStream)
+                            outputStream.flush()
                         }
                         document.close()
                     }
@@ -88,7 +87,7 @@ fun RotateView(onBack: () -> Unit) {
                 Spacer(Modifier.width(16.dp))
                 Column {
                     Text("Rotate", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                    Text("FIX PAGE ORIENTATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                    Text("FIX DOCUMENT ORIENTATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                 }
             }
         }
@@ -106,7 +105,7 @@ fun RotateView(onBack: () -> Unit) {
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(32.dp))
                         .background(if (isDark) Color(0xFF09090B) else Color.White)
-                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)), RoundedCornerShape(32.dp))
+                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(32.dp))
                         .clickable { pickLauncher.launch("application/pdf") },
                     contentAlignment = Alignment.Center
                 ) {
@@ -122,22 +121,20 @@ fun RotateView(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
+                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
                 ) {
                     Column(Modifier.padding(24.dp)) {
-                        Text("Orientation", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                        Text("Rotation Angle", fontWeight = FontWeight.Black, fontSize = 16.sp)
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(90, 180, 270).forEach { angle ->
-                                Button(
-                                    onClick = { rotationAngle = angle },
-                                    modifier = Modifier.weight(1f).height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (rotationAngle == angle) PaperPink else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                        contentColor = if (rotationAngle == angle) Color.White else MaterialTheme.colorScheme.onSurface
-                                    ),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) { Text("$angle°", fontWeight = FontWeight.Black) }
+                                FilterChip(
+                                    selected = rotation == angle,
+                                    onClick = { rotation = angle },
+                                    label = { Text("$angle°", fontWeight = FontWeight.Bold) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = PaperPink, selectedLabelColor = Color.White)
+                                )
                             }
                         }
                     }
@@ -146,7 +143,7 @@ fun RotateView(onBack: () -> Unit) {
                 Button(
                     onClick = { saveLauncher.launch("rotated.pdf") },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    enabled = rotationAngle != 0 && !isProcessing,
+                    enabled = !isProcessing,
                     colors = ButtonDefaults.buttonColors(containerColor = PaperPink),
                     shape = RoundedCornerShape(20.dp)
                 ) {

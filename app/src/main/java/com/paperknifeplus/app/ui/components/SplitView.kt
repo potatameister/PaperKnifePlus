@@ -88,8 +88,13 @@ fun SplitView(onBack: () -> Unit) {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream)
                         val newDocument = PDDocument()
-                        selectedPages.sorted().forEach { index -> newDocument.addPage(document.getPage(index)) }
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> newDocument.save(outputStream) }
+                        selectedPages.sorted().forEach { index -> 
+                            newDocument.addPage(document.getPage(index)) 
+                        }
+                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
+                            newDocument.save(outputStream)
+                            outputStream.flush()
+                        }
                         newDocument.close()
                         document.close()
                     }
@@ -144,7 +149,7 @@ fun SplitView(onBack: () -> Unit) {
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(32.dp))
                         .background(if (isDark) Color(0xFF09090B) else Color.White)
-                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)), RoundedCornerShape(32.dp))
+                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(32.dp))
                         .clickable { pickLauncher.launch("application/pdf") },
                     contentAlignment = Alignment.Center
                 ) {
@@ -160,7 +165,7 @@ fun SplitView(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
+                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
                 ) {
                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Surface(Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = PaperPink.copy(alpha = 0.1f)) {

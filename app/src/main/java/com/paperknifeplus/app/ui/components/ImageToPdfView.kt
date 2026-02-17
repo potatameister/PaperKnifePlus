@@ -9,6 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -26,6 +27,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
+import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,7 +50,8 @@ fun ImageToPdfView(onBack: () -> Unit) {
                     selectedUris.forEach { imgUri ->
                         context.contentResolver.openInputStream(imgUri)?.use { inputStream ->
                             val bitmap = BitmapFactory.decodeStream(inputStream)
-                            val pdImage = LosslessFactory.createFromImage(document, bitmap)
+                            // Use JPEGFactory for better compatibility and smaller size
+                            val pdImage = JPEGFactory.createFromImage(document, bitmap)
                             val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
                             document.addPage(page)
                             val contentStream = PDPageContentStream(document, page)
@@ -57,7 +60,10 @@ fun ImageToPdfView(onBack: () -> Unit) {
                             bitmap.recycle()
                         }
                     }
-                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> document.save(outputStream) }
+                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
+                        document.save(outputStream)
+                        outputStream.flush()
+                    }
                     document.close()
                     withContext(Dispatchers.Main) { Toast.makeText(context, "PDF Created!", Toast.LENGTH_LONG).show(); onBack() }
                 } catch (e: Exception) {
@@ -70,32 +76,32 @@ fun ImageToPdfView(onBack: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back") }
-            Text(text = "Image to PDF", style = MaterialTheme.typography.titleLarge)
+            Text(text = "Image to PDF", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
         }
 
         Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
             if (selectedUris.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(text = "No images selected.") }
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(text = "No images selected.", color = Color.Gray) }
             } else {
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(selectedUris) { uri ->
-                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), shape = RoundedCornerShape(12.dp)) {
                             Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Image(painter = rememberAsyncImagePainter(model = uri), contentDescription = null, modifier = Modifier.size(60.dp), contentScale = ContentScale.Crop)
                                 Spacer(modifier = Modifier.width(16.dp))
-                                Text(text = "Image", modifier = Modifier.weight(1f))
-                                IconButton(onClick = { selectedUris = selectedUris - uri }) { Icon(imageVector = Icons.Default.Delete, contentDescription = "Remove") }
+                                Text(text = "Image", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                                IconButton(onClick = { selectedUris = selectedUris - uri }) { Icon(imageVector = Icons.Default.Delete, contentDescription = "Remove", tint = Color.Gray) }
                             }
                         }
                     }
                 }
-                Button(onClick = { saveLauncher.launch("images.pdf") }, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), enabled = !isProcessing) {
-                    if (isProcessing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    else Text(text = "Create PDF")
+                Button(onClick = { saveLauncher.launch("images.pdf") }, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp).height(56.dp), enabled = !isProcessing, shape = RoundedCornerShape(16.dp)) {
+                    if (isProcessing) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    else Text(text = "Create PDF", fontWeight = FontWeight.Black)
                 }
             }
         }
         
-        FloatingActionButton(onClick = { pickLauncher.launch("image/*") }, modifier = Modifier.align(Alignment.End).padding(32.dp)) { Icon(imageVector = Icons.Default.AddPhotoAlternate, contentDescription = "Add") }
+        FloatingActionButton(onClick = { pickLauncher.launch("image/*") }, modifier = Modifier.align(Alignment.End).padding(32.dp), shape = RoundedCornerShape(16.dp)) { Icon(imageVector = Icons.Default.AddPhotoAlternate, contentDescription = "Add") }
     }
 }

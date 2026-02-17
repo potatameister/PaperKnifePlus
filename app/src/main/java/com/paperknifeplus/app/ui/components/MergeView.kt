@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,7 +61,9 @@ fun MergeView(onBack: () -> Unit) {
                             }
                         }
                         merger.destinationStream = outputStream
-                        merger.mergeDocuments(null)
+                        // setupMainMemoryOnly is critical for Android to avoid temp file permission issues
+                        merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly())
+                        outputStream.flush()
                     }
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Merged successfully!", Toast.LENGTH_LONG).show()
@@ -133,7 +136,7 @@ fun MergeView(onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                            border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
+                            border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
                         ) {
                             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Surface(Modifier.size(36.dp), shape = RoundedCornerShape(8.dp), color = PaperPink.copy(alpha = 0.1f)) {

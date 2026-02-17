@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun PdfToTextView(onBack: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineManager()
+    val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
     
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
@@ -58,6 +58,8 @@ fun PdfToTextView(onBack: () -> Unit) {
         }
     }
 
+    LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -68,7 +70,7 @@ fun PdfToTextView(onBack: () -> Unit) {
                     }
                 },
                 actions = {
-                    if (extractedText.isNotEmpty()) {
+                    if (extractedText.isNotBlank()) {
                         IconButton(onClick = {
                             clipboardManager.setText(AnnotatedString(extractedText))
                             Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
@@ -112,19 +114,30 @@ fun PdfToTextView(onBack: () -> Unit) {
                     }
                 } else {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        Text(
-                            "EXTRACTED CONTENT",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.Gray,
-                            letterSpacing = 1.5.sp,
-                            modifier = Modifier.padding(vertical = 16.dp)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "EXTRACTED CONTENT",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.Gray,
+                                letterSpacing = 1.5.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (extractedText.isBlank()) {
+                                Text(
+                                    "NO TEXT FOUND (NEED OCR?)",
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = PaperPink
+                                )
+                            }
+                        }
                         
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
+                                .padding(vertical = 12.dp)
                                 .background(
                                     if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF09090B) else Color(0xFFF8F9FA),
                                     RoundedCornerShape(16.dp)
@@ -133,16 +146,17 @@ fun PdfToTextView(onBack: () -> Unit) {
                         ) {
                             val scrollState = rememberScrollState()
                             Text(
-                                text = extractedText.ifEmpty { "No text found in PDF." },
+                                text = extractedText.ifBlank { "No text found in PDF. This document likely contains only images/scans and requires OCR to extract text." },
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 13.sp,
-                                modifier = Modifier.verticalScroll(scrollState)
+                                modifier = Modifier.verticalScroll(scrollState),
+                                color = if (extractedText.isBlank()) Color.Gray else MaterialTheme.colorScheme.onSurface
                             )
                         }
                         
                         Button(
                             onClick = { selectedUri = null; extractedText = "" },
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PaperPink)
                         ) {
@@ -161,7 +175,7 @@ private suspend fun extractTextFromPdf(context: android.content.Context, uri: Ur
             PDDocument.load(inputStream).use { document ->
                 val stripper = PDFTextStripper()
                 stripper.sortByPosition = true
-                stripper.getText(document)
+                stripper.getText(document) ?: ""
             }
         } ?: "Error opening file"
     } catch (e: Exception) {
@@ -169,6 +183,3 @@ private suspend fun extractTextFromPdf(context: android.content.Context, uri: Ur
         "Error extracting text: ${e.localizedMessage}"
     }
 }
-
-@Composable
-fun rememberCoroutineManager() = rememberCoroutineScope()

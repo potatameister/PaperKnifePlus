@@ -56,7 +56,10 @@ fun ProtectView(onBack: () -> Unit) {
                         val spp = StandardProtectionPolicy(password, password, ap)
                         spp.encryptionKeyLength = 128
                         document.protect(spp)
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> document.save(outputStream) }
+                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
+                            document.save(outputStream)
+                            outputStream.flush()
+                        }
                         document.close()
                     }
                     withContext(Dispatchers.Main) { Toast.makeText(context, "Protected!", Toast.LENGTH_LONG).show(); onBack() }
@@ -105,14 +108,14 @@ fun ProtectView(onBack: () -> Unit) {
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(32.dp))
                         .background(if (isDark) Color(0xFF09090B) else Color.White)
-                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)), RoundedCornerShape(32.dp))
+                        .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(32.dp))
                         .clickable { pickLauncher.launch("application/pdf") },
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(imageVector = Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(64.dp).alpha(0.1f))
                         Spacer(Modifier.height(16.dp))
-                        Text("Select PDF to Secure", fontWeight = FontWeight.Black, color = Color.Gray)
+                        Text("Select PDF to Protect", fontWeight = FontWeight.Black, color = Color.Gray)
                         Text("TAP TO BROWSE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
                     }
                 }
@@ -121,10 +124,10 @@ fun ProtectView(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f))
+                    border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
                 ) {
                     Column(Modifier.padding(24.dp)) {
-                        Text("Encryption", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                        Text("Security", fontWeight = FontWeight.Black, fontSize = 16.sp)
                         Spacer(Modifier.height(16.dp))
                         OutlinedTextField(
                             value = password,

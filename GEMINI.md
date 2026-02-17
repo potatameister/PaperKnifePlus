@@ -21,7 +21,19 @@ To ensure byte-for-byte reproducibility:
 - Avoid non-deterministic build timestamps.
 - Ensure consistent environment via `gradle-wrapper`.
 
+## Project Integrity & Trust
+- **100% Offline:** Verified. All PDF processing (Merge, Split, Text Extraction, etc.) happens entirely on-device using the `pdfbox-android` engine. No internet permission is declared in `AndroidManifest.xml`.
+- **Reproducible Builds (RB):** 
+    - **Current Status:** High probability but not byte-for-byte guaranteed yet. 
+    - **Required for F-Droid/Izzy:** We must ensure the build environment is deterministic.
+    - **Next Steps:** Standardize the build container, remove any dynamic timestamps in `build.gradle.kts`, and ensure all dependencies are resolved from fixed versions in `libs.versions.toml`.
+- **Privacy First:** Zero trackers, zero analytics. The app does not have the ability to reach the network.
+
 ## Major Evolutions
+- **2026-02-17:** Implemented Search and Icon headers for Tools and History.
+- **2026-02-17:** Fixed 0-byte file saving issues by enforcing memory-only merging and explicit stream flushing.
+- **2026-02-17:** Refined UI: Increased radial hue size (320.dp), more compact tool items, and dark-mode optimized FAB edges.
+- **2026-02-17:** Enhanced PDF-to-Text with "No text found" detection (identifying need for OCR).
 - **2026-02-16:** Initial project scaffolded with Android Compose and Material 3 theme.
 - **2026-02-16:** Implemented core tools: Merge, Split, Protect, Unlock, Rotate, Rearrange, Image-to-PDF, and PDF-to-Images.
 - **2026-02-16:** Replicated PaperKnife branding: Logo, Bento-style UI, and "Titan" Bottom Navigation.

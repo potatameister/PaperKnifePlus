@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -66,7 +67,9 @@ fun PdfToImageView(onBack: () -> Unit) {
                                 }
                                 renderer.close()
                             }
+                            zipOut.flush()
                         }
+                        outputStream.flush()
                     }
                     withContext(Dispatchers.Main) { Toast.makeText(context, "ZIP Exported!", Toast.LENGTH_LONG).show(); onBack() }
                 } catch (e: Exception) {
@@ -79,7 +82,7 @@ fun PdfToImageView(onBack: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
-            Text("PDF to Image ZIP", style = MaterialTheme.typography.titleLarge)
+            Text("PDF to Image ZIP", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
         }
 
         Column(Modifier.weight(1f).padding(24.dp)) {
@@ -93,9 +96,9 @@ fun PdfToImageView(onBack: () -> Unit) {
             } else {
                 Text("Export $pageCount pages as JPEG images inside a ZIP.", style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(24.dp))
-                Button(onClick = { saveLauncher.launch("images.zip") }, modifier = Modifier.fillMaxWidth(), enabled = !isProcessing) {
-                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp))
-                    else Text("Export ZIP")
+                Button(onClick = { saveLauncher.launch("images.zip") }, modifier = Modifier.fillMaxWidth().height(56.dp), enabled = !isProcessing, shape = RoundedCornerShape(16.dp)) {
+                    if (isProcessing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
+                    else Text("Export ZIP", fontWeight = FontWeight.Black)
                 }
             }
         }

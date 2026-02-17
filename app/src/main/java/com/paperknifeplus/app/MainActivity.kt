@@ -172,7 +172,7 @@ fun FixedTitanBottomBar(
             modifier = Modifier
                 .offset(y = (-34).dp)
                 .size(58.dp)
-                .border(2.5.dp, Color.White, RoundedCornerShape(20.dp))
+                .border(2.5.dp, if (MaterialTheme.colorScheme.background == Color.Black) Color.Black else Color.White, RoundedCornerShape(20.dp))
                 .shadow(elevation = 12.dp, shape = RoundedCornerShape(20.dp), spotColor = PaperPink)
                 .clickable { /* Action */ },
             shape = RoundedCornerShape(20.dp),

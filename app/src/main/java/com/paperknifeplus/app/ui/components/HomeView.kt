@@ -54,10 +54,7 @@ fun HomeView(
         Tool("protect", "Protect", "SECURE", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
     )
 
-    val history = listOf(
-        ActivityEntry("1", "Resume_Final.pdf", "Compress", "1.2 MB", Icons.Outlined.Description),
-        ActivityEntry("2", "Invoice_Feb.pdf", "Merge", "0.8 MB", Icons.Outlined.Description)
-    )
+    val history = emptyList<ActivityEntry>()
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(
@@ -214,10 +211,10 @@ fun HeroCard(onSelectPdf: () -> Unit) {
             // Hue inside Select File grid only
             Box(
                 modifier = Modifier
-                    .size(240.dp)
+                    .size(320.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 60.dp, y = (-60).dp)
-                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = if (isDark) 0.25f else 0.2f), Color.Transparent)))
+                    .offset(x = 80.dp, y = (-80).dp)
+                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = if (isDark) 0.3f else 0.25f), Color.Transparent)))
             )
 
             Column(modifier = Modifier.align(Alignment.BottomStart)) {
@@ -297,18 +294,32 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
                 Spacer(Modifier.width(6.dp))
                 Text("RECENT ACTIVITY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
             }
-            Text("VIEW ALL", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+            if (history.isNotEmpty()) {
+                Text("VIEW ALL", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+            }
         }
+        
         Spacer(Modifier.height(12.dp))
-        history.take(3).forEach { entry ->
-            Row(
-                modifier = Modifier.padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(entry.icon, null, modifier = Modifier.size(14.dp), tint = PaperPink)
-                Spacer(Modifier.width(10.dp))
-                Text(entry.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                Text(entry.tool.uppercase(), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink.copy(alpha = 0.7f))
+        
+        if (history.isEmpty()) {
+            Text(
+                "NO RECENT SESSIONS",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray.copy(alpha = 0.4f),
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        } else {
+            history.take(3).forEach { entry ->
+                Row(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(entry.icon, null, modifier = Modifier.size(14.dp), tint = PaperPink)
+                    Spacer(Modifier.width(10.dp))
+                    Text(entry.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    Text(entry.tool.uppercase(), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink.copy(alpha = 0.7f))
+                }
             }
         }
     }
