@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
                                     onToolClick = { toolId -> currentScreen = toolId }
                                 )
                                 "tools" -> ToolsView(onToolClick = { toolId -> currentScreen = toolId })
-                                "history" -> Box(Modifier.fillMaxSize()) { Text("History coming soon", Modifier.padding(16.dp)) }
+                                "history" -> HistoryView()
                                 "settings" -> SettingsView(onNavigateToAbout = { currentScreen = "about" })
                                 "about" -> AboutView()
                                 
@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
                                 "unlock" -> UnlockView(onBack = { currentScreen = "home" })
                                 "img2pdf" -> ImageToPdfView(onBack = { currentScreen = "home" })
                                 "pdf2img" -> PdfToImageView(onBack = { currentScreen = "home" })
+                                "pdf2text" -> PdfToTextView(onBack = { currentScreen = "home" })
                                 
                                 else -> HomeView(
                                     isDarkMode = isDarkMode,

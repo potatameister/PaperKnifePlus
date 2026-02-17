@@ -213,10 +213,10 @@ fun HeroCard(onSelectPdf: () -> Unit) {
             // Hue inside Select File grid only
             Box(
                 modifier = Modifier
-                    .size(180.dp)
+                    .size(240.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 40.dp, y = (-40).dp)
-                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = if (isDark) 0.2f else 0.15f), Color.Transparent)))
+                    .offset(x = 60.dp, y = (-60).dp)
+                    .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = if (isDark) 0.25f else 0.2f), Color.Transparent)))
             )
 
             Column(modifier = Modifier.align(Alignment.BottomStart)) {
@@ -246,7 +246,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 border = BorderStroke(1.dp, if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.05f))
             ) {
                 Icon(
-                    Icons.Default.CloudUpload,
+                    Icons.Outlined.FileOpen,
                     contentDescription = null,
                     tint = if (isDark) Color.Black else Color.White,
                     modifier = Modifier.padding(12.dp)
