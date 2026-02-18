@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.ImageLoader
+import coil.compose.LocalImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
@@ -44,24 +45,8 @@ fun UnifiedPdfPreview(
     val context = LocalContext.current
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
     
-    // Optimized "Blitz Engine" Loader
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components { add(PdfPageFetcher.Factory(context)) }
-            .memoryCache {
-                coil.memory.MemoryCache.Builder(context)
-                    .maxSizePercent(0.30) // Use 30% of available RAM for grid cache
-                    .build()
-            }
-            .diskCache {
-                coil.disk.DiskCache.Builder()
-                    .directory(context.cacheDir.resolve("pdf_previews"))
-                    .maxSizeBytes(200 * 1024 * 1024) // 200MB disk cache
-                    .build()
-            }
-            .crossfade(false) // Disable crossfade for maximum scroll speed
-            .build()
-    }
+    // NITRO ENGINE: Use Shared Global Loader (MainActivity)
+    val imageLoader = LocalImageLoader.current
 
     if (mode == PreviewMode.COVER) {
         // --- TYPE B: ONE PAGE PREVIEW ---

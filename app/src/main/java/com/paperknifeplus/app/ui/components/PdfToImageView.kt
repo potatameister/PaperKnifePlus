@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.ImageLoader
+import coil.compose.LocalImageLoader
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
@@ -57,13 +58,8 @@ fun PdfToImageView(onBack: () -> Unit) {
     var showLoadingWarning by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
 
-    // Use standard ImageLoader for efficient page rendering
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components { add(PdfPageFetcher.Factory(context)) }
-            .crossfade(true)
-            .build()
-    }
+    // Use Shared Global Loader (MainActivity)
+    val imageLoader = LocalImageLoader.current
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {

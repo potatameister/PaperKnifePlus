@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.ImageLoader
+import coil.compose.LocalImageLoader
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -59,13 +60,8 @@ fun RearrangeView(onBack: () -> Unit) {
     var showLoadingWarning by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
 
-    // Use standard ImageLoader for efficient page rendering
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components { add(PdfPageFetcher.Factory(context)) }
-            .crossfade(true)
-            .build()
-    }
+    // Use Shared Global Loader (MainActivity)
+    val imageLoader = LocalImageLoader.current
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {

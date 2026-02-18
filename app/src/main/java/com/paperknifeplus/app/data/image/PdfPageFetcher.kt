@@ -23,6 +23,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 data class PdfPageRequest(
     val uri: Uri,
@@ -33,43 +35,46 @@ data class PdfPageRequest(
 )
 
 /**
- * Robust, Multi-Document Cache for the Native Engine.
- * Replicates the "Blitz" speed of original PaperKnife by keeping the C++ engine open.
+ * NITRO ENGINE: Renderer Pool.
+ * Allows multiple pages of the same document to render in parallel.
  */
-object NativeRendererCache {
+object NativeRendererPool {
     private val mutex = Mutex()
-    
-    private class CacheEntry(val renderer: PdfRenderer, val pfd: ParcelFileDescriptor)
-    
-    private val cache = object : LruCache<Uri, CacheEntry>(3) {
-        override fun entryRemoved(evicted: Boolean, key: Uri?, oldValue: CacheEntry?, newValue: CacheEntry?) {
-            try {
-                oldValue?.renderer?.close()
-                oldValue?.pfd?.close()
-            } catch (e: Exception) {}
-        }
-    }
+    private val pool = mutableMapOf<Uri, MutableList<Pair<PdfRenderer, ParcelFileDescriptor>>>()
+    private val inUse = mutableSetOf<PdfRenderer>()
 
-    suspend fun getRenderer(context: Context, uri: Uri): PdfRenderer? {
-        mutex.withLock {
-            cache.get(uri)?.let { return it.renderer }
-            
-            return try {
+    suspend fun acquire(context: Context, uri: Uri): PdfRenderer? = mutex.withLock {
+        val list = pool.getOrPut(uri) { mutableListOf() }
+        
+        // Find an idle renderer
+        val idle = list.find { it.first !in inUse }
+        if (idle != null) {
+            inUse.add(idle.first)
+            return idle.first
+        }
+
+        // Create new if pool is small (allow up to 4 per document for "Nitro" speed)
+        if (list.size < 4) {
+            try {
                 val pfd = context.contentResolver.openFileDescriptor(uri, "r")
                 if (pfd != null) {
                     val renderer = PdfRenderer(pfd)
-                    cache.put(uri, CacheEntry(renderer, pfd))
-                    renderer
-                } else null
-            } catch (e: Exception) {
-                null
-            }
+                    list.add(renderer to pfd)
+                    inUse.add(renderer)
+                    return renderer
+                }
+            } catch (e: Exception) {}
         }
+        return null
+    }
+
+    suspend fun release(renderer: PdfRenderer) = mutex.withLock {
+        inUse.remove(renderer)
     }
 }
 
-// Global Mutex for serialized rendering - Native PdfRenderer is NOT thread-safe
-private val drawMutex = Mutex()
+// Global Semaphore to limit total system-wide PDF pressure (4 threads)
+private val renderSemaphore = Semaphore(4)
 
 class PdfPageFetcher(
     private val context: Context,
@@ -78,41 +83,41 @@ class PdfPageFetcher(
 
     override suspend fun fetch(): FetchResult? = withContext(Dispatchers.IO) {
         runCatching {
-            // 1. Try Native Renderer (Ultra Fast)
+            // 1. Try Native Renderer (Ultra Fast Nitro Path)
             if (data.password == null) {
-                val renderer = NativeRendererCache.getRenderer(context, data.uri)
+                val renderer = NativeRendererPool.acquire(context, data.uri)
                 if (renderer != null && isActive) {
-                    
-                    drawMutex.withLock {
-                        if (!isActive) return@withContext null
-                        
-                        if (data.pageIndex < renderer.pageCount) {
-                            val page = renderer.openPage(data.pageIndex)
-                            try {
-                                val width = (page.width * data.scale).toInt().coerceAtLeast(1)
-                                val height = (page.height * data.scale).toInt().coerceAtLeast(1)
-                                
-                                // BITMAP POOLING: Prevents GC stutter
-                                val config = if (data.scale <= 0.6f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
-                                val bitmap = BitmapPool.get(width, height, config)
-                                
-                                // ROBUST RENDER: Fill with White before drawing
-                                // This fixes "missing images" and transparency glitches
-                                val canvas = Canvas(bitmap)
-                                canvas.drawColor(Color.WHITE)
-                                
-                                // Hardware-accelerated native render
-                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                
-                                return@withContext DrawableResult(
-                                    drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
-                                    isSampled = data.scale < 1.0f,
-                                    dataSource = DataSource.DISK
-                                )
-                            } finally {
-                                try { page.close() } catch (e: Exception) {}
+                    try {
+                        renderSemaphore.withPermit {
+                            if (!isActive) return@withContext null
+                            
+                            if (data.pageIndex < renderer.pageCount) {
+                                val page = renderer.openPage(data.pageIndex)
+                                try {
+                                    val width = (page.width * data.scale).toInt().coerceAtLeast(1)
+                                    val height = (page.height * data.scale).toInt().coerceAtLeast(1)
+                                    
+                                    // BITMAP POOLING
+                                    val config = if (data.scale <= 0.6f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
+                                    val bitmap = BitmapPool.get(width, height, config)
+                                    
+                                    val canvas = Canvas(bitmap)
+                                    canvas.drawColor(Color.WHITE)
+                                    
+                                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                    
+                                    return@withContext DrawableResult(
+                                        drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
+                                        isSampled = data.scale < 1.0f,
+                                        dataSource = DataSource.DISK
+                                    )
+                                } finally {
+                                    try { page.close() } catch (e: Exception) {}
+                                }
                             }
                         }
+                    } finally {
+                        NativeRendererPool.release(renderer)
                     }
                 }
             }

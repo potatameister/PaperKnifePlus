@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import android.graphics.Bitmap
 import android.net.Uri
 import coil.ImageLoader
+import coil.compose.LocalImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
@@ -66,12 +67,8 @@ fun ProcessingStateView(
     showWarning: Boolean
 ) {
     val context = LocalContext.current
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components { add(PdfPageFetcher.Factory(context)) }
-            .crossfade(true)
-            .build()
-    }
+    // NITRO ENGINE: Use Shared Global Loader (MainActivity)
+    val imageLoader = LocalImageLoader.current
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {

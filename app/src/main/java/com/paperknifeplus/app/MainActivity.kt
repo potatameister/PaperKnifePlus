@@ -27,6 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import coil.ImageLoader
+import coil.compose.LocalImageLoader
+import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.ui.components.*
 import com.paperknifeplus.app.ui.theme.PaperKnifePlusTheme
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -36,10 +39,30 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        
+        // --- NITRO ENGINE: GLOBAL IMAGE LOADER ---
+        // Persists cache across all tools (Merge, Split, etc.) for "Blitz" speed
+        val nitroImageLoader = ImageLoader.Builder(applicationContext)
+            .components { add(PdfPageFetcher.Factory(applicationContext)) }
+            .memoryCache {
+                coil.memory.MemoryCache.Builder(applicationContext)
+                    .maxSizePercent(0.25) // 25% of RAM
+                    .build()
+            }
+            .diskCache {
+                coil.disk.DiskCache.Builder()
+                    .directory(applicationContext.cacheDir.resolve("pdf_previews"))
+                    .maxSizeBytes(150 * 1024 * 1024) // 150MB
+                    .build()
+            }
+            .crossfade(false) // Disable for maximum scrolling performance
+            .build()
+
         setContent {
             var isDarkMode by remember { mutableStateOf(false) }
-            PaperKnifePlusTheme(darkTheme = isDarkMode) {
-                var currentScreen by remember { mutableStateOf("home") }
+            CompositionLocalProvider(LocalImageLoader provides nitroImageLoader) {
+                PaperKnifePlusTheme(darkTheme = isDarkMode) {
+                    var currentScreen by remember { mutableStateOf("home") }
                 val isMainView = currentScreen in listOf("home", "tools", "history", "settings", "about")
 
                 Box(modifier = Modifier

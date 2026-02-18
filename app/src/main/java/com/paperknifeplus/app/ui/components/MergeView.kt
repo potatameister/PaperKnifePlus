@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.ImageLoader
+import coil.compose.LocalImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
@@ -52,12 +53,8 @@ fun MergeView(onBack: () -> Unit) {
     var showLoadingWarning by remember { mutableStateOf(false) }
     var progressCount by remember { mutableIntStateOf(0) }
 
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components { add(PdfPageFetcher.Factory(context)) }
-            .crossfade(true)
-            .build()
-    }
+    // Use Shared Global Loader (MainActivity)
+    val imageLoader = LocalImageLoader.current
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {

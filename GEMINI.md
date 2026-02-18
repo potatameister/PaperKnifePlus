@@ -30,6 +30,10 @@ To ensure byte-for-byte reproducibility:
 - **Privacy First:** Zero trackers, zero analytics. The app does not have the ability to reach the network.
 
 ## Major Evolutions
+- **2026-02-18:** Implemented **NITRO ENGINE 2.0**:
+    - **Global Blitz Cache:** Unified singleton `ImageLoader` via `CompositionLocal` ensures PDF previews are shared across all tools (Merge, Split, etc.).
+    - **Nitro Parallel Rendering:** Replaced the global mutex with a **4-Thread Renderer Pool** and a `NativeRendererPool`. This allows up to 4 pages to render concurrently, eliminating grid scrolling lag.
+    - **Memory Optimization:** Switched thumbnails to `RGB_565` and ensured redundant loader allocations are purged for "Zero-Jank" performance.
 - **2026-02-18:** Established "Proactive Build Troubleshooting" workflow—monitoring CI logs in real-time and applying hot-fixes while builds are in-flight to maximize iteration speed.
 - **2026-02-18:** Unified PDF Preview system (Type A/Grid & Type B/Cover) integrated across all PDF tools using high-performance Coil rendering.
 - **2026-02-17:** Implemented Search and Icon headers for Tools and History.
