@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import androidx.compose.runtime.CompositionLocalProvider
 import coil.ImageLoader
 import coil.compose.LocalImageLoader
 import com.paperknifeplus.app.data.image.PdfPageFetcher
@@ -132,6 +133,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 }
 
 @Composable
