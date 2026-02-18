@@ -166,7 +166,7 @@ fun GrayscaleView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
+                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
                                     if (count > 0) {
                                         withContext(Dispatchers.Main) {
                                             pageCount = count
@@ -194,22 +194,20 @@ fun GrayscaleView(onBack: () -> Unit) {
                             }
                             Spacer(Modifier.height(12.dp))
                             
-                            // THE NEW FAST ENGINE
                             UnifiedPdfPreview(
                                 uri = selectedUri!!,
                                 pageCount = pageCount,
                                 mode = PreviewMode.GRID,
                                 password = if (unlockPassword.isEmpty()) null else unlockPassword,
-                                onPageClick = { lightboxPage = it }
+                                accentColor = accentColor
                             )
                         }
                     }
                     ToolState.PROCESSING -> {
-                        // For processing view, we can grab page 0 using our new fetcher if we want,
-                        // or just show a generic progress. Let's keep it simple for now to ensure stability.
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = null, // Can upgrade this later to use fetcher too
+                            uri = selectedUri,
+                            password = if (unlockPassword.isEmpty()) null else unlockPassword,
                             text = "Applying grayscale filter...",
                             current = progressPage,
                             total = pageCount,
@@ -230,25 +228,4 @@ fun GrayscaleView(onBack: () -> Unit) {
             }
         }
     }
-
-    if (lightboxPage != null && selectedUri != null) {
-        PageLightbox(
-            uri = selectedUri!!,
-            initialPage = lightboxPage!!,
-            totalCount = pageCount,
-            password = if (unlockPassword.isEmpty()) null else unlockPassword,
-            onDismiss = { lightboxPage = null }
-        )
-    }
-}
-
-private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream, password) else com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
-            val count = document.numberOfPages
-            document.close()
-            count
-        } ?: 0
-    } catch (e: Exception) { 0 }
 }

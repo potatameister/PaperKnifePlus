@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,10 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,7 +43,6 @@ fun UnlockView(onBack: () -> Unit) {
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var password by remember { mutableStateOf("") }
-    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
@@ -161,11 +156,9 @@ fun UnlockView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val bitmap = loadPreview(context, selectedUri!!, password)
-                                    val count = getPageCountLocal(context, selectedUri!!, password)
-                                    if (bitmap != null || count > 0) {
+                                    val count = getPageCount(context, selectedUri!!, password)
+                                    if (count > 0) {
                                         withContext(Dispatchers.Main) { 
-                                            previewBitmap = bitmap
                                             pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false 
@@ -185,19 +178,16 @@ fun UnlockView(onBack: () -> Unit) {
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                             Spacer(Modifier.height(16.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth().aspectRatio(0.707f),
-                                shape = RoundedCornerShape(24.dp),
-                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-                            ) {
-                                if (previewBitmap != null) {
-                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-                                } else {
-                                    Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Outlined.LockOpen, null, modifier = Modifier.size(48.dp).alpha(0.2f))
-                                    }
-                                }
-                            }
+                            
+                            // UNIFIED PREVIEW
+                            UnifiedPdfPreview(
+                                uri = selectedUri!!,
+                                pageCount = pageCount,
+                                mode = PreviewMode.COVER,
+                                password = password,
+                                accentColor = accentColor
+                            )
+                            
                             Spacer(Modifier.height(16.dp))
                             Text(fileName, fontWeight = FontWeight.Black, fontSize = 16.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
                             Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
@@ -211,7 +201,10 @@ fun UnlockView(onBack: () -> Unit) {
                             Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 14.sp)
                             Spacer(Modifier.height(32.dp))
                             Button(
-                                onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-unlocked.pdf") }, 
+                                onClick = { 
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-unlocked.pdf"
+                                    saveLauncher.launch(defaultName) 
+                                }, 
                                 modifier = Modifier.fillMaxWidth().height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
@@ -227,7 +220,8 @@ fun UnlockView(onBack: () -> Unit) {
                     ToolState.PROCESSING -> {
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = previewBitmap,
+                            uri = selectedUri,
+                            password = password,
                             text = "Decrypting document...",
                             current = 0,
                             total = 0,
@@ -243,7 +237,6 @@ fun UnlockView(onBack: () -> Unit) {
                             onProcessMore = { 
                                 selectedUri = null
                                 password = ""
-                                previewBitmap = null
                                 currentState = ToolState.SELECTING 
                             },
                             accentColor = accentColor
@@ -253,15 +246,4 @@ fun UnlockView(onBack: () -> Unit) {
             }
         }
     }
-}
-
-private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val count = document.numberOfPages
-            document.close()
-            count
-        } ?: 0
-    } catch (e: Exception) { 0 }
 }

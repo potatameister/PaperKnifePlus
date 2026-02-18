@@ -1,12 +1,10 @@
 package com.paperknifeplus.app.ui.components
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,24 +20,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.paperknifeplus.app.ui.theme.PaperPink
-import com.tom_roush.pdfbox.pdmodel.PDDocument
+import coil.ImageLoader
+import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 @Composable
 fun PdfToImageView(onBack: () -> Unit) {
@@ -59,11 +52,17 @@ fun PdfToImageView(onBack: () -> Unit) {
     var format by remember { mutableStateOf("JPEG") }
     var quality by remember { mutableStateOf("Standard") }
     
-    var thumbnails by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
     var progressCount by remember { mutableIntStateOf(0) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
-    var lightboxPage by remember { mutableStateOf<Int?>(null) }
+
+    // Use standard ImageLoader for efficient page rendering
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .components { add(PdfPageFetcher.Factory(context)) }
+            .crossfade(true)
+            .build()
+    }
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {
@@ -85,16 +84,10 @@ fun PdfToImageView(onBack: () -> Unit) {
                 if (isEncrypted) {
                     withContext(Dispatchers.Main) { currentState = ToolState.UNLOCKING }
                 } else {
-                    val count = getPageCountLocal(context, it, null)
-                    val thumbs = mutableMapOf<Int, Bitmap>()
-                    for (i in 0 until minOf(count, 30)) {
-                        val bitmap = renderPageToBitmap(context, it, i, null, 0.3f)
-                        if (bitmap != null) thumbs[i] = bitmap
-                    }
+                    val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
                         selectedPages = (0 until count).toSet()
-                        thumbnails = thumbs
                         currentState = ToolState.CONFIGURING
                     }
                 }
@@ -169,17 +162,11 @@ fun PdfToImageView(onBack: () -> Unit) {
                         onPasswordChange = { unlockPassword = it },
                         onUnlock = {
                             scope.launch(Dispatchers.IO) {
-                                val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
-                                val thumbs = mutableMapOf<Int, Bitmap>()
-                                for (i in 0 until minOf(count, 20)) {
-                                    val bitmap = renderPageToBitmap(context, selectedUri!!, i, unlockPassword, 0.3f)
-                                    if (bitmap != null) thumbs[i] = bitmap
-                                }
+                                val count = getPageCount(context, selectedUri!!, unlockPassword)
                                 if (count > 0) {
                                     withContext(Dispatchers.Main) {
                                         pageCount = count
                                         selectedPages = (0 until count).toSet()
-                                        thumbnails = thumbs
                                         currentState = ToolState.CONFIGURING
                                     }
                                 } else {
@@ -218,28 +205,25 @@ fun PdfToImageView(onBack: () -> Unit) {
                             columns = GridCells.Fixed(3),
                             modifier = Modifier.weight(1f),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
                             items(pageCount) { index ->
                                 val isSelected = selectedPages.contains(index)
-                                Box(
-                                    modifier = Modifier
-                                        .aspectRatio(0.8f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(if (isDark) Color(0xFF18181B) else Color(0xFFF4F4F5))
-                                        .border(BorderStroke(2.dp, if (isSelected) accentColor else Color.Transparent), RoundedCornerShape(12.dp))
-                                        .clickable { 
-                                            selectedPages = if (isSelected) selectedPages - index else selectedPages + index 
-                                        }
+                                PdfPageItem(
+                                    uri = selectedUri!!,
+                                    index = index,
+                                    password = unlockPassword.ifEmpty { null },
+                                    imageLoader = imageLoader,
+                                    onClick = { 
+                                        selectedPages = if (isSelected) selectedPages - index else selectedPages + index 
+                                    },
+                                    modifier = Modifier.border(BorderStroke(2.dp, if (isSelected) accentColor else Color.Transparent), RoundedCornerShape(12.dp))
                                 ) {
-                                    thumbnails[index]?.let { Image(bitmap = it.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                                     if (isSelected) {
                                         Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp), color = accentColor, shape = CircleShape) {
                                             Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(14.dp).padding(2.dp))
                                         }
-                                    }
-                                    Surface(modifier = Modifier.align(Alignment.BottomStart).padding(6.dp), color = Color.Black.copy(0.5f), shape = RoundedCornerShape(4.dp)) {
-                                        Text("${index + 1}", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 4.dp))
                                     }
                                 }
                             }
@@ -259,7 +243,8 @@ fun PdfToImageView(onBack: () -> Unit) {
                 ToolState.PROCESSING -> {
                     ProcessingStateView(
                         accentColor = accentColor,
-                        preview = thumbnails[0],
+                        uri = selectedUri,
+                        password = unlockPassword.ifEmpty { null },
                         text = "Rendering page $progressCount of ${selectedPages.size}...",
                         current = progressCount,
                         total = selectedPages.size,
@@ -280,25 +265,4 @@ fun PdfToImageView(onBack: () -> Unit) {
             }
         }
     }
-
-    if (lightboxPage != null && selectedUri != null) {
-        PageLightbox(
-            uri = selectedUri!!,
-            initialPage = lightboxPage!!,
-            totalCount = pageCount,
-            password = if (unlockPassword.isEmpty()) null else unlockPassword,
-            onDismiss = { lightboxPage = null }
-        )
-    }
-}
-
-private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val count = document.numberOfPages
-            document.close()
-            count
-        } ?: 0
-    } catch (e: Exception) { 0 }
 }

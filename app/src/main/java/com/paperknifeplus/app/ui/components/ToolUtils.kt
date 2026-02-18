@@ -123,6 +123,17 @@ suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? 
     renderPageToBitmap(context, uri, 0, password, 1.0f) // High quality cover
 }
 
+suspend fun getPageCount(context: Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val count = document.numberOfPages
+            document.close()
+            count
+        } ?: 0
+    } catch (e: Exception) { 0 }
+}
+
 suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, password: String?, scale: Float = 1f): Bitmap? = withContext(Dispatchers.IO) {
     val key = "$uri-$pageIndex-$scale"
     BitmapCache.getBitmap(key)?.let { return@withContext it }

@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,10 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,7 +46,6 @@ fun ProtectView(onBack: () -> Unit) {
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var protectPassword by remember { mutableStateOf("") }
-    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
@@ -82,10 +77,8 @@ fun ProtectView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    val bitmap = loadPreview(context, it, null)
-                    val count = getPageCountLocal(context, it, null)
+                    val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
-                        previewBitmap = bitmap
                         pageCount = count
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
@@ -177,11 +170,9 @@ fun ProtectView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
-                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
-                                    if (bitmap != null || count > 0) {
+                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
+                                    if (count > 0) {
                                         withContext(Dispatchers.Main) { 
-                                            previewBitmap = bitmap
                                             pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false 
@@ -200,11 +191,12 @@ fun ProtectView(onBack: () -> Unit) {
                     }
                     ToolState.CONFIGURING -> {
                         ProtectConfiguringView(
-                            preview = previewBitmap,
+                            uri = selectedUri!!,
+                            pageCount = pageCount,
                             fileName = fileName,
                             fileSize = fileSize,
-                            pageCount = pageCount,
                             password = protectPassword,
+                            unlockPassword = unlockPassword,
                             onPasswordChange = { protectPassword = it },
                             onProtect = { 
                                 val defaultName = fileName.replace(".pdf", "", true) + "-protected.pdf"
@@ -217,7 +209,8 @@ fun ProtectView(onBack: () -> Unit) {
                     ToolState.PROCESSING -> {
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = previewBitmap,
+                            uri = selectedUri,
+                            password = unlockPassword.ifEmpty { null },
                             text = "Applying encryption policy...",
                             current = 0,
                             total = 0,
@@ -234,7 +227,6 @@ fun ProtectView(onBack: () -> Unit) {
                                 selectedUri = null
                                 unlockPassword = ""
                                 protectPassword = ""
-                                previewBitmap = null
                                 currentState = ToolState.SELECTING 
                             },
                             accentColor = accentColor
@@ -248,11 +240,12 @@ fun ProtectView(onBack: () -> Unit) {
 
 @Composable
 fun ProtectConfiguringView(
-    preview: Bitmap?, 
+    uri: Uri,
+    pageCount: Int,
     fileName: String,
     fileSize: String,
-    pageCount: Int,
     password: String, 
+    unlockPassword: String,
     onPasswordChange: (String) -> Unit, 
     onProtect: () -> Unit, 
     onChangeFile: () -> Unit, 
@@ -260,19 +253,15 @@ fun ProtectConfiguringView(
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Spacer(Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth().aspectRatio(0.707f),
-            shape = RoundedCornerShape(24.dp),
-            border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-        ) {
-            if (preview != null) {
-                Image(bitmap = preview.asImageBitmap(), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-            } else {
-                Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
-                    Text("No Preview Available", color = Color.Gray)
-                }
-            }
-        }
+        
+        // UNIFIED PREVIEW: COVER MODE
+        UnifiedPdfPreview(
+            uri = uri,
+            pageCount = pageCount,
+            mode = PreviewMode.COVER,
+            password = if (unlockPassword.isEmpty()) null else unlockPassword,
+            accentColor = accentColor
+        )
         
         Spacer(Modifier.height(16.dp))
         Text(fileName, fontWeight = FontWeight.Black, fontSize = 16.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -318,15 +307,4 @@ fun ProtectConfiguringView(
         }
         Spacer(Modifier.height(100.dp))
     }
-}
-
-private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val count = document.numberOfPages
-            document.close()
-            count
-        } ?: 0
-    } catch (e: Exception) { 0 }
 }

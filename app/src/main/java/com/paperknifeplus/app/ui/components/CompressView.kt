@@ -1,12 +1,10 @@
 package com.paperknifeplus.app.ui.components
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,16 +19,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
-import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -57,7 +51,6 @@ fun CompressView(onBack: () -> Unit) {
     var compressionLevel by remember { mutableStateOf("Recommended") }
     var pageCount by remember { mutableIntStateOf(0) }
     var progressPage by remember { mutableIntStateOf(0) }
-    var firstPagePreview by remember { mutableStateOf<Bitmap?>(null) }
     var showLoadingWarning by remember { mutableStateOf(false) }
 
     LaunchedEffect(isFileLoading, currentState) {
@@ -87,10 +80,8 @@ fun CompressView(onBack: () -> Unit) {
                     }
                 } else {
                     val count = getPageCountLocal(context, it, null)
-                    val preview = loadPreview(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
-                        firstPagePreview = preview
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -110,13 +101,14 @@ fun CompressView(onBack: () -> Unit) {
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    
                     val newDetails = getUriDetails(context, saveUri)
                     val spaceSaved = if (fileSizeOld > 0) ((fileSizeOld - newDetails.sizeBytes).toFloat() / fileSizeOld * 100).toInt().coerceAtLeast(0) else 0
                     
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         spaceSavedText = "REDUCED BY $spaceSaved% (${newDetails.size})"
-                        SessionManager.addEntry(fileName, "Compress", "Optimized size", Icons.Outlined.Bolt)
+                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Outlined.Bolt)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -174,12 +166,10 @@ fun CompressView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
-                                    val preview = loadPreview(context, selectedUri!!, unlockPassword)
+                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
                                     if (count > 0) {
                                         withContext(Dispatchers.Main) {
                                             pageCount = count
-                                            firstPagePreview = preview
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false
                                         }
@@ -198,26 +188,19 @@ fun CompressView(onBack: () -> Unit) {
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                             Spacer(Modifier.height(16.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth().height(240.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-                            ) {
-                                if (firstPagePreview != null) {
-                                    Image(bitmap = firstPagePreview!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                                } else {
-                                    Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Outlined.Bolt, null, modifier = Modifier.size(48.dp).alpha(0.2f))
-                                    }
-                                }
-                            }
-                            Spacer(Modifier.height(12.dp))
+                            
+                            // UNIFIED PREVIEW: COVER MODE
+                            UnifiedPdfPreview(
+                                uri = selectedUri!!,
+                                pageCount = pageCount,
+                                mode = PreviewMode.COVER,
+                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                accentColor = accentColor
+                            )
+                            
+                            Spacer(Modifier.height(16.dp))
                             Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-                                Text(fileSize, fontSize = 11.sp, color = Color.Gray)
-                                Spacer(Modifier.width(8.dp))
-                                Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
-                            }
+                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
                             
                             Spacer(Modifier.height(32.dp))
                             Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
@@ -273,7 +256,8 @@ fun CompressView(onBack: () -> Unit) {
                     ToolState.PROCESSING -> {
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = firstPagePreview,
+                            uri = selectedUri,
+                            password = if (unlockPassword.isEmpty()) null else unlockPassword,
                             text = "Optimizing document size...",
                             current = progressPage,
                             total = pageCount,
@@ -294,15 +278,4 @@ fun CompressView(onBack: () -> Unit) {
             }
         }
     }
-}
-
-private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val count = document.numberOfPages
-            document.close()
-            count
-        } ?: 0
-    } catch (e: Exception) { 0 }
 }

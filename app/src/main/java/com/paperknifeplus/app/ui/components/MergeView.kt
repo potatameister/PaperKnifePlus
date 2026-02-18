@@ -26,6 +26,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.ImageLoader
+import coil.compose.rememberAsyncImagePainter
+import com.paperknifeplus.app.data.image.PdfPageFetcher
+import com.paperknifeplus.app.data.image.PdfPageRequest
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -47,6 +51,13 @@ fun MergeView(onBack: () -> Unit) {
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
     var progressCount by remember { mutableIntStateOf(0) }
+
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .components { add(PdfPageFetcher.Factory(context)) }
+            .crossfade(true)
+            .build()
+    }
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {
@@ -144,6 +155,7 @@ fun MergeView(onBack: () -> Unit) {
                         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             item { Spacer(Modifier.height(16.dp)) }
                             items(selectedUris) { uri ->
+                                val details = remember(uri) { getUriDetails(context, uri) }
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(20.dp),
@@ -151,11 +163,24 @@ fun MergeView(onBack: () -> Unit) {
                                     border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
                                 ) {
                                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Surface(Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = accentColor.copy(alpha = 0.1f)) {
-                                            Icon(Icons.Default.Description, null, tint = accentColor, modifier = Modifier.padding(10.dp))
+                                        Surface(
+                                            modifier = Modifier.size(44.dp), 
+                                            shape = RoundedCornerShape(10.dp), 
+                                            color = accentColor.copy(alpha = 0.05f)
+                                        ) {
+                                            val request = remember(uri) { PdfPageRequest(uri, 0, null, 0.2f) }
+                                            Image(
+                                                painter = rememberAsyncImagePainter(request, imageLoader),
+                                                contentDescription = null,
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Crop
+                                            )
                                         }
                                         Spacer(Modifier.width(12.dp))
-                                        Text("Document", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Column(Modifier.weight(1f)) {
+                                            Text(details.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                                            Text(details.size, fontSize = 10.sp, color = Color.Gray)
+                                        }
                                         IconButton(onClick = { selectedUris = selectedUris - uri }) { 
                                             Icon(Icons.Default.DeleteOutline, null, tint = Color.Gray, modifier = Modifier.size(20.dp)) 
                                         }
@@ -164,6 +189,18 @@ fun MergeView(onBack: () -> Unit) {
                             }
                             item { Spacer(Modifier.height(100.dp)) }
                         }
+                        
+                        Button(
+                            onClick = { saveLauncher.launch("merged.pdf") },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
+                            enabled = selectedUris.size > 1,
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text("Merge ${selectedUris.size} Files", fontWeight = FontWeight.Black)
+                        }
+                    }
+                }
                         
                         Button(
                             onClick = { saveLauncher.launch("merged.pdf") },

@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.ImageLoader
+import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -52,10 +54,18 @@ fun RearrangeView(onBack: () -> Unit) {
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var pageOrder by remember { mutableStateOf<List<Int>>(emptyList()) }
-    var thumbnails by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
+    var lightboxPage by remember { mutableStateOf<Int?>(null) }
+
+    // Use standard ImageLoader for efficient page rendering
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .components { add(PdfPageFetcher.Factory(context)) }
+            .crossfade(true)
+            .build()
+    }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
@@ -81,15 +91,9 @@ fun RearrangeView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    val count = getPageCountLocal(context, it, null)
-                    val thumbs = mutableMapOf<Int, Bitmap>()
-                    for (i in 0 until minOf(count, 20)) {
-                        val bitmap = renderPageToBitmap(context, it, i, null, 0.3f)
-                        if (bitmap != null) thumbs[i] = bitmap
-                    }
+                    val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageOrder = (0 until count).toList()
-                        thumbnails = thumbs
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -151,7 +155,7 @@ fun RearrangeView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                LoadingStateView(accentColor, showLoadingWarning, "Generating page thumbnails...")
+                LoadingStateView(accentColor, showLoadingWarning, "Reading document structure...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -173,16 +177,10 @@ fun RearrangeView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
-                                    val thumbs = mutableMapOf<Int, Bitmap>()
-                                    for (i in 0 until minOf(count, 20)) {
-                                        val bitmap = renderPageToBitmap(context, selectedUri!!, i, unlockPassword, 0.3f)
-                                        if (bitmap != null) thumbs[i] = bitmap
-                                    }
+                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
                                     if (count > 0) {
                                         withContext(Dispatchers.Main) {
                                             pageOrder = (0 until count).toList()
-                                            thumbnails = thumbs
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false
                                         }
@@ -225,18 +223,27 @@ fun RearrangeView(onBack: () -> Unit) {
                                 columns = GridCells.Fixed(3),
                                 modifier = Modifier.weight(1f),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp)
                             ) {
                                 items(pageOrder.size) { i ->
                                     val index = pageOrder[i]
-                                    Box(
-                                        modifier = Modifier
-                                            .aspectRatio(0.75f)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(if (isDark) Color(0xFF18181B) else Color(0xFFF4F4F5))
+                                    PdfPageItem(
+                                        uri = selectedUri!!,
+                                        index = index,
+                                        password = unlockPassword.ifEmpty { null },
+                                        imageLoader = imageLoader,
+                                        onClick = { lightboxPage = index }
                                     ) {
-                                        thumbnails[index]?.let { Image(bitmap = it.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
-                                        
+                                        // Small Zoom Indicator
+                                        Surface(
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                                            color = Color.Black.copy(0.4f),
+                                            shape = CircleShape
+                                        ) {
+                                            Icon(Icons.Default.ZoomIn, null, tint = Color.White, modifier = Modifier.size(16.dp).padding(3.dp))
+                                        }
+
                                         Row(
                                             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
                                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -250,10 +257,6 @@ fun RearrangeView(onBack: () -> Unit) {
                                                 onClick = { if (i < pageOrder.size - 1) { val list = pageOrder.toMutableList(); val temp = list[i]; list[i] = list[i+1]; list[i+1] = temp; pageOrder = list } },
                                                 modifier = Modifier.size(28.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape)
                                             ) { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(14.dp), tint = Color.White) }
-                                        }
-                                        
-                                        Surface(modifier = Modifier.align(Alignment.TopStart).padding(6.dp), color = Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp)) {
-                                            Text("${index + 1}", modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black)
                                         }
                                     }
                                 }
@@ -272,7 +275,8 @@ fun RearrangeView(onBack: () -> Unit) {
                     ToolState.PROCESSING -> {
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = thumbnails[0],
+                            uri = selectedUri,
+                            password = unlockPassword.ifEmpty { null },
                             text = "Applying new page order...",
                             current = 0,
                             total = 0,
@@ -293,15 +297,14 @@ fun RearrangeView(onBack: () -> Unit) {
             }
         }
     }
-}
 
-private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val count = document.numberOfPages
-            document.close()
-            count
-        } ?: 0
-    } catch (e: Exception) { 0 }
+    if (lightboxPage != null && selectedUri != null) {
+        PageLightbox(
+            uri = selectedUri!!,
+            initialPage = lightboxPage!!,
+            totalCount = pageOrder.size,
+            password = unlockPassword.ifEmpty { null },
+            onDismiss = { lightboxPage = null }
+        )
+    }
 }

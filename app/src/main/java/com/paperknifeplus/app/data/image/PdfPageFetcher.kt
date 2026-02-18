@@ -22,7 +22,8 @@ import java.io.File
 data class PdfPageRequest(
     val uri: Uri,
     val pageIndex: Int,
-    val password: String? = null
+    val password: String? = null,
+    val scale: Float = 1.0f
 )
 
 class PdfPageFetcher(
@@ -39,20 +40,19 @@ class PdfPageFetcher(
                     if (data.pageIndex < renderer.pageCount) {
                         val page = renderer.openPage(data.pageIndex)
                         
-                        // Calculate optimal scale for thumbnails vs full screen
-                        // Standard thumbnail size is usually around 300px width
-                        val width = page.width
-                        val height = page.height
+                        val width = (page.width * data.scale).toInt().coerceAtLeast(1)
+                        val height = (page.height * data.scale).toInt().coerceAtLeast(1)
                         
-                        // Use RGB_565 for thumbnails to save 50% RAM
-                        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+                        // Use RGB_565 for thumbnails to save 50% RAM if scale is low
+                        val config = if (data.scale <= 0.5f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
+                        val bitmap = Bitmap.createBitmap(width, height, config)
                         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         page.close()
                         renderer.close()
                         
                         return@withContext DrawableResult(
                             drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
-                            isSampled = true,
+                            isSampled = data.scale < 1.0f,
                             dataSource = DataSource.DISK
                         )
                     }
@@ -73,13 +73,12 @@ class PdfPageFetcher(
                 }
                 
                 val renderer = com.tom_roush.pdfbox.rendering.PDFRenderer(document)
-                // 0.5f scale is usually plenty for thumbnails
-                val bitmap = renderer.renderImage(data.pageIndex, 0.5f, ImageType.RGB)
+                val bitmap = renderer.renderImage(data.pageIndex, data.scale, ImageType.RGB)
                 document.close()
                 
                 return@withContext DrawableResult(
                     drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
-                    isSampled = true,
+                    isSampled = data.scale < 1.0f,
                     dataSource = DataSource.DISK
                 )
             }

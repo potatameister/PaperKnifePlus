@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,10 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,7 +45,7 @@ fun RepairView(onBack: () -> Unit) {
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
-    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
@@ -78,9 +74,9 @@ fun RepairView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    val bitmap = loadPreview(context, it, null)
+                    val count = getPageCountLocal(context, it, null)
                     withContext(Dispatchers.Main) {
-                        previewBitmap = bitmap
+                        pageCount = count
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -158,25 +154,17 @@ fun RepairView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
-                                    if (bitmap != null) {
-                                        previewBitmap = bitmap
+                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
+                                    if (count > 0) {
                                         withContext(Dispatchers.Main) { 
+                                            pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false 
                                         }
                                     } else {
-                                        val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
-                                        if (isValid) {
-                                            withContext(Dispatchers.Main) { 
-                                                currentState = ToolState.CONFIGURING
-                                                isFileLoading = false 
-                                            }
-                                        } else {
-                                            withContext(Dispatchers.Main) { 
-                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                                isFileLoading = false 
-                                            }
+                                        withContext(Dispatchers.Main) { 
+                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                            isFileLoading = false 
                                         }
                                     }
                                 }
@@ -188,24 +176,26 @@ fun RepairView(onBack: () -> Unit) {
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                             Spacer(Modifier.height(16.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth().height(240.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-                            ) {
-                                if (previewBitmap != null) {
-                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                                } else {
-                                    Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Outlined.Build, null, modifier = Modifier.size(48.dp).alpha(0.2f))
-                                    }
-                                }
-                            }
-                            Spacer(Modifier.height(12.dp))
+                            
+                            // UNIFIED PREVIEW
+                            UnifiedPdfPreview(
+                                uri = selectedUri!!,
+                                pageCount = pageCount,
+                                mode = PreviewMode.COVER,
+                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                accentColor = accentColor
+                            )
+                            
+                            Spacer(Modifier.height(16.dp))
                             Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                                Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+                                Spacer(Modifier.width(8.dp))
+                                Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
+                            }
                             
                             Spacer(Modifier.height(32.dp))
+                            
                             Text("READY TO REPAIR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Text("PaperKnife+ will rebuild the PDF index and cross-reference table to restore accessibility.", fontSize = 12.sp, color = Color.Gray)
                             
@@ -231,7 +221,8 @@ fun RepairView(onBack: () -> Unit) {
                     ToolState.PROCESSING -> {
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = previewBitmap,
+                            uri = selectedUri,
+                            password = if (unlockPassword.isEmpty()) null else unlockPassword,
                             text = "Rebuilding XRef tables...",
                             current = 0,
                             total = 0,
@@ -240,12 +231,13 @@ fun RepairView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
+                            message = "Repair Complete",
+                            subMessage = "Structure rebuilt successfully",
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
                                 selectedUri = null
                                 unlockPassword = ""
-                                previewBitmap = null
                                 currentState = ToolState.SELECTING 
                             },
                             accentColor = accentColor

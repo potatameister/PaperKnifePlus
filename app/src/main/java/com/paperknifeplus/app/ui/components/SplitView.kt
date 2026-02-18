@@ -49,7 +49,7 @@ fun SplitView(onBack: () -> Unit) {
     var range by remember { mutableStateOf("1-2") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
-    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
@@ -78,9 +78,9 @@ fun SplitView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    val bitmap = loadPreview(context, it, null)
+                    val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
-                        previewBitmap = bitmap
+                        pageCount = count
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -174,25 +174,17 @@ fun SplitView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
-                                    if (bitmap != null) {
-                                        previewBitmap = bitmap
+                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
+                                    if (count > 0) {
                                         withContext(Dispatchers.Main) { 
+                                            pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false 
                                         }
                                     } else {
-                                        val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
-                                        if (isValid) {
-                                            withContext(Dispatchers.Main) { 
-                                                currentState = ToolState.CONFIGURING
-                                                isFileLoading = false 
-                                            }
-                                        } else {
-                                            withContext(Dispatchers.Main) { 
-                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                                isFileLoading = false 
-                                            }
+                                        withContext(Dispatchers.Main) { 
+                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                            isFileLoading = false 
                                         }
                                     }
                                 }
@@ -204,19 +196,15 @@ fun SplitView(onBack: () -> Unit) {
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                             Spacer(Modifier.height(16.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth().height(240.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-                            ) {
-                                if (previewBitmap != null) {
-                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                                } else {
-                                    Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.ContentCut, null, modifier = Modifier.size(48.dp).alpha(0.2f))
-                                    }
-                                }
-                            }
+                            
+                            UnifiedPdfPreview(
+                                uri = selectedUri!!,
+                                pageCount = pageCount,
+                                mode = PreviewMode.COVER,
+                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                accentColor = accentColor
+                            )
+                            
                             Spacer(Modifier.height(12.dp))
                             Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
                             Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -258,7 +246,8 @@ fun SplitView(onBack: () -> Unit) {
                     ToolState.PROCESSING -> {
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = previewBitmap,
+                            uri = selectedUri,
+                            password = unlockPassword.ifEmpty { null },
                             text = "Extracting specified pages...",
                             current = 0,
                             total = 0,
