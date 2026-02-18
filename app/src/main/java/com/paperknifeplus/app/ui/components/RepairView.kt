@@ -74,7 +74,7 @@ fun RepairView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    val count = getPageCountLocal(context, it, null)
+                    val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
                         currentState = ToolState.CONFIGURING
