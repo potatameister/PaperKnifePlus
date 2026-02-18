@@ -10,6 +10,7 @@ import android.provider.OpenableColumns
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
+import com.tom_roush.pdfbox.pdmodel.PDResources
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
@@ -42,13 +43,11 @@ object PreferencesManager {
 fun getUriDetails(context: Context, uri: Uri): UriDetails {
     var name = "Document.pdf"
     var size = "Unknown size"
-    
     try {
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             if (cursor.moveToFirst()) {
                 val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                
                 if (nameIndex != -1) {
                     val rawName = cursor.getString(nameIndex)
                     if (rawName != null) name = rawName
@@ -62,7 +61,6 @@ fun getUriDetails(context: Context, uri: Uri): UriDetails {
     } catch (e: Exception) {
         uri.lastPathSegment?.let { name = it }
     }
-    
     if (!name.contains(".")) name += ".pdf"
     return UriDetails(name, size)
 }
@@ -201,29 +199,16 @@ private fun processResourcesForCompression(document: PDDocument, resources: PDRe
     }
 }
 
-suspend fun convertImagesToPdf(
-    context: Context, 
-    imageUris: List<Uri>, 
-    outputUri: Uri, 
-    pageSize: String, 
-    onProgress: (Int, Int) -> Unit
-) = withContext(Dispatchers.IO) {
+suspend fun convertImagesToPdf(context: Context, imageUris: List<Uri>, outputUri: Uri, pageSize: String, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     val document = PDDocument()
     imageUris.forEachIndexed { index, uri ->
         onProgress(index + 1, imageUris.size)
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             val bitmap = BitmapFactory.decodeStream(inputStream)
             val pdImage = JPEGFactory.createFromImage(document, bitmap, 0.8f)
-            
-            val rect = if (pageSize == "A4") {
-                PDRectangle.A4
-            } else {
-                PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat())
-            }
-            
+            val rect = if (pageSize == "A4") PDRectangle.A4 else PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat())
             val page = PDPage(rect)
             document.addPage(page)
-            
             PDPageContentStream(document, page).use { contentStream ->
                 if (pageSize == "A4") {
                     val scale = Math.min(rect.width / pdImage.width, rect.height / pdImage.height)
@@ -240,31 +225,19 @@ suspend fun convertImagesToPdf(
     saveAndFlush(context, document, outputUri)
 }
 
-suspend fun convertPdfToImages(
-    context: Context, 
-    pdfUri: Uri, 
-    outputUri: Uri, 
-    password: String?, 
-    selectedPages: List<Int>, 
-    format: String, 
-    quality: String, 
-    onProgress: (Int, Int) -> Unit
-) = withContext(Dispatchers.IO) {
+suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, password: String?, selectedPages: List<Int>, format: String, quality: String, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openOutputStream(outputUri)?.use { outputStream ->
         ZipOutputStream(outputStream).use { zipOut ->
             context.contentResolver.openInputStream(pdfUri)?.use { inputStream ->
                 val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
                 val renderer = com.tom_roush.pdfbox.rendering.PDFRenderer(document)
-                
                 val scale = when(quality) { "HD" -> 2.5f; "Standard" -> 1.5f; else -> 1.0f }
                 val compressFormat = if (format == "PNG") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
                 val fileExt = if (format == "PNG") "png" else "jpg"
-                
                 selectedPages.forEachIndexed { index, pageIdx ->
                     onProgress(index + 1, selectedPages.size)
                     val bitmap = renderer.renderImage(pageIdx, scale)
-                    val entry = ZipEntry("page_${pageIdx + 1}.$fileExt")
-                    zipOut.putNextEntry(entry)
+                    zipOut.putNextEntry(ZipEntry("page_${pageIdx + 1}.$fileExt"))
                     bitmap.compress(compressFormat, 90, zipOut)
                     zipOut.closeEntry()
                     bitmap.recycle()
