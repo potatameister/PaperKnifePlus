@@ -68,8 +68,10 @@ fun PageLightbox(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                pageSpacing = 16.dp
+                pageSpacing = 16.dp,
+                beyondBoundsPageCount = 1 // Only keep neighbors in memory
             ) { pageIndex ->
+                // Limit scale to 1.5f to prevent OOM on 500-page docs
                 val request = remember(uri, pageIndex, password) { PdfPageRequest(uri, pageIndex, password, 1.5f) }
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Image(

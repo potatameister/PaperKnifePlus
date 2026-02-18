@@ -2,6 +2,8 @@ package com.paperknifeplus.app.data.image
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
@@ -41,8 +43,10 @@ object NativeRendererCache {
     
     private val cache = object : LruCache<Uri, CacheEntry>(3) {
         override fun entryRemoved(evicted: Boolean, key: Uri?, oldValue: CacheEntry?, newValue: CacheEntry?) {
-            oldValue?.renderer?.close()
-            oldValue?.pfd?.close()
+            try {
+                oldValue?.renderer?.close()
+                oldValue?.pfd?.close()
+            } catch (e: Exception) {}
         }
     }
 
@@ -64,6 +68,7 @@ object NativeRendererCache {
     }
 }
 
+// Global Mutex for serialized rendering - Native PdfRenderer is NOT thread-safe
 private val drawMutex = Mutex()
 
 class PdfPageFetcher(
@@ -72,29 +77,31 @@ class PdfPageFetcher(
 ) : Fetcher {
 
     override suspend fun fetch(): FetchResult? = withContext(Dispatchers.IO) {
-        if (data.password == null) {
-            try {
+        runCatching {
+            // 1. Try Native Renderer (Ultra Fast)
+            if (data.password == null) {
                 val renderer = NativeRendererCache.getRenderer(context, data.uri)
-                if (renderer != null && coroutineContext.isActive) {
+                if (renderer != null && isActive) {
                     
-                    // PRE-FETCH LOGIC: Fire and forget rendering of next 2 pages
-                    if (data.prefetch) {
-                        launch {
-                            prefetchPages(renderer, data.uri, data.pageIndex, data.scale)
-                        }
-                    }
-
                     drawMutex.withLock {
-                        if (!coroutineContext.isActive) return@withContext null
+                        if (!isActive) return@withContext null
                         
                         if (data.pageIndex < renderer.pageCount) {
                             val page = renderer.openPage(data.pageIndex)
                             try {
                                 val width = (page.width * data.scale).toInt().coerceAtLeast(1)
                                 val height = (page.height * data.scale).toInt().coerceAtLeast(1)
+                                
+                                // BITMAP POOLING: Prevents GC stutter
                                 val config = if (data.scale <= 0.6f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
                                 val bitmap = BitmapPool.get(width, height, config)
                                 
+                                // ROBUST RENDER: Fill with White before drawing
+                                // This fixes "missing images" and transparency glitches
+                                val canvas = Canvas(bitmap)
+                                canvas.drawColor(Color.WHITE)
+                                
+                                // Hardware-accelerated native render
                                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                                 
                                 return@withContext DrawableResult(
@@ -103,17 +110,15 @@ class PdfPageFetcher(
                                     dataSource = DataSource.DISK
                                 )
                             } finally {
-                                page.close()
+                                try { page.close() } catch (e: Exception) {}
                             }
                         }
                     }
                 }
-            } catch (e: Exception) {}
-        }
+            }
 
-        // PDFBox-Lite Fallback
-        if (!coroutineContext.isActive) return@withContext null
-        try {
+            // 2. Fallback to PDFBox (For Passwords)
+            if (!isActive) return@withContext null
             context.contentResolver.openInputStream(data.uri)?.use { inputStream ->
                 val document = if (data.password != null) {
                     PDDocument.load(inputStream, data.password)
@@ -134,20 +139,7 @@ class PdfPageFetcher(
                     document.close()
                 }
             }
-        } catch (e: Exception) {
-            return@withContext null
-        }
-        return@withContext null
-    }
-
-    private suspend fun prefetchPages(renderer: PdfRenderer, uri: Uri, currentIndex: Int, scale: Float) {
-        val nextPages = listOf(currentIndex + 1, currentIndex + 2)
-        nextPages.forEach { index ->
-            if (index < renderer.pageCount) {
-                // Just opening and rendering to fill internal C++ cache if possible, 
-                // or we could render to BitmapPool here. For now, let's just use NativeRenderer's internal speed.
-            }
-        }
+        }.getOrNull()
     }
 
     class Factory(private val context: Context) : Fetcher.Factory<PdfPageRequest> {

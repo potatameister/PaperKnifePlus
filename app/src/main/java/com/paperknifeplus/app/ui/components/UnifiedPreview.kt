@@ -102,12 +102,12 @@ fun UnifiedPdfPreview(
             }
         }
     } else {
-        // --- TYPE A: MINI PREVIEW GRID (Optimized for Speed) ---
+        // --- TYPE A: MINI PREVIEW GRID (2-Column Stable Mode) ---
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 100.dp),
+            columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(16.dp)
         ) {
             items(pageCount, key = { it }) { index ->
