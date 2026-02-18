@@ -55,6 +55,7 @@ fun PdfToImageView(onBack: () -> Unit) {
     var progressCount by remember { mutableIntStateOf(0) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
+    var lightboxPage by remember { mutableStateOf<Int?>(null) }
 
     // Use standard ImageLoader for efficient page rendering
     val imageLoader = remember {
