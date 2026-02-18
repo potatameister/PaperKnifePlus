@@ -17,6 +17,8 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.rendering.ImageType
 import com.tom_roush.pdfbox.rendering.PDFRenderer
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -27,38 +29,46 @@ data class PdfPageRequest(
     val scale: Float = 1.0f
 )
 
+// Global mutex to serialize access to the non-thread-safe native PdfRenderer
+private val rendererMutex = Mutex()
+
 class PdfPageFetcher(
     private val context: Context,
     private val data: PdfPageRequest
 ) : Fetcher {
 
     override suspend fun fetch(): FetchResult? = withContext(Dispatchers.IO) {
-        // 1. Try Native Renderer (Ultra Fast)
+        // 1. Try Native Renderer (Ultra Fast, but needs Serial Access)
         if (data.password == null) {
             try {
                 context.contentResolver.openFileDescriptor(data.uri, "r")?.use { pfd ->
-                    val renderer = PdfRenderer(pfd)
-                    if (data.pageIndex < renderer.pageCount) {
-                        val page = renderer.openPage(data.pageIndex)
-                        
-                        val width = (page.width * data.scale).toInt().coerceAtLeast(1)
-                        val height = (page.height * data.scale).toInt().coerceAtLeast(1)
-                        
-                        // REUSE BITMAP FROM POOL
-                        val config = if (data.scale <= 0.5f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
-                        val bitmap = BitmapPool.get(width, height, config)
-                        
-                        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                        page.close()
-                        renderer.close()
-                        
-                        return@withContext DrawableResult(
-                            drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
-                            isSampled = data.scale < 1.0f,
-                            dataSource = DataSource.DISK
-                        )
+                    // Mutex lock ensures only one page renders at a time, preventing native engine choke
+                    rendererMutex.withLock {
+                        val renderer = PdfRenderer(pfd)
+                        try {
+                            if (data.pageIndex < renderer.pageCount) {
+                                val page = renderer.openPage(data.pageIndex)
+                                
+                                val width = (page.width * data.scale).toInt().coerceAtLeast(1)
+                                val height = (page.height * data.scale).toInt().coerceAtLeast(1)
+                                
+                                // REUSE BITMAP FROM POOL
+                                val config = if (data.scale <= 0.5f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
+                                val bitmap = BitmapPool.get(width, height, config)
+                                
+                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                page.close()
+                                
+                                return@withContext DrawableResult(
+                                    drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
+                                    isSampled = data.scale < 1.0f,
+                                    dataSource = DataSource.DISK
+                                )
+                            }
+                        } finally {
+                            renderer.close()
+                        }
                     }
-                    renderer.close()
                 }
             } catch (e: Exception) {
                 // Fallback to PDFBox
@@ -76,6 +86,8 @@ class PdfPageFetcher(
                 
                 try {
                     val renderer = com.tom_roush.pdfbox.rendering.PDFRenderer(document)
+                    // PDFBox rendering is also CPU intensive, serialize it too if needed, 
+                    // but usually used for single page previews anyway.
                     val bitmap = renderer.renderImage(data.pageIndex, data.scale, ImageType.RGB)
                     
                     return@withContext DrawableResult(
