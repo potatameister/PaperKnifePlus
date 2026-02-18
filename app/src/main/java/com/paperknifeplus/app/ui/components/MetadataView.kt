@@ -34,6 +34,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -55,12 +56,21 @@ fun MetadataView(onBack: () -> Unit) {
     var creator by remember { mutableStateOf("") }
     var producer by remember { mutableStateOf("") }
     
-    var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isFileLoading, currentState) {
+        if (isFileLoading || currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -68,7 +78,6 @@ fun MetadataView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
-            
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -79,10 +88,10 @@ fun MetadataView(onBack: () -> Unit) {
                     }
                 } else {
                     val bitmap = loadPreview(context, it, null)
-                    withContext(Dispatchers.Main) {
-                        previewBitmap = bitmap
-                        loadMetadata(context, it, null) { t, a, s, k, c, p ->
-                            title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                    loadMetadata(context, it, null) { t, a, s, k, c, p ->
+                        title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                        withContext(Dispatchers.Main) {
+                            previewBitmap = bitmap
                             currentState = ToolState.CONFIGURING
                             isFileLoading = false
                         }
@@ -99,15 +108,8 @@ fun MetadataView(onBack: () -> Unit) {
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                        val document = if (unlockPassword.isNotEmpty()) {
-                            PDDocument.load(inputStream, unlockPassword)
-                        } else {
-                            PDDocument.load(inputStream)
-                        }
-                        
-                        if (document.isEncrypted) {
-                            document.isAllSecurityToBeRemoved = true
-                        }
+                        val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
+                        if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
                         
                         val info = document.documentInformation
                         info.title = title
@@ -117,20 +119,13 @@ fun MetadataView(onBack: () -> Unit) {
                         info.creator = creator
                         info.producer = producer
                         
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
-                            document.save(outputStream)
-                            outputStream.flush()
-                        }
-                        document.close()
+                        saveAndFlush(context, document, saveUri)
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
-                        savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Metadata", "Edited", Icons.Outlined.Fingerprint)
+                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", Icons.Outlined.Fingerprint)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -147,7 +142,7 @@ fun MetadataView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -166,13 +161,7 @@ fun MetadataView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = accentColor)
-                        Spacer(Modifier.height(16.dp))
-                        Text("Loading metadata...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    }
-                }
+                LoadingStateView(accentColor, showLoadingWarning, "Reading file properties...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -195,10 +184,10 @@ fun MetadataView(onBack: () -> Unit) {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
                                     val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
-                                    previewBitmap = bitmap
                                     loadMetadata(context, selectedUri!!, unlockPassword) { t, a, s, k, c, p ->
                                         title = t; author = a; subject = s; keywords = k; creator = c; producer = p
                                         withContext(Dispatchers.Main) {
+                                            previewBitmap = bitmap
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false
                                         }
@@ -230,23 +219,18 @@ fun MetadataView(onBack: () -> Unit) {
                             Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
                             
                             Spacer(Modifier.height(24.dp))
-                            
                             MetadataGroup("DOCUMENT CORE") {
                                 MetadataEditField("Title", title, accentColor) { title = it }
                                 MetadataEditField("Author", author, accentColor) { author = it }
                                 MetadataEditField("Subject", subject, accentColor) { subject = it }
                             }
-                            
                             Spacer(Modifier.height(16.dp))
-                            
                             MetadataGroup("ADDITIONAL INFO") {
                                 MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
                                 MetadataEditField("Creator", creator, accentColor) { creator = it }
                                 MetadataEditField("Producer", producer, accentColor) { producer = it }
                             }
-                            
                             Spacer(Modifier.height(32.dp))
-                            
                             Button(
                                 onClick = { 
                                     val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
@@ -258,7 +242,6 @@ fun MetadataView(onBack: () -> Unit) {
                             ) {
                                 Text("Save Metadata", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                                 Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
                             }
@@ -266,18 +249,17 @@ fun MetadataView(onBack: () -> Unit) {
                         }
                     }
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = accentColor)
-                                Spacer(Modifier.height(16.dp))
-                                Text("Saving properties...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = previewBitmap,
+                            text = "Updating document metadata...",
+                            current = 0,
+                            total = 0,
+                            showWarning = showLoadingWarning
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = fileName,
-                            path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -353,9 +335,5 @@ private suspend fun loadMetadata(
             document.close()
             onSuccess(t, a, s, k, c, p)
         }
-    } catch (e: Exception) {
-        withContext(Dispatchers.Main) {
-            Toast.makeText(context, "Incorrect password or error", Toast.LENGTH_SHORT).show()
-        }
-    }
+    } catch (e: Exception) { }
 }

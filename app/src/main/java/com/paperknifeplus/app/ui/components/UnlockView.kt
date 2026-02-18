@@ -33,6 +33,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -47,12 +48,20 @@ fun UnlockView(onBack: () -> Unit) {
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var password by remember { mutableStateOf("") }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
-    var processedFileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isFileLoading, currentState) {
+        if (isFileLoading || currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -60,7 +69,6 @@ fun UnlockView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
-            
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -88,21 +96,13 @@ fun UnlockView(onBack: () -> Unit) {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream, password)
                         document.isAllSecurityToBeRemoved = true
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
-                            document.save(outputStream)
-                            outputStream.flush()
-                        }
-                        document.close()
+                        saveAndFlush(context, document, saveUri)
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
-                        processedFileName = finalName
-                        savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Unlock", "Decrypted", Icons.Outlined.LockOpen)
+                        SessionManager.addEntry(fileName, "Unlock", "Decrypted", Icons.Outlined.LockOpen)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -119,7 +119,7 @@ fun UnlockView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -138,9 +138,7 @@ fun UnlockView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = accentColor)
-                }
+                LoadingStateView(accentColor, showLoadingWarning, "Preparing document...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -208,7 +206,6 @@ fun UnlockView(onBack: () -> Unit) {
                             Spacer(Modifier.height(12.dp))
                             Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
                             Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            
                             Spacer(Modifier.height(24.dp))
                             Text("File Unlocked", fontWeight = FontWeight.Black, fontSize = 20.sp)
                             Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 14.sp)
@@ -231,18 +228,17 @@ fun UnlockView(onBack: () -> Unit) {
                         }
                     }
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = accentColor)
-                                Spacer(Modifier.height(16.dp))
-                                Text("Removing restrictions...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = previewBitmap,
+                            text = "Decrypting document...",
+                            current = 0,
+                            total = 0,
+                            showWarning = showLoadingWarning
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = processedFileName,
-                            path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
