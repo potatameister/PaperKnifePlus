@@ -98,55 +98,68 @@ fun PageLightbox(
                     }
                 }
 
-                // Update global zoom state
+                // Update global zoom state (only disable pager if significantly zoomed)
                 LaunchedEffect(scale) {
                     if (pagerState.currentPage == pageIndex) {
-                        isAnyPageZoomed = scale > 1f
+                        isAnyPageZoomed = scale > 1.05f
                     }
                 }
 
-                val state = rememberTransformableState { zoomChange, offsetChange, _ ->
-                    scale = (scale * zoomChange).coerceIn(1f, 4f)
-                    
-                    // Bound-aware panning
-                    val extraWidth = (scale - 1) * 1000 // Approximate base width
-                    val extraHeight = (scale - 1) * 1400 // Approximate base height
-                    
-                    offset += offsetChange
-                }
-
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onDoubleTap = { 
-                                    scale = if (scale > 1f) 1f else 2.5f
-                                    offset = androidx.compose.ui.geometry.Offset.Zero 
-                                }
-                            )
-                        }
-                        .transformable(state = state),
+                BoxWithConstraints(
+                    Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    val painter = rememberAsyncImagePainter(request, imageLoader)
-                    
-                    Image(
-                        painter = painter,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer(
-                                scaleX = scale,
-                                scaleY = scale,
-                                translationX = offset.x,
-                                translationY = offset.y
-                            ),
-                        contentScale = ContentScale.Fit
-                    )
+                    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+                        scale = (scale * zoomChange).coerceIn(1f, 4f)
+                        
+                        // Strict bound-aware panning
+                        val maxX = (constraints.maxWidth * (scale - 1) / 2)
+                        val maxY = (constraints.maxHeight * (scale - 1) / 2)
+                        
+                        val newOffset = offset + offsetChange
+                        offset = androidx.compose.ui.geometry.Offset(
+                            newOffset.x.coerceIn(-maxX, maxX),
+                            newOffset.y.coerceIn(-maxY, maxY)
+                        )
+                    }
 
-                    if (painter.state is AsyncImagePainter.State.Loading) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(48.dp))
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onDoubleTap = { 
+                                        if (scale > 1f) {
+                                            scale = 1f
+                                            offset = androidx.compose.ui.geometry.Offset.Zero
+                                        } else {
+                                            scale = 2.5f
+                                        }
+                                    }
+                                )
+                            }
+                            .transformable(state = state),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val painter = rememberAsyncImagePainter(request, imageLoader)
+                        
+                        Image(
+                            painter = painter,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer(
+                                    scaleX = scale,
+                                    scaleY = scale,
+                                    translationX = offset.x,
+                                    translationY = offset.y
+                                ),
+                            contentScale = ContentScale.Fit
+                        )
+
+                        if (painter.state is AsyncImagePainter.State.Loading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(48.dp))
+                        }
                     }
                 }
             }

@@ -147,8 +147,8 @@ fun PdfPageItem(
     accentColor: Color = MaterialTheme.colorScheme.primary,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
-    // LOW-RES THUMBNAILS (0.2f) for blitz-fast scrolling
-    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.2f) }
+    // INCREASED SCALE (0.4f) for better text readability in grids
+    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.4f) }
     
     Box(
         modifier = modifier
