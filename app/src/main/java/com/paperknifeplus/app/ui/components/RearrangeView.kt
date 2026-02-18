@@ -1,7 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
 import android.graphics.Bitmap
-import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -37,6 +36,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -56,7 +56,16 @@ fun RearrangeView(onBack: () -> Unit) {
     var thumbnails by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var savedFilePath by remember { mutableStateOf("") }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isFileLoading, currentState) {
+        if (isFileLoading || currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -64,7 +73,6 @@ fun RearrangeView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
-            
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -74,31 +82,17 @@ fun RearrangeView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    try {
-                        context.contentResolver.openFileDescriptor(it, "r")?.use { pfd ->
-                            val renderer = PdfRenderer(pfd)
-                            val count = renderer.pageCount
-                            val thumbs = mutableMapOf<Int, Bitmap>()
-                            for (i in 0 until minOf(count, 50)) {
-                                val page = renderer.openPage(i)
-                                val bitmap = Bitmap.createBitmap(page.width/4, page.height/4, Bitmap.Config.ARGB_8888)
-                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                thumbs[i] = bitmap
-                                page.close()
-                            }
-                            withContext(Dispatchers.Main) {
-                                pageOrder = (0 until count).toList()
-                                thumbnails = thumbs
-                                currentState = ToolState.CONFIGURING
-                                isFileLoading = false
-                            }
-                            renderer.close()
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                            isFileLoading = false
-                        }
+                    val count = getPageCountLocal(context, it, null)
+                    val thumbs = mutableMapOf<Int, Bitmap>()
+                    for (i in 0 until minOf(count, 30)) {
+                        val bitmap = renderPageToBitmap(context, it, i, null, 0.3f)
+                        if (bitmap != null) thumbs[i] = bitmap
+                    }
+                    withContext(Dispatchers.Main) {
+                        pageOrder = (0 until count).toList()
+                        thumbnails = thumbs
+                        currentState = ToolState.CONFIGURING
+                        isFileLoading = false
                     }
                 }
             }
@@ -115,21 +109,14 @@ fun RearrangeView(onBack: () -> Unit) {
                         val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                         val newDocument = PDDocument()
                         pageOrder.forEach { index -> newDocument.addPage(document.getPage(index)) }
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
-                            newDocument.save(outputStream)
-                            outputStream.flush()
-                        }
-                        newDocument.close()
+                        saveAndFlush(context, newDocument, saveUri)
                         document.close()
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
-                        savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Rearrange", "${pageOrder.size} pages", Icons.Default.ViewQuilt)
+                        SessionManager.addEntry(fileName, "Rearrange", "Reordered", Icons.Default.ViewQuilt)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -146,7 +133,7 @@ fun RearrangeView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -165,9 +152,7 @@ fun RearrangeView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = accentColor)
-                }
+                LoadingStateView(accentColor, showLoadingWarning, "Generating page thumbnails...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -189,40 +174,23 @@ fun RearrangeView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    try {
-                                        context.contentResolver.openFileDescriptor(selectedUri!!, "r")?.use { pfd ->
-                                            val renderer = PdfRenderer(pfd)
-                                            val count = renderer.pageCount
-                                            val thumbs = mutableMapOf<Int, Bitmap>()
-                                            for (i in 0 until minOf(count, 50)) {
-                                                val page = renderer.openPage(i)
-                                                val bitmap = Bitmap.createBitmap(page.width/4, page.height/4, Bitmap.Config.ARGB_8888)
-                                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                                thumbs[i] = bitmap
-                                                page.close()
-                                            }
-                                            withContext(Dispatchers.Main) {
-                                                pageOrder = (0 until count).toList()
-                                                thumbnails = thumbs
-                                                currentState = ToolState.CONFIGURING
-                                                isFileLoading = false
-                                            }
-                                            renderer.close()
+                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
+                                    val thumbs = mutableMapOf<Int, Bitmap>()
+                                    for (i in 0 until minOf(count, 20)) {
+                                        val bitmap = renderPageToBitmap(context, selectedUri!!, i, unlockPassword, 0.3f)
+                                        if (bitmap != null) thumbs[i] = bitmap
+                                    }
+                                    if (count > 0) {
+                                        withContext(Dispatchers.Main) {
+                                            pageOrder = (0 until count).toList()
+                                            thumbnails = thumbs
+                                            currentState = ToolState.CONFIGURING
+                                            isFileLoading = false
                                         }
-                                    } catch (e: Exception) {
-                                        // If native renderer fails, we might still be able to rearrange with PDFBox
-                                        // but we can't show thumbnails easily without rendering.
-                                        val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
-                                        if (isValid) {
-                                            withContext(Dispatchers.Main) {
-                                                currentState = ToolState.CONFIGURING
-                                                isFileLoading = false
-                                            }
-                                        } else {
-                                            withContext(Dispatchers.Main) {
-                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                                isFileLoading = false
-                                            }
+                                    } else {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                            isFileLoading = false
                                         }
                                     }
                                 }
@@ -311,7 +279,7 @@ fun RearrangeView(onBack: () -> Unit) {
 
                             Button(
                                 onClick = { 
-                                    val defaultName = fileName.replace(".pdf", "", true) + "-rearranged.pdf"
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-reordered.pdf"
                                     saveLauncher.launch(defaultName) 
                                 },
                                 modifier = Modifier
@@ -326,18 +294,17 @@ fun RearrangeView(onBack: () -> Unit) {
                         }
                     }
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = accentColor)
-                                Spacer(Modifier.height(16.dp))
-                                Text("Saving order...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = thumbnails[0],
+                            text = "Applying new page order...",
+                            current = 0,
+                            total = 0,
+                            showWarning = showLoadingWarning
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = fileName,
-                            path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -351,4 +318,15 @@ fun RearrangeView(onBack: () -> Unit) {
             }
         }
     }
+}
+
+private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val count = document.numberOfPages
+            document.close()
+            count
+        } ?: 0
+    } catch (e: Exception) { 0 }
 }

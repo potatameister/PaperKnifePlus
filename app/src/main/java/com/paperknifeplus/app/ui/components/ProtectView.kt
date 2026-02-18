@@ -35,6 +35,7 @@ import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -50,12 +51,20 @@ fun ProtectView(onBack: () -> Unit) {
     var unlockPassword by remember { mutableStateOf("") }
     var protectPassword by remember { mutableStateOf("") }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var savedFilePath by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
-    var processedFileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isFileLoading, currentState) {
+        if (isFileLoading || currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -63,7 +72,6 @@ fun ProtectView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
-            
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -102,21 +110,13 @@ fun ProtectView(onBack: () -> Unit) {
                         spp.encryptionKeyLength = 128
                         document.protect(spp)
                         
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
-                            document.save(outputStream)
-                            outputStream.flush()
-                        }
-                        document.close()
+                        saveAndFlush(context, document, saveUri)
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
-                        processedFileName = finalName
-                        savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Protect", "Encrypted", Icons.Outlined.Lock)
+                        SessionManager.addEntry(fileName, "Protect", "Encrypted", Icons.Outlined.Lock)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -133,7 +133,7 @@ fun ProtectView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -152,9 +152,7 @@ fun ProtectView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = accentColor)
-                }
+                LoadingStateView(accentColor, showLoadingWarning, "Preparing document...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -219,18 +217,17 @@ fun ProtectView(onBack: () -> Unit) {
                         )
                     }
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = accentColor)
-                                Spacer(Modifier.height(16.dp))
-                                Text("Encrypting...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = previewBitmap,
+                            text = "Applying encryption policy...",
+                            current = 0,
+                            total = 0,
+                            showWarning = showLoadingWarning
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = processedFileName,
-                            path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -246,74 +243,5 @@ fun ProtectView(onBack: () -> Unit) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ProtectConfiguringView(
-    preview: Bitmap?, 
-    fileName: String,
-    fileSize: String,
-    password: String, 
-    onPasswordChange: (String) -> Unit, 
-    onProtect: () -> Unit, 
-    onChangeFile: () -> Unit, 
-    accentColor: Color
-) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Spacer(Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth().height(240.dp),
-            shape = RoundedCornerShape(24.dp),
-            border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-        ) {
-            if (preview != null) {
-                Image(bitmap = preview.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            } else {
-                Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
-                    Text("No Preview Available", color = Color.Gray)
-                }
-            }
-        }
-        
-        Spacer(Modifier.height(12.dp))
-        Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-        Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
-        
-        Spacer(Modifier.height(24.dp))
-        Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-        Spacer(Modifier.height(12.dp))
-        
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("New Password", fontWeight = FontWeight.Bold) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = accentColor,
-                cursorColor = accentColor,
-                unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Transparent
-            )
-        )
-        
-        Spacer(Modifier.height(16.dp))
-        Surface(color = Color(0xFFFFF1F2), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(12.dp))
-                Text("PaperKnife+ cannot recover lost passwords. Ensure you keep it safe.", fontSize = 11.sp, color = Color(0xFF9F1239), fontWeight = FontWeight.Bold, lineHeight = 16.sp)
-            }
-        }
-        
-        Spacer(Modifier.height(32.dp))
-        Button(onClick = onProtect, modifier = Modifier.fillMaxWidth().height(60.dp), enabled = password.isNotBlank(), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) {
-            Text("Protect & Save", fontWeight = FontWeight.Black, color = Color.White)
-        }
-        TextButton(onClick = onChangeFile, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.height(100.dp))
     }
 }
