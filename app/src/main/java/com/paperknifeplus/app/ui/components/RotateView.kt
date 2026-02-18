@@ -8,8 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -23,7 +21,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -215,10 +212,8 @@ fun RotateView(onBack: () -> Unit) {
                             Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
                             
                             Spacer(Modifier.height(32.dp))
-                            
                             Text("ROTATION ANGLE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Spacer(Modifier.height(12.dp))
-                            
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf(90, 180, 270).forEach { angle ->
                                     FilterChip(
@@ -230,14 +225,9 @@ fun RotateView(onBack: () -> Unit) {
                                     )
                                 }
                             }
-                            
                             Spacer(Modifier.height(32.dp))
-                            
                             Button(
-                                onClick = { 
-                                    val defaultName = fileName.replace(".pdf", "", true) + "-rotated.pdf"
-                                    saveLauncher.launch(defaultName) 
-                                }, 
+                                onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-rotated.pdf") }, 
                                 modifier = Modifier.fillMaxWidth().height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
@@ -262,14 +252,11 @@ fun RotateView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
+                            message = "Rotate Complete",
+                            subMessage = "Orientation updated",
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { 
-                                selectedUri = null
-                                unlockPassword = ""
-                                previewBitmap = null
-                                currentState = ToolState.SELECTING 
-                            },
+                            onProcessMore = { selectedUri = null; unlockPassword = ""; previewBitmap = null; currentState = ToolState.SELECTING },
                             accentColor = accentColor
                         )
                     }

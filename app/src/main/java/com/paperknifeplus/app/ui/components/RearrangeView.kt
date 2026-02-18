@@ -11,8 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -84,7 +83,7 @@ fun RearrangeView(onBack: () -> Unit) {
                 } else {
                     val count = getPageCountLocal(context, it, null)
                     val thumbs = mutableMapOf<Int, Bitmap>()
-                    for (i in 0 until minOf(count, 30)) {
+                    for (i in 0 until minOf(count, 20)) {
                         val bitmap = renderPageToBitmap(context, it, i, null, 0.3f)
                         if (bitmap != null) thumbs[i] = bitmap
                     }
@@ -116,7 +115,7 @@ fun RearrangeView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Rearrange", "Reordered", Icons.Default.ViewQuilt)
+                        SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", Icons.Default.ViewQuilt)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -236,14 +235,7 @@ fun RearrangeView(onBack: () -> Unit) {
                                             .clip(RoundedCornerShape(12.dp))
                                             .background(if (isDark) Color(0xFF18181B) else Color(0xFFF4F4F5))
                                     ) {
-                                        thumbnails[index]?.let { 
-                                            Image(
-                                                bitmap = it.asImageBitmap(), 
-                                                contentDescription = null, 
-                                                modifier = Modifier.fillMaxSize(), 
-                                                contentScale = ContentScale.Crop 
-                                            ) 
-                                        }
+                                        thumbnails[index]?.let { Image(bitmap = it.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                                         
                                         Row(
                                             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
@@ -260,32 +252,16 @@ fun RearrangeView(onBack: () -> Unit) {
                                             ) { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(14.dp), tint = Color.White) }
                                         }
                                         
-                                        Surface(
-                                            modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
-                                            color = Color.Black.copy(alpha = 0.6f),
-                                            shape = RoundedCornerShape(4.dp)
-                                        ) {
-                                            Text(
-                                                text = "${index + 1}", 
-                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), 
-                                                color = Color.White, 
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Black
-                                            )
+                                        Surface(modifier = Modifier.align(Alignment.TopStart).padding(6.dp), color = Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp)) {
+                                            Text("${index + 1}", modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black)
                                         }
                                     }
                                 }
                             }
 
                             Button(
-                                onClick = { 
-                                    val defaultName = fileName.replace(".pdf", "", true) + "-reordered.pdf"
-                                    saveLauncher.launch(defaultName) 
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp)
-                                    .height(56.dp),
+                                onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-reordered.pdf") },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                                 shape = RoundedCornerShape(20.dp)
                             ) {
@@ -305,12 +281,11 @@ fun RearrangeView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
+                            message = "Rearrange Complete",
+                            subMessage = "Page order updated successfully",
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { 
-                                selectedUri = null
-                                currentState = ToolState.SELECTING 
-                            },
+                            onProcessMore = { selectedUri = null; currentState = ToolState.SELECTING },
                             accentColor = accentColor
                         )
                     }

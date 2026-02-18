@@ -110,7 +110,6 @@ fun MetadataView(onBack: () -> Unit) {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                         if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
-                        
                         val info = document.documentInformation
                         info.title = title
                         info.author = author
@@ -118,7 +117,6 @@ fun MetadataView(onBack: () -> Unit) {
                         info.keywords = keywords
                         info.creator = creator
                         info.producer = producer
-                        
                         saveAndFlush(context, document, saveUri)
                     }
                     val endTime = System.currentTimeMillis()
@@ -260,13 +258,11 @@ fun MetadataView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
+                            message = "Properties Updated",
+                            subMessage = "Document metadata saved",
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { 
-                                selectedUri = null
-                                unlockPassword = ""
-                                currentState = ToolState.SELECTING 
-                            },
+                            onProcessMore = { selectedUri = null; unlockPassword = ""; currentState = ToolState.SELECTING },
                             accentColor = accentColor
                         )
                     }

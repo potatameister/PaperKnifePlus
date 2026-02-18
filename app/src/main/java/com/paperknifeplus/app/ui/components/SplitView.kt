@@ -102,7 +102,7 @@ fun SplitView(onBack: () -> Unit) {
                             if (part.contains("-")) {
                                 val split = part.split("-")
                                 (split[0].toInt()..split[1].toInt()).toList()
-                            } else listOf(part.toInt())
+                            } else listOf(part.trim().toInt())
                         }
                         parts.forEach { pageNum ->
                             if (pageNum <= document.numberOfPages) {
@@ -242,10 +242,7 @@ fun SplitView(onBack: () -> Unit) {
                             Spacer(Modifier.height(32.dp))
                             
                             Button(
-                                onClick = { 
-                                    val defaultName = fileName.replace(".pdf", "", true) + "-split.pdf"
-                                    saveLauncher.launch(defaultName) 
-                                }, 
+                                onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-split.pdf") }, 
                                 modifier = Modifier.fillMaxWidth().height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
@@ -270,13 +267,11 @@ fun SplitView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
+                            message = "Split Complete",
+                            subMessage = "Selected pages saved successfully",
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { 
-                                selectedUri = null
-                                unlockPassword = ""
-                                currentState = ToolState.SELECTING 
-                            },
+                            onProcessMore = { selectedUri = null; unlockPassword = ""; currentState = ToolState.SELECTING },
                             accentColor = accentColor
                         )
                     }

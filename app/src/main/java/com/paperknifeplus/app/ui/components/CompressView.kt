@@ -110,14 +110,13 @@ fun CompressView(onBack: () -> Unit) {
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     val newDetails = getUriDetails(context, saveUri)
                     val spaceSaved = if (fileSizeOld > 0) ((fileSizeOld - newDetails.sizeBytes).toFloat() / fileSizeOld * 100).toInt().coerceAtLeast(0) else 0
                     
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         spaceSavedText = "REDUCED BY $spaceSaved% (${newDetails.size})"
-                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Outlined.Bolt)
+                        SessionManager.addEntry(fileName, "Compress", "Optimized size", Icons.Outlined.Bolt)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
