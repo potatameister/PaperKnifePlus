@@ -63,6 +63,7 @@ fun PdfToImageView(onBack: () -> Unit) {
     var progressCount by remember { mutableIntStateOf(0) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
+    var lightboxPage by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {
@@ -267,6 +268,8 @@ fun PdfToImageView(onBack: () -> Unit) {
                 }
                 ToolState.SUCCESS -> {
                     SuccessView(
+                        message = "Images Exported",
+                        subMessage = "${selectedPages.size} pages saved to ZIP",
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { selectedUri = null; currentState = ToolState.SELECTING },
@@ -276,6 +279,16 @@ fun PdfToImageView(onBack: () -> Unit) {
                 else -> {}
             }
         }
+    }
+
+    if (lightboxPage != null && selectedUri != null) {
+        PageLightbox(
+            uri = selectedUri!!,
+            initialPage = lightboxPage!!,
+            totalCount = pageCount,
+            password = if (unlockPassword.isEmpty()) null else unlockPassword,
+            onDismiss = { lightboxPage = null }
+        )
     }
 }
 

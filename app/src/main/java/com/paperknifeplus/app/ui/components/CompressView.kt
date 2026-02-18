@@ -111,9 +111,8 @@ fun CompressView(onBack: () -> Unit) {
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     
-                    // Space saved calculation
                     val newDetails = getUriDetails(context, saveUri)
-                    val spaceSaved = ((fileSizeOld - newDetails.sizeBytes).toFloat() / fileSizeOld * 100).toInt().coerceAtLeast(0)
+                    val spaceSaved = if (fileSizeOld > 0) ((fileSizeOld - newDetails.sizeBytes).toFloat() / fileSizeOld * 100).toInt().coerceAtLeast(0) else 0
                     
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
