@@ -80,7 +80,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry("Image PDF", "Image to PDF", "${selectedUris.size} images", Icons.Default.PictureAsPdf)
+                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Default.PictureAsPdf)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -114,14 +114,14 @@ fun ImageToPdfView(onBack: () -> Unit) {
             }
         },
         floatingActionButton = {
-            if (currentState == ToolState.CONFIGURING) {
+            if (currentState == ToolState.CONFIGURING && selectedUris.isNotEmpty()) {
                 FloatingActionButton(
                     onClick = { pickLauncher.launch("image/*") },
                     containerColor = accentColor,
                     contentColor = Color.White,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
-                ) { Icon(Icons.Default.AddPhotoAlternate, "Add Images") }
+                ) { Icon(Icons.Default.Add, "Add") }
             }
         }
     ) { padding ->
@@ -129,31 +129,30 @@ fun ImageToPdfView(onBack: () -> Unit) {
             when (currentState) {
                 ToolState.CONFIGURING -> {
                     if (selectedUris.isEmpty()) {
-                        Box(Modifier.weight(1f).fillMaxWidth(), Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.AddPhotoAlternate, null, modifier = Modifier.size(64.dp).alpha(0.1f))
-                                Spacer(Modifier.height(16.dp))
-                                Text("No images selected.", fontWeight = FontWeight.Bold, color = Color.Gray)
-                                Text("TAP THE + BUTTON TO START", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
-                            }
-                        }
+                        SelectionGrid(
+                            onSelect = { pickLauncher.launch("image/*") },
+                            isDark = isDark,
+                            icon = Icons.Default.AddPhotoAlternate,
+                            title = "Tap to select images",
+                            subtitle = "JPG, PNG, OR WEBP",
+                            accentColor = accentColor,
+                            modifier = Modifier.weight(1f)
+                        )
                     } else {
                         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("REORDER & CONFIGURE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                            Text("REORDER BY TAPPING ARROWS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Page:", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                                Spacer(Modifier.width(8.dp))
                                 FilterChip(
                                     selected = pageSize == "Fit",
                                     onClick = { pageSize = "Fit" },
-                                    label = { Text("Fit", fontSize = 10.sp) },
+                                    label = { Text("Original Size", fontSize = 10.sp) },
                                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = accentColor, selectedLabelColor = Color.White)
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 FilterChip(
                                     selected = pageSize == "A4",
                                     onClick = { pageSize = "A4" },
-                                    label = { Text("A4", fontSize = 10.sp) },
+                                    label = { Text("A4 Paper", fontSize = 10.sp) },
                                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = accentColor, selectedLabelColor = Color.White)
                                 )
                             }
@@ -169,21 +168,25 @@ fun ImageToPdfView(onBack: () -> Unit) {
                                 Box(modifier = Modifier.aspectRatio(0.8f).clip(RoundedCornerShape(12.dp)).background(if (isDark) Color(0xFF18181B) else Color(0xFFF4F4F5))) {
                                     Image(painter = rememberAsyncImagePainter(model = uri), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                     
-                                    Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                        IconButton(
-                                            onClick = { if (index > 0) { val list = selectedUris.toMutableList(); val tmp = list[index]; list[index] = list[index-1]; list[index-1] = tmp; selectedUris = list } },
-                                            modifier = Modifier.size(24.dp).background(Color.Black.copy(0.4f), CircleShape)
-                                        ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
-                                        
-                                        IconButton(
-                                            onClick = { selectedUris = selectedUris.filterIndexed { i, _ -> i != index } },
-                                            modifier = Modifier.size(24.dp).background(Color.Black.copy(0.4f), CircleShape)
-                                        ) { Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
+                                    // Subtle Controls
+                                    Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(20.dp).clickable { selectedUris = selectedUris.filterIndexed { i, _ -> i != index } }, color = Color.Black.copy(0.5f), shape = CircleShape) {
+                                        Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                    }
 
-                                        IconButton(
-                                            onClick = { if (index < selectedUris.size - 1) { val list = selectedUris.toMutableList(); val tmp = list[index]; list[index] = list[index+1]; list[index+1] = tmp; selectedUris = list } },
-                                            modifier = Modifier.size(24.dp).background(Color.Black.copy(0.4f), CircleShape)
-                                        ) { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
+                                    Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        if (index > 0) {
+                                            IconButton(
+                                                onClick = { val list = selectedUris.toMutableList(); val tmp = list[index]; list[index] = list[index-1]; list[index-1] = tmp; selectedUris = list },
+                                                modifier = Modifier.size(24.dp).background(Color.Black.copy(0.4f), CircleShape)
+                                            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
+                                        }
+                                        
+                                        if (index < selectedUris.size - 1) {
+                                            IconButton(
+                                                onClick = { val list = selectedUris.toMutableList(); val tmp = list[index]; list[index] = list[index+1]; list[index+1] = tmp; selectedUris = list },
+                                                modifier = Modifier.size(24.dp).background(Color.Black.copy(0.4f), CircleShape)
+                                            ) { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
+                                        }
                                     }
                                 }
                             }
@@ -203,7 +206,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                     ProcessingStateView(
                         accentColor = accentColor,
                         preview = null,
-                        text = "Encoding image $progressCount of ${selectedUris.size}...",
+                        text = "Packaging high-res document...",
                         current = progressCount,
                         total = selectedUris.size,
                         showWarning = showLoadingWarning
@@ -211,6 +214,8 @@ fun ImageToPdfView(onBack: () -> Unit) {
                 }
                 ToolState.SUCCESS -> {
                     SuccessView(
+                        message = "PDF Created",
+                        subMessage = "Images merged into document",
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { selectedUris = emptyList(); currentState = ToolState.CONFIGURING },

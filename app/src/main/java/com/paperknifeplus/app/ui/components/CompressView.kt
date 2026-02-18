@@ -49,8 +49,10 @@ fun CompressView(onBack: () -> Unit) {
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
+    var fileSizeOld by remember { mutableLongStateOf(0L) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
+    var spaceSavedText by remember { mutableStateOf("") }
     
     var compressionLevel by remember { mutableStateOf("Recommended") }
     var pageCount by remember { mutableIntStateOf(0) }
@@ -73,6 +75,7 @@ fun CompressView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
+            fileSizeOld = details.sizeBytes
             
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
@@ -107,8 +110,14 @@ fun CompressView(onBack: () -> Unit) {
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    
+                    // Space saved calculation
+                    val newDetails = getUriDetails(context, saveUri)
+                    val spaceSaved = ((fileSizeOld - newDetails.sizeBytes).toFloat() / fileSizeOld * 100).toInt().coerceAtLeast(0)
+                    
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
+                        spaceSavedText = "REDUCED BY $spaceSaved% (${newDetails.size})"
                         SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Outlined.Bolt)
                         currentState = ToolState.SUCCESS
                     }
@@ -206,7 +215,11 @@ fun CompressView(onBack: () -> Unit) {
                             }
                             Spacer(Modifier.height(12.dp))
                             Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                                Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+                                Spacer(Modifier.width(8.dp))
+                                Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
+                            }
                             
                             Spacer(Modifier.height(32.dp))
                             Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
@@ -229,9 +242,9 @@ fun CompressView(onBack: () -> Unit) {
                                                 Text(level, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                                 Text(
                                                     text = when(level) {
-                                                        "Extreme" -> "Smallest size, lower quality"
+                                                        "Extreme" -> "Max reduction, lower image quality"
                                                         "Recommended" -> "Great balance of size and quality"
-                                                        else -> "Minor reduction, keeps high quality"
+                                                        else -> "Maintains high visual fidelity"
                                                     },
                                                     fontSize = 10.sp, color = Color.Gray
                                                 )
@@ -242,7 +255,6 @@ fun CompressView(onBack: () -> Unit) {
                             }
                             
                             Spacer(Modifier.height(32.dp))
-                            
                             Button(
                                 onClick = { 
                                     val defaultName = fileName.replace(".pdf", "", true) + "-compressed.pdf"
@@ -264,7 +276,7 @@ fun CompressView(onBack: () -> Unit) {
                         ProcessingStateView(
                             accentColor = accentColor,
                             preview = firstPagePreview,
-                            text = "Optimizing image data...",
+                            text = "Optimizing document size...",
                             current = progressPage,
                             total = pageCount,
                             showWarning = showLoadingWarning
@@ -272,13 +284,11 @@ fun CompressView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
+                            message = "Compression Complete",
+                            subMessage = spaceSavedText,
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { 
-                                selectedUri = null
-                                unlockPassword = ""
-                                currentState = ToolState.SELECTING 
-                            },
+                            onProcessMore = { selectedUri = null; unlockPassword = ""; currentState = ToolState.SELECTING },
                             accentColor = accentColor
                         )
                     }

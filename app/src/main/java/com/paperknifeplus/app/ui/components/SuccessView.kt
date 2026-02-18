@@ -19,7 +19,8 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
 fun SuccessView(
-    fileName: String = "", 
+    message: String = "Task Complete",
+    subMessage: String = "Saved successfully",
     processingTime: String = "", 
     onDone: () -> Unit, 
     onProcessMore: () -> Unit,
@@ -45,28 +46,30 @@ fun SuccessView(
         
         Spacer(Modifier.height(32.dp))
         
-        Text("Task Complete", fontWeight = FontWeight.Black, fontSize = 28.sp, letterSpacing = (-0.5).sp)
+        Text(message, fontWeight = FontWeight.Black, fontSize = 28.sp, letterSpacing = (-0.5).sp)
         
-        if (processingTime.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
-            Surface(
-                color = Color(0xFF06D6A0).copy(alpha = 0.1f),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    "PROCESSED IN $processingTime", 
-                    fontSize = 10.sp, 
-                    fontWeight = FontWeight.Black, 
-                    color = Color(0xFF06D6A0),
-                    letterSpacing = 1.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 8.dp)) {
+            Text(subMessage, fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            if (processingTime.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                Surface(
+                    color = Color(0xFF06D6A0).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        "PROCESSED IN $processingTime", 
+                        fontSize = 9.sp, 
+                        fontWeight = FontWeight.Black, 
+                        color = Color(0xFF06D6A0),
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
         
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(64.dp))
         
-        // Premium Buttons
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)

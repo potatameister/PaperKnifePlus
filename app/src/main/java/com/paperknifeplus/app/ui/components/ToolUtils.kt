@@ -25,7 +25,8 @@ import java.util.zip.ZipOutputStream
 
 data class UriDetails(
     val name: String,
-    val size: String
+    val size: String,
+    val sizeBytes: Long = 0
 )
 
 object PreferencesManager {
@@ -43,6 +44,7 @@ object PreferencesManager {
 fun getUriDetails(context: Context, uri: Uri): UriDetails {
     var name = "Document.pdf"
     var size = "Unknown size"
+    var bytes: Long = 0
     try {
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             if (cursor.moveToFirst()) {
@@ -53,8 +55,8 @@ fun getUriDetails(context: Context, uri: Uri): UriDetails {
                     if (rawName != null) name = rawName
                 }
                 if (sizeIndex != -1) {
-                    val sizeBytes = cursor.getLong(sizeIndex)
-                    size = formatSize(sizeBytes)
+                    bytes = cursor.getLong(sizeIndex)
+                    size = formatSize(bytes)
                 }
             }
         }
@@ -62,10 +64,10 @@ fun getUriDetails(context: Context, uri: Uri): UriDetails {
         uri.lastPathSegment?.let { name = it }
     }
     if (!name.contains(".")) name += ".pdf"
-    return UriDetails(name, size)
+    return UriDetails(name, size, bytes)
 }
 
-private fun formatSize(bytes: Long): String {
+fun formatSize(bytes: Long): String {
     if (bytes <= 0) return "0 B"
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
     val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
@@ -103,7 +105,7 @@ suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? 
             return@withContext bitmap
         }
     } catch (e: Exception) {
-        renderPageToBitmap(context, uri, 0, password, 0.5f)
+        renderPageToBitmap(context, uri, 0, password, 0.8f)
     }
     null
 }
@@ -122,7 +124,7 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
 }
 
 fun toGrayscaleBitmap(src: Bitmap): Bitmap {
-    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.RGB_565)
     val canvas = Canvas(bmpGrayscale)
     val paint = Paint()
     val cm = ColorMatrix().apply { setSaturation(0f) }
@@ -131,71 +133,47 @@ fun toGrayscaleBitmap(src: Bitmap): Bitmap {
     return bmpGrayscale
 }
 
-suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
-    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        document.isAllSecurityToBeRemoved = true 
-        saveAndFlush(context, document, outputUri)
-    }
-}
-
 suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: Uri, password: String?, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        val total = document.numberOfPages
+        val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        val targetDoc = PDDocument()
+        val renderer = PDFRenderer(sourceDoc)
+        val total = sourceDoc.numberOfPages
         for (i in 0 until total) {
             onProgress(i + 1, total)
-            processResourcesForGrayscale(document, document.getPage(i).resources)
+            val rgbBitmap = renderer.renderImage(i, 1.5f, ImageType.RGB)
+            val grayBitmap = toGrayscaleBitmap(rgbBitmap)
+            rgbBitmap.recycle()
+            val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.75f)
+            val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
+            targetDoc.addPage(page)
+            PDPageContentStream(targetDoc, page).use { it.drawImage(pdImage, 0f, 0f) }
+            grayBitmap.recycle()
         }
-        saveAndFlush(context, document, outputUri)
-    }
-}
-
-private fun processResourcesForGrayscale(document: PDDocument, resources: PDResources) {
-    for (name in resources.xObjectNames) {
-        try {
-            val xobject = resources.getXObject(name)
-            if (xobject is PDImageXObject) {
-                val bitmap = xobject.image
-                val grayBitmap = toGrayscaleBitmap(bitmap)
-                val grayImage = JPEGFactory.createFromImage(document, grayBitmap, 0.8f)
-                resources.put(name, grayImage)
-                bitmap.recycle()
-                grayBitmap.recycle()
-            }
-        } catch (e: Exception) { }
+        saveAndFlush(context, targetDoc, outputUri)
+        sourceDoc.close()
     }
 }
 
 suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?, level: String, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        val quality = when(level) { "Extreme" -> 0.3f; "Recommended" -> 0.6f; else -> 0.85f }
-        val scale = when(level) { "Extreme" -> 0.5f; "Recommended" -> 0.75f; else -> 1.0f }
-        val total = document.numberOfPages
+        val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        val targetDoc = PDDocument()
+        val renderer = PDFRenderer(sourceDoc)
+        val total = sourceDoc.numberOfPages
+        val quality = when(level) { "Extreme" -> 0.15f; "Recommended" -> 0.4f; else -> 0.7f }
+        val scale = when(level) { "Extreme" -> 0.35f; "Recommended" -> 0.6f; else -> 0.9f }
         for (i in 0 until total) {
             onProgress(i + 1, total)
-            processResourcesForCompression(document, document.getPage(i).resources, scale, quality)
+            val bitmap = renderer.renderImage(i, scale, ImageType.RGB)
+            val pdImage = JPEGFactory.createFromImage(targetDoc, bitmap, quality)
+            val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
+            targetDoc.addPage(page)
+            PDPageContentStream(targetDoc, page).use { it.drawImage(pdImage, 0f, 0f) }
+            bitmap.recycle()
         }
-        saveAndFlush(context, document, outputUri)
-    }
-}
-
-private fun processResourcesForCompression(document: PDDocument, resources: PDResources, scale: Float, quality: Float) {
-    for (name in resources.xObjectNames) {
-        try {
-            val xobject = resources.getXObject(name)
-            if (xobject is PDImageXObject) {
-                val bitmap = xobject.image
-                val newWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
-                val newHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
-                val compressedImage = JPEGFactory.createFromImage(document, scaledBitmap, quality)
-                resources.put(name, compressedImage)
-                bitmap.recycle()
-                scaledBitmap.recycle()
-            }
-        } catch (e: Exception) { }
+        saveAndFlush(context, targetDoc, outputUri)
+        sourceDoc.close()
     }
 }
 
@@ -204,20 +182,16 @@ suspend fun convertImagesToPdf(context: Context, imageUris: List<Uri>, outputUri
     imageUris.forEachIndexed { index, uri ->
         onProgress(index + 1, imageUris.size)
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val bitmap = BitmapFactory.decodeStream(inputStream)
+            val bitmap = BitmapFactory.decodeStream(inputStream) ?: return@use
             val pdImage = JPEGFactory.createFromImage(document, bitmap, 0.8f)
             val rect = if (pageSize == "A4") PDRectangle.A4 else PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat())
             val page = PDPage(rect)
             document.addPage(page)
-            PDPageContentStream(document, page).use { contentStream ->
+            PDPageContentStream(document, page).use { cs ->
                 if (pageSize == "A4") {
-                    val scale = Math.min(rect.width / pdImage.width, rect.height / pdImage.height)
-                    val x = (rect.width - pdImage.width * scale) / 2
-                    val y = (rect.height - pdImage.height * scale) / 2
-                    contentStream.drawImage(pdImage, x, y, pdImage.width * scale, pdImage.height * scale)
-                } else {
-                    contentStream.drawImage(pdImage, 0f, 0f)
-                }
+                    val sc = Math.min(rect.width / pdImage.width, rect.height / pdImage.height)
+                    cs.drawImage(pdImage, (rect.width - pdImage.width * sc) / 2, (rect.height - pdImage.height * sc) / 2, pdImage.width * sc, pdImage.height * sc)
+                } else cs.drawImage(pdImage, 0f, 0f)
             }
             bitmap.recycle()
         }
@@ -230,15 +204,15 @@ suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, pa
         ZipOutputStream(outputStream).use { zipOut ->
             context.contentResolver.openInputStream(pdfUri)?.use { inputStream ->
                 val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-                val renderer = com.tom_roush.pdfbox.rendering.PDFRenderer(document)
+                val renderer = PDFRenderer(document)
                 val scale = when(quality) { "HD" -> 2.5f; "Standard" -> 1.5f; else -> 1.0f }
-                val compressFormat = if (format == "PNG") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
-                val fileExt = if (format == "PNG") "png" else "jpg"
+                val cf = if (format == "PNG") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+                val ext = if (format == "PNG") "png" else "jpg"
                 selectedPages.forEachIndexed { index, pageIdx ->
                     onProgress(index + 1, selectedPages.size)
                     val bitmap = renderer.renderImage(pageIdx, scale)
-                    zipOut.putNextEntry(ZipEntry("page_${pageIdx + 1}.$fileExt"))
-                    bitmap.compress(compressFormat, 90, zipOut)
+                    zipOut.putNextEntry(ZipEntry("page_${pageIdx + 1}.$ext"))
+                    bitmap.compress(cf, 90, zipOut)
                     zipOut.closeEntry()
                     bitmap.recycle()
                 }
@@ -255,12 +229,10 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
     info.producer = "PaperKnife+ Native Engine"
     val autoAuthor = PreferencesManager.getDefaultAuthor(context)
     if (autoAuthor.isNotEmpty()) info.author = autoAuthor
-    context.contentResolver.openOutputStream(outputUri, "rwt")?.use { outputStream ->
-        document.save(outputStream)
-        outputStream.flush()
-        if (outputStream is FileOutputStream) {
-            try { outputStream.fd.sync() } catch (e: Exception) { }
-        }
+    context.contentResolver.openOutputStream(outputUri, "rwt")?.use { os ->
+        document.save(os)
+        os.flush()
+        if (os is FileOutputStream) { try { os.fd.sync() } catch (e: Exception) { } }
     }
     document.close()
     try {
@@ -268,4 +240,12 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
         values.put(MediaStore.MediaColumns.IS_PENDING, 0)
         context.contentResolver.update(outputUri, values, null, null)
     } catch (e: Exception) { }
+}
+
+suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
+    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
+        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        document.isAllSecurityToBeRemoved = true 
+        saveAndFlush(context, document, outputUri)
+    }
 }
