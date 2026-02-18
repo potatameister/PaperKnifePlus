@@ -1,7 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
-import android.graphics.Bitmap
-import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -32,8 +31,10 @@ import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PageLightbox(
     uri: Uri,
@@ -127,8 +128,7 @@ fun PageLightbox(
                 }
             }
 
-            // Bottom Navigation Dots or Mini-Carousel could go here like iLovePDF
-            // For now, let's just use simple navigation indicators
+            // Navigation
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -140,14 +140,14 @@ fun PageLightbox(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { scope.run { androidx.compose.launch.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } } },
+                    onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
                     enabled = pagerState.currentPage > 0
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = if (pagerState.currentPage > 0) Color.White else Color.White.copy(0.3f))
                 }
 
                 IconButton(
-                    onClick = { scope.run { androidx.compose.launch.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } } },
+                    onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
                     enabled = pagerState.currentPage < totalCount - 1
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = if (pagerState.currentPage < totalCount - 1) Color.White else Color.White.copy(0.3f))
