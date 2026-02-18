@@ -1,43 +1,27 @@
 package com.paperknifeplus.app.ui.components
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Compare
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
-import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -55,17 +39,13 @@ fun GrayscaleView(onBack: () -> Unit) {
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
-    var fileSize by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     
     var pageCount by remember { mutableIntStateOf(0) }
-    var isGrayscalePreview by remember { mutableStateOf(true) }
-    var showLoadingWarning by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
-    
+    var showLoadingWarning by remember { mutableStateOf(false) }
     var progressPage by remember { mutableIntStateOf(0) }
-    var firstPagePreview by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
@@ -81,7 +61,6 @@ fun GrayscaleView(onBack: () -> Unit) {
             selectedUri = it
             val details = getUriDetails(context, it)
             fileName = details.name
-            fileSize = details.size
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -92,10 +71,8 @@ fun GrayscaleView(onBack: () -> Unit) {
                     }
                 } else {
                     val count = getPageCountLocal(context, it, null)
-                    val preview = loadPreview(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
-                        firstPagePreview = preview
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -147,14 +124,6 @@ fun GrayscaleView(onBack: () -> Unit) {
                         Text("Grayscale", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
                         Text("CONVERT DOCUMENT TO B&W", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
-                    if (currentState == ToolState.CONFIGURING) {
-                        IconButton(
-                            onClick = { isGrayscalePreview = !isGrayscalePreview },
-                            modifier = Modifier.background(if (isGrayscalePreview) accentColor else Color.Gray.copy(0.2f), CircleShape)
-                        ) {
-                            Icon(Icons.Outlined.Compare, null, tint = if (isGrayscalePreview) Color.White else MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
-                        }
-                    }
                 }
             }
         },
@@ -198,11 +167,9 @@ fun GrayscaleView(onBack: () -> Unit) {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
                                     val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
-                                    val preview = loadPreview(context, selectedUri!!, unlockPassword)
                                     if (count > 0) {
                                         withContext(Dispatchers.Main) {
                                             pageCount = count
-                                            firstPagePreview = preview
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false
                                         }
@@ -221,37 +188,28 @@ fun GrayscaleView(onBack: () -> Unit) {
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize()) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(if (isGrayscalePreview) "GRAYSCALE PREVIEW" else "ORIGINAL PREVIEW", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (isGrayscalePreview) accentColor else Color.Gray, letterSpacing = 1.sp)
+                                Text("PREVIEW", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
                                 Spacer(Modifier.width(8.dp))
                                 Text("• $pageCount PAGES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
                             }
                             Spacer(Modifier.height(12.dp))
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(3),
-                                modifier = Modifier.weight(1f).fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(bottom = 100.dp)
-                            ) {
-                                items(pageCount) { index ->
-                                    Box(modifier = Modifier.aspectRatio(0.707f).clickable { lightboxPage = index }) {
-                                        PagePreviewThumbnail(
-                                            context = context,
-                                            uri = selectedUri!!,
-                                            pageIndex = index,
-                                            password = if (unlockPassword.isEmpty()) null else unlockPassword,
-                                            isGrayscale = isGrayscalePreview,
-                                            accentColor = accentColor
-                                        )
-                                    }
-                                }
-                            }
+                            
+                            // THE NEW FAST ENGINE
+                            UnifiedPdfPreview(
+                                uri = selectedUri!!,
+                                pageCount = pageCount,
+                                mode = PreviewMode.GRID,
+                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                onPageClick = { lightboxPage = it }
+                            )
                         }
                     }
                     ToolState.PROCESSING -> {
+                        // For processing view, we can grab page 0 using our new fetcher if we want,
+                        // or just show a generic progress. Let's keep it simple for now to ensure stability.
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = firstPagePreview,
+                            preview = null, // Can upgrade this later to use fetcher too
                             text = "Applying grayscale filter...",
                             current = progressPage,
                             total = pageCount,
@@ -284,47 +242,10 @@ fun GrayscaleView(onBack: () -> Unit) {
     }
 }
 
-@Composable
-fun PagePreviewThumbnail(
-    context: android.content.Context,
-    uri: Uri,
-    pageIndex: Int,
-    password: String?,
-    isGrayscale: Boolean,
-    accentColor: Color
-) {
-    var bitmap by remember(uri, pageIndex, password) { mutableStateOf<Bitmap?>(null) }
-    
-    LaunchedEffect(uri, pageIndex, password) {
-        withContext(Dispatchers.IO) {
-            val b = renderPageToBitmap(context, uri, pageIndex, password, 0.3f)
-            withContext(Dispatchers.Main) { bitmap = b }
-        }
-    }
-
-    Card(
-        modifier = Modifier.fillMaxSize(),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            if (bitmap != null) {
-                val displayBitmap = if (isGrayscale) remember(bitmap) { toGrayscaleBitmap(bitmap!!) } else bitmap!!
-                Image(bitmap = displayBitmap.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                Surface(modifier = Modifier.align(Alignment.BottomStart).padding(6.dp), color = Color.Black.copy(0.5f), shape = RoundedCornerShape(4.dp)) {
-                    Text("${pageIndex + 1}", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 4.dp))
-                }
-            } else {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = accentColor.copy(0.3f))
-            }
-        }
-    }
-}
-
 private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val document = if (password != null) com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream, password) else com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
             val count = document.numberOfPages
             document.close()
             count
