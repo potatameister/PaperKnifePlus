@@ -34,6 +34,11 @@ To ensure byte-for-byte reproducibility:
 - **Type B (Cover Preview):** A single, high-quality (1.2f scale) preview of the first page. Used in tools where a single document is being processed as a whole (e.g., Compress, Protect, Unlock). Supports deep-zoom via Lightbox.
 
 ## Major Evolutions
+- **2026-02-18:** **NITRO ENGINE 2.0 Stability & UX Refinements**:
+    - **Global Decryption Cache:** Password-protected PDFs are now decrypted once to a temporary cache file. This enables high-performance native rendering and fixes "Missing Images" in protected documents.
+    - **Visual Fix (Zero-White):** Enforced `ARGB_8888` and `RENDER_MODE_FOR_PRINT` to eliminate the "white pages" bug in the grid.
+    - **Intelligent Zoom:** Added bound-aware panning and automatic `HorizontalPager` lock-out when zoomed to prevent UX conflicts.
+    - **Type A Grid Consistency:** Standardized 2-column layout applied to all tools (Rearrange, Split, Grayscale, etc.).
 - **2026-02-18:** Refined **NITRO ENGINE 2.0** UX:
     - **Standardized Type A Grid:** Unified 2-column layout across all tools (Rearrange, Split, Grayscale, etc.).
     - **Loading States:** Added circular progress indicators to all PDF thumbnails.

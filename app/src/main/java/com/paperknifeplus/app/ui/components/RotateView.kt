@@ -164,9 +164,11 @@ fun RotateView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
-                                    if (count > 0) {
+                                    val decryptedUri = decryptToCache(context, selectedUri!!, unlockPassword)
+                                    if (decryptedUri != null) {
+                                        val count = getPageCount(context, decryptedUri, null)
                                         withContext(Dispatchers.Main) { 
+                                            selectedUri = decryptedUri
                                             pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false 
@@ -191,7 +193,7 @@ fun RotateView(onBack: () -> Unit) {
                                 uri = selectedUri!!,
                                 pageCount = pageCount,
                                 mode = PreviewMode.COVER,
-                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                password = null, // Already decrypted
                                 accentColor = accentColor
                             )
                             

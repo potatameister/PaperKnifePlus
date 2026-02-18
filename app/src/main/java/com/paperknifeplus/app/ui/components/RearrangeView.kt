@@ -173,9 +173,11 @@ fun RearrangeView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
-                                    if (count > 0) {
+                                    val decryptedUri = decryptToCache(context, selectedUri!!, unlockPassword)
+                                    if (decryptedUri != null) {
+                                        val count = getPageCount(context, decryptedUri, null)
                                         withContext(Dispatchers.Main) {
+                                            selectedUri = decryptedUri
                                             pageOrder = (0 until count).toList()
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false
@@ -220,7 +222,7 @@ fun RearrangeView(onBack: () -> Unit) {
                                     uri = selectedUri!!,
                                     pageCount = pageOrder.size,
                                     mode = PreviewMode.GRID,
-                                    password = unlockPassword.ifEmpty { null },
+                                    password = null, // Already decrypted
                                     accentColor = accentColor
                                 )
                                 

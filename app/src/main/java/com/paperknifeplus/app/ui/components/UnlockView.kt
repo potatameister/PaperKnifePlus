@@ -156,9 +156,11 @@ fun UnlockView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val count = getPageCount(context, selectedUri!!, password)
-                                    if (count > 0) {
+                                    val decryptedUri = decryptToCache(context, selectedUri!!, password)
+                                    if (decryptedUri != null) {
+                                        val count = getPageCount(context, decryptedUri, null)
                                         withContext(Dispatchers.Main) { 
+                                            selectedUri = decryptedUri
                                             pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false 
@@ -184,7 +186,7 @@ fun UnlockView(onBack: () -> Unit) {
                                 uri = selectedUri!!,
                                 pageCount = pageCount,
                                 mode = PreviewMode.COVER,
-                                password = password,
+                                password = null, // Already decrypted
                                 accentColor = accentColor
                             )
                             

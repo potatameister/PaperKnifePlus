@@ -352,3 +352,26 @@ suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password:
         saveAndFlush(context, document, outputUri)
     }
 }
+
+/**
+ * NITRO ENGINE: Decrypt to Cache.
+ * Fixes "Missing Images" and "Lag" in protected PDFs by decrypting the whole file ONCE 
+ * and using a temporary file for the native renderer.
+ */
+suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? = withContext(Dispatchers.IO) {
+    try {
+        val tempFile = File(context.cacheDir, "decrypted_${System.currentTimeMillis()}.pdf")
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = PDDocument.load(inputStream, password)
+            document.isAllSecurityToBeRemoved = true
+            FileOutputStream(tempFile).use { os ->
+                document.save(os)
+                os.flush()
+            }
+            document.close()
+        }
+        Uri.fromFile(tempFile)
+    } catch (e: Exception) {
+        null
+    }
+}

@@ -177,12 +177,21 @@ fun MetadataView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
-                                    loadMetadata(context, selectedUri!!, unlockPassword) { t, a, s, k, c, p ->
-                                        title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                                    val decryptedUri = decryptToCache(context, selectedUri!!, unlockPassword)
+                                    if (decryptedUri != null) {
+                                        val count = getPageCount(context, decryptedUri, null)
+                                        loadMetadata(context, decryptedUri, null) { t, a, s, k, c, p ->
+                                            title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                                            withContext(Dispatchers.Main) {
+                                                selectedUri = decryptedUri
+                                                pageCount = count
+                                                currentState = ToolState.CONFIGURING
+                                                isFileLoading = false
+                                            }
+                                        }
+                                    } else {
                                         withContext(Dispatchers.Main) {
-                                            pageCount = count
-                                            currentState = ToolState.CONFIGURING
+                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
                                             isFileLoading = false
                                         }
                                     }
@@ -200,7 +209,7 @@ fun MetadataView(onBack: () -> Unit) {
                                 uri = selectedUri!!,
                                 pageCount = pageCount,
                                 mode = PreviewMode.COVER,
-                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                password = null, // Already decrypted
                                 accentColor = accentColor
                             )
                             

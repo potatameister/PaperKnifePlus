@@ -97,14 +97,14 @@ class PdfPageFetcher(
                                     val width = (page.width * data.scale).toInt().coerceAtLeast(1)
                                     val height = (page.height * data.scale).toInt().coerceAtLeast(1)
                                     
-                                    // BITMAP POOLING
-                                    val config = if (data.scale <= 0.6f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
-                                    val bitmap = BitmapPool.get(width, height, config)
+                                    // BITMAP POOLING: Enforce ARGB_8888 for native compatibility
+                                    val bitmap = BitmapPool.get(width, height, Bitmap.Config.ARGB_8888)
                                     
                                     val canvas = Canvas(bitmap)
                                     canvas.drawColor(Color.WHITE)
                                     
-                                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                    // Use PRINT mode which is often more robust for complex PDFs
+                                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
                                     
                                     return@withContext DrawableResult(
                                         drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),

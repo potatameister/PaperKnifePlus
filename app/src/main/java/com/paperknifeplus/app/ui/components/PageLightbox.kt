@@ -67,6 +67,9 @@ fun PageLightbox(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
+        // Track overall zoom state to disable pager when any page is zoomed
+        var isAnyPageZoomed by remember { mutableStateOf(false) }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -77,7 +80,7 @@ fun PageLightbox(
                 modifier = Modifier.fillMaxSize(),
                 pageSpacing = 16.dp,
                 beyondBoundsPageCount = 1,
-                userScrollEnabled = true // Enable only when not zoomed? Standard is simpler.
+                userScrollEnabled = !isAnyPageZoomed 
             ) { pageIndex ->
                 // NATIVE RESOLUTION (1.5f - 2.0f) only here
                 val request = remember(uri, pageIndex, password) { 
@@ -86,8 +89,29 @@ fun PageLightbox(
                 
                 var scale by remember { mutableFloatStateOf(1f) }
                 var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+                
+                // Reset zoom when this page is no longer the current page
+                LaunchedEffect(pagerState.currentPage) {
+                    if (pagerState.currentPage != pageIndex) {
+                        scale = 1f
+                        offset = androidx.compose.ui.geometry.Offset.Zero
+                    }
+                }
+
+                // Update global zoom state
+                LaunchedEffect(scale) {
+                    if (pagerState.currentPage == pageIndex) {
+                        isAnyPageZoomed = scale > 1f
+                    }
+                }
+
                 val state = rememberTransformableState { zoomChange, offsetChange, _ ->
                     scale = (scale * zoomChange).coerceIn(1f, 4f)
+                    
+                    // Bound-aware panning
+                    val extraWidth = (scale - 1) * 1000 // Approximate base width
+                    val extraHeight = (scale - 1) * 1400 // Approximate base height
+                    
                     offset += offsetChange
                 }
 
@@ -96,8 +120,10 @@ fun PageLightbox(
                         .fillMaxSize()
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onDoubleTap = { scale = if (scale > 1f) 1f else 2.5f; offset = androidx.compose.ui.geometry.Offset.Zero },
-                                onTap = { /* Toggle UI visibility? */ }
+                                onDoubleTap = { 
+                                    scale = if (scale > 1f) 1f else 2.5f
+                                    offset = androidx.compose.ui.geometry.Offset.Zero 
+                                }
                             )
                         }
                         .transformable(state = state),
