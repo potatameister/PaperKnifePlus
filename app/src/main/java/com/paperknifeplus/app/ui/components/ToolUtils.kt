@@ -94,19 +94,35 @@ suspend fun verifyPasswordLocal(context: Context, uri: Uri, password: String): B
 }
 
 suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
+    // We want a full page, high quality preview.
+    // Try native renderer first for speed
+    if (password == null) {
+        try {
+            context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                val renderer = android.graphics.pdf.PdfRenderer(pfd)
+                val page = renderer.openPage(0)
+                // Use a reasonable scale for full page display without OOM
+                val scale = 1.5f
+                val bitmap = Bitmap.createBitmap((page.width * scale).toInt(), (page.height * scale).toInt(), Bitmap.Config.ARGB_8888)
+                page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                page.close()
+                renderer.close()
+                return@withContext bitmap
+            }
+        } catch (e: Exception) { }
+    }
+    
+    // Fallback to PDFBox (handles encrypted files with password)
     try {
-        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            val renderer = android.graphics.pdf.PdfRenderer(pfd)
-            val page = renderer.openPage(0)
-            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-            page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            page.close()
-            renderer.close()
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val renderer = PDFRenderer(document)
+            val bitmap = renderer.renderImage(0, 1.0f, ImageType.RGB)
+            document.close()
             return@withContext bitmap
         }
-    } catch (e: Exception) {
-        renderPageToBitmap(context, uri, 0, password, 0.8f)
-    }
+    } catch (e: Exception) { }
+    
     null
 }
 
@@ -114,6 +130,10 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            if (pageIndex >= document.numberOfPages) {
+                document.close()
+                return@withContext null
+            }
             val renderer = PDFRenderer(document)
             val bitmap = renderer.renderImage(pageIndex, scale, ImageType.RGB)
             document.close()
@@ -124,7 +144,7 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
 }
 
 fun toGrayscaleBitmap(src: Bitmap): Bitmap {
-    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.RGB_565)
+    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bmpGrayscale)
     val paint = Paint()
     val cm = ColorMatrix().apply { setSaturation(0f) }

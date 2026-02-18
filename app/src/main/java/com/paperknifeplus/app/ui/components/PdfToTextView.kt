@@ -70,6 +70,7 @@ fun PdfToTextView(onBack: () -> Unit) {
                 if (isEncrypted) {
                     withContext(Dispatchers.Main) { currentState = ToolState.UNLOCKING }
                 } else {
+                    withContext(Dispatchers.Main) { currentState = ToolState.PROCESSING }
                     processText(context, it, null) { text, time ->
                         extractedText = text
                         processingTime = time
@@ -132,6 +133,7 @@ fun PdfToTextView(onBack: () -> Unit) {
                         onPasswordChange = { unlockPassword = it },
                         onUnlock = {
                             scope.launch(Dispatchers.IO) {
+                                withContext(Dispatchers.Main) { currentState = ToolState.PROCESSING }
                                 processText(context, selectedUri!!, unlockPassword) { text, time ->
                                     extractedText = text
                                     processingTime = time
@@ -150,8 +152,18 @@ fun PdfToTextView(onBack: () -> Unit) {
                     Column(Modifier.fillMaxSize()) {
                         Row(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text("EXTRACTED CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            IconButton(onClick = { saveTxtLauncher.launch(fileName.replace(".pdf", ".txt")) }) {
-                                Icon(Icons.Default.Save, null, tint = accentColor)
+                            Row {
+                                IconButton(onClick = { 
+                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val clip = android.content.ClipData.newPlainText("PDF Text", extractedText)
+                                    clipboard.setPrimaryClip(clip)
+                                    Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                                }) {
+                                    Icon(Icons.Default.ContentCopy, null, tint = accentColor)
+                                }
+                                IconButton(onClick = { saveTxtLauncher.launch(fileName.replace(".pdf", ".txt")) }) {
+                                    Icon(Icons.Default.Save, null, tint = accentColor)
+                                }
                             }
                         }
                         

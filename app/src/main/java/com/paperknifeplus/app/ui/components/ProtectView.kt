@@ -53,6 +53,7 @@ fun ProtectView(onBack: () -> Unit) {
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
+    var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
@@ -82,8 +83,10 @@ fun ProtectView(onBack: () -> Unit) {
                     }
                 } else {
                     val bitmap = loadPreview(context, it, null)
+                    val count = getPageCountLocal(context, it, null)
                     withContext(Dispatchers.Main) {
                         previewBitmap = bitmap
+                        pageCount = count
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -175,24 +178,18 @@ fun ProtectView(onBack: () -> Unit) {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
                                     val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
-                                    if (bitmap != null) {
-                                        previewBitmap = bitmap
+                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
+                                    if (bitmap != null || count > 0) {
                                         withContext(Dispatchers.Main) { 
+                                            previewBitmap = bitmap
+                                            pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false 
                                         }
                                     } else {
-                                        val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
-                                        if (isValid) {
-                                            withContext(Dispatchers.Main) { 
-                                                currentState = ToolState.CONFIGURING
-                                                isFileLoading = false 
-                                            }
-                                        } else {
-                                            withContext(Dispatchers.Main) { 
-                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                                isFileLoading = false 
-                                            }
+                                        withContext(Dispatchers.Main) { 
+                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                            isFileLoading = false 
                                         }
                                     }
                                 }
@@ -206,6 +203,7 @@ fun ProtectView(onBack: () -> Unit) {
                             preview = previewBitmap,
                             fileName = fileName,
                             fileSize = fileSize,
+                            pageCount = pageCount,
                             password = protectPassword,
                             onPasswordChange = { protectPassword = it },
                             onProtect = { 
@@ -228,6 +226,8 @@ fun ProtectView(onBack: () -> Unit) {
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
+                            message = "Protect Complete",
+                            subMessage = "Document encrypted with password",
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -251,6 +251,7 @@ fun ProtectConfiguringView(
     preview: Bitmap?, 
     fileName: String,
     fileSize: String,
+    pageCount: Int,
     password: String, 
     onPasswordChange: (String) -> Unit, 
     onProtect: () -> Unit, 
@@ -260,12 +261,12 @@ fun ProtectConfiguringView(
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Spacer(Modifier.height(16.dp))
         Card(
-            modifier = Modifier.fillMaxWidth().height(240.dp),
+            modifier = Modifier.fillMaxWidth().aspectRatio(0.707f),
             shape = RoundedCornerShape(24.dp),
             border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
         ) {
             if (preview != null) {
-                Image(bitmap = preview.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                Image(bitmap = preview.asImageBitmap(), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
             } else {
                 Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
                     Text("No Preview Available", color = Color.Gray)
@@ -273,9 +274,13 @@ fun ProtectConfiguringView(
             }
         }
         
-        Spacer(Modifier.height(12.dp))
-        Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-        Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Spacer(Modifier.height(16.dp))
+        Text(fileName, fontWeight = FontWeight.Black, fontSize = 16.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+            Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+            Spacer(Modifier.width(8.dp))
+            Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
+        }
         
         Spacer(Modifier.height(24.dp))
         Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
@@ -313,4 +318,15 @@ fun ProtectConfiguringView(
         }
         Spacer(Modifier.height(100.dp))
     }
+}
+
+private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val count = document.numberOfPages
+            document.close()
+            count
+        } ?: 0
+    } catch (e: Exception) { 0 }
 }

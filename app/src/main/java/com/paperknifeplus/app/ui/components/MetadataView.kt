@@ -5,6 +5,9 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -58,6 +61,7 @@ fun MetadataView(onBack: () -> Unit) {
     
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
+    var pageCount by remember { mutableIntStateOf(0) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
@@ -88,10 +92,12 @@ fun MetadataView(onBack: () -> Unit) {
                     }
                 } else {
                     val bitmap = loadPreview(context, it, null)
+                    val count = getPageCountLocal(context, it, null)
                     loadMetadata(context, it, null) { t, a, s, k, c, p ->
                         title = t; author = a; subject = s; keywords = k; creator = c; producer = p
                         withContext(Dispatchers.Main) {
                             previewBitmap = bitmap
+                            pageCount = count
                             currentState = ToolState.CONFIGURING
                             isFileLoading = false
                         }
@@ -182,10 +188,12 @@ fun MetadataView(onBack: () -> Unit) {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
                                     val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
+                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
                                     loadMetadata(context, selectedUri!!, unlockPassword) { t, a, s, k, c, p ->
                                         title = t; author = a; subject = s; keywords = k; creator = c; producer = p
                                         withContext(Dispatchers.Main) {
                                             previewBitmap = bitmap
+                                            pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false
                                         }
@@ -200,21 +208,25 @@ fun MetadataView(onBack: () -> Unit) {
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                             Spacer(Modifier.height(16.dp))
                             Card(
-                                modifier = Modifier.fillMaxWidth().height(180.dp),
+                                modifier = Modifier.fillMaxWidth().aspectRatio(0.707f),
                                 shape = RoundedCornerShape(24.dp),
                                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
                             ) {
                                 if (previewBitmap != null) {
-                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
                                 } else {
                                     Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
                                         Icon(Icons.Outlined.Fingerprint, null, modifier = Modifier.size(48.dp).alpha(0.2f))
                                     }
                                 }
                             }
-                            Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Spacer(Modifier.height(16.dp))
+                            Text(fileName, fontWeight = FontWeight.Black, fontSize = 16.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                                Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+                                Spacer(Modifier.width(8.dp))
+                                Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
+                            }
                             
                             Spacer(Modifier.height(24.dp))
                             MetadataGroup("DOCUMENT CORE") {
@@ -230,10 +242,7 @@ fun MetadataView(onBack: () -> Unit) {
                             }
                             Spacer(Modifier.height(32.dp))
                             Button(
-                                onClick = { 
-                                    val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
-                                    saveLauncher.launch(defaultName) 
-                                }, 
+                                onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-meta.pdf") }, 
                                 modifier = Modifier.fillMaxWidth().height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
@@ -332,4 +341,15 @@ private suspend fun loadMetadata(
             onSuccess(t, a, s, k, c, p)
         }
     } catch (e: Exception) { }
+}
+
+private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val count = document.numberOfPages
+            document.close()
+            count
+        } ?: 0
+    } catch (e: Exception) { 0 }
 }
