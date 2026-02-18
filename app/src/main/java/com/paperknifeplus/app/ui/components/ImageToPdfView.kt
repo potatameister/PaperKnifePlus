@@ -38,6 +38,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -50,9 +51,19 @@ fun ImageToPdfView(onBack: () -> Unit) {
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.CONFIGURING) }
     var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    var savedFilePath by remember { mutableStateOf("") }
-    var resultFileName by remember { mutableStateOf("") }
     var processingTime by remember { mutableStateOf("") }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+    
+    var progressCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(currentState) {
+        if (currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris -> 
         selectedUris = selectedUris + uris 
@@ -65,33 +76,25 @@ fun ImageToPdfView(onBack: () -> Unit) {
             scope.launch(Dispatchers.IO) {
                 try {
                     val document = PDDocument()
-                    selectedUris.forEach { imgUri ->
+                    selectedUris.forEachIndexed { index, imgUri ->
+                        progressCount = index + 1
                         context.contentResolver.openInputStream(imgUri)?.use { inputStream ->
                             val bitmap = BitmapFactory.decodeStream(inputStream)
                             val pdImage = JPEGFactory.createFromImage(document, bitmap)
                             val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
                             document.addPage(page)
-                            val contentStream = PDPageContentStream(document, page)
-                            contentStream.drawImage(pdImage, 0f, 0f)
-                            contentStream.close()
+                            PDPageContentStream(document, page).use { contentStream ->
+                                contentStream.drawImage(pdImage, 0f, 0f)
+                            }
                             bitmap.recycle()
                         }
                     }
-                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream -> 
-                        document.save(outputStream)
-                        outputStream.flush()
-                    }
-                    document.close()
-                    
+                    saveAndFlush(context, document, saveUri)
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: "images.pdf"
-                        savedFilePath = "Local Storage / $finalName"
-                        resultFileName = finalName
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Image to PDF", "${selectedUris.size} images", Icons.Default.PictureAsPdf)
+                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Default.PictureAsPdf)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -106,7 +109,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -173,31 +176,20 @@ fun ImageToPdfView(onBack: () -> Unit) {
                         
                         Button(
                             onClick = { saveLauncher.launch("images.pdf") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp)
-                                .height(56.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
                             enabled = selectedUris.isNotEmpty(),
                             colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                             shape = RoundedCornerShape(20.dp)
                         ) {
-                            Text("Create PDF from ${selectedUris.size} Images", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
+                            Text("Create PDF from ${selectedUris.size} Images", fontWeight = FontWeight.Black)
                         }
                     }
                 }
                 ToolState.PROCESSING -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = accentColor)
-                            Spacer(Modifier.height(16.dp))
-                            Text("Creating document...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                        }
-                    }
+                    LoadingStateView(accentColor, showLoadingWarning, "Encoding image $progressCount of ${selectedUris.size}...")
                 }
                 ToolState.SUCCESS -> {
                     SuccessView(
-                        fileName = resultFileName,
-                        path = savedFilePath,
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { 

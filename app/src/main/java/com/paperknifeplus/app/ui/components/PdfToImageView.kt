@@ -36,6 +36,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.zip.ZipEntry
@@ -53,11 +54,22 @@ fun PdfToImageView(onBack: () -> Unit) {
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
-    var pageCount by remember { mutableStateOf(0) }
+    var pageCount by remember { mutableIntStateOf(0) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var savedFilePath by remember { mutableStateOf("") }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+    
+    var progressCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(isFileLoading, currentState) {
+        if (isFileLoading || currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -65,7 +77,6 @@ fun PdfToImageView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
-            
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -76,16 +87,10 @@ fun PdfToImageView(onBack: () -> Unit) {
                     }
                 } else {
                     val bitmap = loadPreview(context, it, null)
-                    try {
-                        context.contentResolver.openFileDescriptor(it, "r")?.use { pfd ->
-                            val renderer = PdfRenderer(pfd)
-                            pageCount = renderer.pageCount
-                            renderer.close()
-                        }
-                    } catch (e: Exception) { }
-                    
+                    val count = getPageCountLocal(context, it, null)
                     withContext(Dispatchers.Main) {
                         previewBitmap = bitmap
+                        pageCount = count
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -102,15 +107,12 @@ fun PdfToImageView(onBack: () -> Unit) {
                 try {
                     context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
                         ZipOutputStream(outputStream).use { zipOut ->
-                            // Use PDFBox to load even if password is required
                             context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                                 val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
-                                
-                                // We need a way to render pages to images. 
-                                // PDFBox-Android's PDFRenderer is available.
                                 val renderer = com.tom_roush.pdfbox.rendering.PDFRenderer(document)
                                 for (i in 0 until document.numberOfPages) {
-                                    val bitmap = renderer.renderImage(i, 2.0f) // 2x scale for quality
+                                    progressCount = i + 1
+                                    val bitmap = renderer.renderImage(i, 2.0f)
                                     val entry = ZipEntry("page_${i + 1}.jpg")
                                     zipOut.putNextEntry(entry)
                                     bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
@@ -125,12 +127,9 @@ fun PdfToImageView(onBack: () -> Unit) {
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName.replace(".pdf", ".zip")
-                        savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "PDF to Image", "$pageCount images", Icons.Outlined.BurstMode)
+                        SessionManager.addEntry(fileName, "PDF to Image", "$pageCount images", Icons.Outlined.BurstMode)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -147,7 +146,7 @@ fun PdfToImageView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -166,9 +165,7 @@ fun PdfToImageView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = accentColor)
-                }
+                LoadingStateView(accentColor, showLoadingWarning, "Preparing document...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -191,24 +188,18 @@ fun PdfToImageView(onBack: () -> Unit) {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
                                     val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
-                                    if (bitmap != null) {
-                                        previewBitmap = bitmap
+                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
+                                    if (count > 0) {
                                         withContext(Dispatchers.Main) { 
+                                            previewBitmap = bitmap
+                                            pageCount = count
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false 
                                         }
                                     } else {
-                                        val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
-                                        if (isValid) {
-                                            withContext(Dispatchers.Main) { 
-                                                currentState = ToolState.CONFIGURING
-                                                isFileLoading = false 
-                                            }
-                                        } else {
-                                            withContext(Dispatchers.Main) { 
-                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                                isFileLoading = false 
-                                            }
+                                        withContext(Dispatchers.Main) { 
+                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                            isFileLoading = false 
                                         }
                                     }
                                 }
@@ -261,18 +252,17 @@ fun PdfToImageView(onBack: () -> Unit) {
                         }
                     }
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = accentColor)
-                                Spacer(Modifier.height(16.dp))
-                                Text("Generating images...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = previewBitmap,
+                            text = "Generating images...",
+                            current = progressCount,
+                            total = pageCount,
+                            showWarning = showLoadingWarning
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = fileName.replace(".pdf", ".zip"),
-                            path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -288,4 +278,15 @@ fun PdfToImageView(onBack: () -> Unit) {
             }
         }
     }
+}
+
+private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val count = document.numberOfPages
+            document.close()
+            count
+        } ?: 0
+    } catch (e: Exception) { 0 }
 }

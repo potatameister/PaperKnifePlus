@@ -8,8 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,6 +34,7 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.zip.ZipEntry
@@ -56,7 +55,16 @@ fun ExtractImagesView(onBack: () -> Unit) {
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var savedFilePath by remember { mutableStateOf("") }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isFileLoading, currentState) {
+        if (isFileLoading || currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -64,7 +72,6 @@ fun ExtractImagesView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
-            
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -119,12 +126,9 @@ fun ExtractImagesView(onBack: () -> Unit) {
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName.replace(".pdf", "_images.zip")
-                        savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Extract Images", "Extracted", Icons.Outlined.PhotoLibrary)
+                        SessionManager.addEntry(fileName, "Extract Images", "Extracted assets", Icons.Outlined.PhotoLibrary)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -141,7 +145,7 @@ fun ExtractImagesView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -160,9 +164,7 @@ fun ExtractImagesView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = accentColor)
-                }
+                LoadingStateView(accentColor, showLoadingWarning, "Preparing document...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -255,18 +257,17 @@ fun ExtractImagesView(onBack: () -> Unit) {
                         }
                     }
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = accentColor)
-                                Spacer(Modifier.height(16.dp))
-                                Text("Extracting images...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = previewBitmap,
+                            text = "Extracting embedded images...",
+                            current = 0,
+                            total = 0,
+                            showWarning = showLoadingWarning
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = fileName.replace(".pdf", "_assets.zip"),
-                            path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 

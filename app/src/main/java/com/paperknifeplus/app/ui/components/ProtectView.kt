@@ -245,3 +245,72 @@ fun ProtectView(onBack: () -> Unit) {
         }
     }
 }
+
+@Composable
+fun ProtectConfiguringView(
+    preview: Bitmap?, 
+    fileName: String,
+    fileSize: String,
+    password: String, 
+    onPasswordChange: (String) -> Unit, 
+    onProtect: () -> Unit, 
+    onChangeFile: () -> Unit, 
+    accentColor: Color
+) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Spacer(Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth().height(240.dp),
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+        ) {
+            if (preview != null) {
+                Image(bitmap = preview.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            } else {
+                Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
+                    Text("No Preview Available", color = Color.Gray)
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(12.dp))
+        Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+        
+        Spacer(Modifier.height(24.dp))
+        Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(12.dp))
+        
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
+            label = { Text("New Password", fontWeight = FontWeight.Bold) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = accentColor,
+                cursorColor = accentColor,
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent
+            )
+        )
+        
+        Spacer(Modifier.height(16.dp))
+        Surface(color = Color(0xFFFFF1F2), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(12.dp))
+                Text("PaperKnife+ cannot recover lost passwords. Ensure you keep it safe.", fontSize = 11.sp, color = Color(0xFF9F1239), fontWeight = FontWeight.Bold, lineHeight = 16.sp)
+            }
+        }
+        
+        Spacer(Modifier.height(32.dp))
+        Button(onClick = onProtect, modifier = Modifier.fillMaxWidth().height(60.dp), enabled = password.isNotBlank(), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) {
+            Text("Protect & Save", fontWeight = FontWeight.Black, color = Color.White)
+        }
+        TextButton(onClick = onChangeFile, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(100.dp))
+    }
+}
