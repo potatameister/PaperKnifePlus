@@ -72,15 +72,18 @@ class PdfPageFetcher(
                     PDDocument.load(inputStream)
                 }
                 
-                val renderer = com.tom_roush.pdfbox.rendering.PDFRenderer(document)
-                val bitmap = renderer.renderImage(data.pageIndex, data.scale, ImageType.RGB)
-                document.close()
-                
-                return@withContext DrawableResult(
-                    drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
-                    isSampled = data.scale < 1.0f,
-                    dataSource = DataSource.DISK
-                )
+                try {
+                    val renderer = com.tom_roush.pdfbox.rendering.PDFRenderer(document)
+                    val bitmap = renderer.renderImage(data.pageIndex, data.scale, ImageType.RGB)
+                    
+                    return@withContext DrawableResult(
+                        drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
+                        isSampled = data.scale < 1.0f,
+                        dataSource = DataSource.DISK
+                    )
+                } finally {
+                    document.close()
+                }
             }
         } catch (e: Exception) {
             return@withContext null
