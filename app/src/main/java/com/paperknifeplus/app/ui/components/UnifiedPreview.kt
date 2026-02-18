@@ -144,12 +144,13 @@ fun PdfPageItem(
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
-    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.4f) }
+    // INCREASE SCALE slightly for better clarity on high-DPI screens
+    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.6f) }
     
     Box(
         modifier = modifier
             .aspectRatio(0.707f)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF4F4F5))
             .clickable { onClick() }
     ) {
