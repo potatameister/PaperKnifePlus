@@ -3,7 +3,7 @@ coreKtx = "1.13.1"
 lifecycle = "2.8.1"
 activity = "1.9.0"
 composeBom = "2024.06.00"
-pdfbox = "1.8.9.2"
+pdfbox = "2.0.27.0"
 coil = "2.6.0"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -22,7 +22,7 @@ compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-mani
 compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
-pdfbox-android = { group = "com.github.tripplemac", name = "pdfbox-android-lite", version.ref = "pdfbox" }
+pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
