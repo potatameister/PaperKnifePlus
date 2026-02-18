@@ -1,6 +1,5 @@
 package com.paperknifeplus.app.ui.components
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -201,18 +201,6 @@ fun MergeView(onBack: () -> Unit) {
                         }
                     }
                 }
-                        
-                        Button(
-                            onClick = { saveLauncher.launch("merged.pdf") },
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
-                            enabled = selectedUris.size > 1,
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text("Merge ${selectedUris.size} Files", fontWeight = FontWeight.Black)
-                        }
-                    }
-                }
                 ToolState.PROCESSING -> {
                     LoadingStateView(accentColor, showLoadingWarning, "Merging $progressCount of ${selectedUris.size} files...")
                 }
@@ -229,7 +217,7 @@ fun MergeView(onBack: () -> Unit) {
                         accentColor = accentColor
                     )
                 }
-                else -> {}
+                else -> { /* Handle other states */ }
             }
         }
     }

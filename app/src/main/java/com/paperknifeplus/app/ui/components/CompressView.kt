@@ -24,6 +24,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.ImageLoader
+import coil.compose.rememberAsyncImagePainter
+import com.paperknifeplus.app.data.image.PdfPageFetcher
+import com.paperknifeplus.app.data.image.PdfPageRequest
+import com.paperknifeplus.app.ui.components.ToolUtils.getPageCount
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +58,13 @@ fun CompressView(onBack: () -> Unit) {
     var progressPage by remember { mutableIntStateOf(0) }
     var showLoadingWarning by remember { mutableStateOf(false) }
 
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .components { add(PdfPageFetcher.Factory(context)) }
+            .crossfade(true)
+            .build()
+    }
+
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
             delay(5000)
@@ -79,7 +91,7 @@ fun CompressView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    val count = getPageCountLocal(context, it, null)
+                    val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
                         currentState = ToolState.CONFIGURING
