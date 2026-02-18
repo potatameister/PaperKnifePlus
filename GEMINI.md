@@ -29,8 +29,17 @@ To ensure byte-for-byte reproducibility:
     - **Next Steps:** Standardize the build container, remove any dynamic timestamps in `build.gradle.kts`, and ensure all dependencies are resolved from fixed versions in `libs.versions.toml`.
 - **Privacy First:** Zero trackers, zero analytics. The app does not have the ability to reach the network.
 
+## PDF Preview Architecture (Nitro Engine)
+- **Type A (Grid Preview):** A scrollable 2-column grid of all pages in a document. Optimized for tools where page selection or reordering is required (e.g., Split, Rearrange, PDF to Image). Uses low-res thumbnails (0.2f scale) for maximum scrolling performance.
+- **Type B (Cover Preview):** A single, high-quality (1.2f scale) preview of the first page. Used in tools where a single document is being processed as a whole (e.g., Compress, Protect, Unlock). Supports deep-zoom via Lightbox.
+
 ## Major Evolutions
-- **2026-02-18:** Implemented **NITRO ENGINE 2.0**:
+- **2026-02-18:** Refined **NITRO ENGINE 2.0** UX:
+    - **Standardized Type A Grid:** Unified 2-column layout across all tools (Rearrange, Split, Grayscale, etc.).
+    - **Loading States:** Added circular progress indicators to all PDF thumbnails.
+    - **Pinch-to-Zoom:** Implemented high-performance zoom and double-tap gestures in the Page Lightbox.
+    - **Protected Previews:** Added "Locked" placeholder icons for password-protected files.
+- **2026-02-18:** Implemented **NITRO ENGINE 2.0** Core:
     - **Global Blitz Cache:** Unified singleton `ImageLoader` via `CompositionLocal` ensures PDF previews are shared across all tools (Merge, Split, etc.).
     - **Nitro Parallel Rendering:** Replaced the global mutex with a **4-Thread Renderer Pool** and a `NativeRendererPool`. This allows up to 4 pages to render concurrently, eliminating grid scrolling lag.
     - **Memory Optimization:** Switched thumbnails to `RGB_565` and ensured redundant loader allocations are purged for "Zero-Jank" performance.

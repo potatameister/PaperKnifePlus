@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -19,6 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.ImageLoader
+import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
@@ -72,19 +76,52 @@ fun PageLightbox(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
                 pageSpacing = 16.dp,
-                beyondBoundsPageCount = 1
+                beyondBoundsPageCount = 1,
+                userScrollEnabled = true // Enable only when not zoomed? Standard is simpler.
             ) { pageIndex ->
                 // NATIVE RESOLUTION (1.5f - 2.0f) only here
                 val request = remember(uri, pageIndex, password) { 
                     PdfPageRequest(uri, pageIndex, password, 2.0f, prefetch = false) 
                 }
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                
+                var scale by remember { mutableFloatStateOf(1f) }
+                var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+                val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+                    scale = (scale * zoomChange).coerceIn(1f, 4f)
+                    offset += offsetChange
+                }
+
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = { scale = if (scale > 1f) 1f else 2.5f; offset = androidx.compose.ui.geometry.Offset.Zero },
+                                onTap = { /* Toggle UI visibility? */ }
+                            )
+                        }
+                        .transformable(state = state),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val painter = rememberAsyncImagePainter(request, imageLoader)
+                    
                     Image(
-                        painter = rememberAsyncImagePainter(request, imageLoader),
+                        painter = painter,
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale,
+                                translationX = offset.x,
+                                translationY = offset.y
+                            ),
                         contentScale = ContentScale.Fit
                     )
+
+                    if (painter.state is AsyncImagePainter.State.Loading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(48.dp))
+                    }
                 }
             }
 

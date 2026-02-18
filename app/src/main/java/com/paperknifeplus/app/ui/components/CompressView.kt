@@ -57,12 +57,8 @@ fun CompressView(onBack: () -> Unit) {
     var progressPage by remember { mutableIntStateOf(0) }
     var showLoadingWarning by remember { mutableStateOf(false) }
 
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components { add(PdfPageFetcher.Factory(context)) }
-            .crossfade(true)
-            .build()
-    }
+    // Use Shared Global Loader (MainActivity)
+    val imageLoader = LocalImageLoader.current
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {

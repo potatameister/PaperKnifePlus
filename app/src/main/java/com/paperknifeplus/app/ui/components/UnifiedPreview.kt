@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.ImageLoader
+import coil.compose.AsyncImagePainter
 import coil.compose.LocalImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
@@ -58,17 +59,31 @@ fun UnifiedPdfPreview(
                     .clickable { lightboxPage = 0 },
                 shape = RoundedCornerShape(24.dp),
                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                colors = CardDefaults.cardColors(containerColor = if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF5F5F5))
             ) {
                 // INCREASE SCALE for cover mode to ensure images are crisp
                 val request = remember(uri, password) { PdfPageRequest(uri, 0, password, 1.2f) }
-                Box(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    val painter = rememberAsyncImagePainter(request, imageLoader)
+                    val painterState = painter.state
+                    
                     Image(
-                        painter = rememberAsyncImagePainter(request, imageLoader),
+                        painter = painter,
                         contentDescription = "Document Cover",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit
                     )
+
+                    if (painterState is AsyncImagePainter.State.Loading) {
+                        CircularProgressIndicator(color = accentColor, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
+                    } else if (painterState is AsyncImagePainter.State.Error && password != null) {
+                        // Locked Placeholder
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Lock, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                            Spacer(Modifier.height(12.dp))
+                            Text("Protected File", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
                     
                     // Zoom Hint
                     Surface(
@@ -93,7 +108,7 @@ fun UnifiedPdfPreview(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 100.dp)
+            contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
         ) {
             items(pageCount, key = { it }) { index ->
                 PdfPageItem(
@@ -101,6 +116,7 @@ fun UnifiedPdfPreview(
                     index = index,
                     password = password,
                     imageLoader = imageLoader,
+                    accentColor = accentColor,
                     onClick = { lightboxPage = index }
                 )
             }
@@ -127,6 +143,7 @@ fun PdfPageItem(
     imageLoader: ImageLoader,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     // LOW-RES THUMBNAILS (0.2f) for blitz-fast scrolling
@@ -135,33 +152,42 @@ fun PdfPageItem(
     Box(
         modifier = modifier
             .aspectRatio(0.707f)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF4F4F5))
-            .clickable { onClick() }
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
     ) {
+        val painter = rememberAsyncImagePainter(request, imageLoader)
+        val painterState = painter.state
+
         Image(
-            painter = rememberAsyncImagePainter(request, imageLoader),
+            painter = painter,
             contentDescription = "Page ${index + 1}",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
+
+        if (painterState is AsyncImagePainter.State.Loading) {
+            CircularProgressIndicator(color = accentColor, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        } else if (painterState is AsyncImagePainter.State.Error && password != null) {
+             Icon(Icons.Default.Lock, null, tint = Color.Gray.copy(0.3f), modifier = Modifier.size(32.dp))
+        }
         
         // Page Number Overlay (Centralized)
         Surface(
             modifier = Modifier
-                .align(Alignment.Center)
-                .size(32.dp),
-            color = Color.Black.copy(0.5f),
-            shape = RoundedCornerShape(6.dp)
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 8.dp),
+            color = Color.Black.copy(0.6f),
+            shape = RoundedCornerShape(8.dp)
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    "${index + 1}", 
-                    color = Color.White, 
-                    fontSize = 12.sp, 
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Text(
+                "${index + 1}", 
+                color = Color.White, 
+                fontSize = 11.sp, 
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+            )
         }
         
         content()

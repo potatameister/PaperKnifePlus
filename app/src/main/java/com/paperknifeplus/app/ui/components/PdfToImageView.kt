@@ -198,41 +198,51 @@ fun PdfToImageView(onBack: () -> Unit) {
                             }
                         }
 
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
-                            modifier = Modifier.weight(1f),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
-                        ) {
-                            items(pageCount) { index ->
-                                val isSelected = selectedPages.contains(index)
-                                PdfPageItem(
-                                    uri = selectedUri!!,
-                                    index = index,
-                                    password = unlockPassword.ifEmpty { null },
-                                    imageLoader = imageLoader,
-                                    onClick = { lightboxPage = index },
-                                    modifier = Modifier.border(BorderStroke(2.dp, if (isSelected) accentColor else Color.Transparent), RoundedCornerShape(12.dp))
-                                ) {
-                                    // Selection toggle button
-                                    Surface(
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .padding(4.dp)
-                                            .size(24.dp)
-                                            .clickable { 
-                                                selectedPages = if (isSelected) selectedPages - index else selectedPages + index 
-                                            },
-                                        color = if (isSelected) accentColor else Color.Black.copy(0.3f),
-                                        shape = CircleShape
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Check, 
-                                            null, 
-                                            tint = Color.White, 
-                                            modifier = Modifier.padding(4.dp)
+                        Box(modifier = Modifier.weight(1f)) {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                            ) {
+                                items(pageCount, key = { it }) { index ->
+                                    val isSelected = selectedPages.contains(index)
+                                    PdfPageItem(
+                                        uri = selectedUri!!,
+                                        index = index,
+                                        password = unlockPassword.ifEmpty { null },
+                                        imageLoader = imageLoader,
+                                        accentColor = accentColor,
+                                        onClick = { lightboxPage = index },
+                                        modifier = Modifier.border(
+                                            BorderStroke(2.dp, if (isSelected) accentColor else Color.Transparent), 
+                                            RoundedCornerShape(12.dp)
                                         )
+                                    ) {
+                                        // Selection Checkbox
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(if (isSelected) accentColor.copy(alpha = 0.1f) else Color.Transparent)
+                                                .clickable { selectedPages = if (isSelected) selectedPages - index else selectedPages + index }
+                                        )
+
+                                        Surface(
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(8.dp)
+                                                .size(24.dp),
+                                            color = if (isSelected) accentColor else Color.Black.copy(0.3f),
+                                            shape = CircleShape
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Check, 
+                                                null, 
+                                                tint = Color.White, 
+                                                modifier = Modifier.padding(4.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
