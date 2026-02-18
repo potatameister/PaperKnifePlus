@@ -44,23 +44,22 @@ fun UnifiedPdfPreview(
     val context = LocalContext.current
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
     
-    // Optimized "Turbo Engine" Loader
+    // Optimized "Blitz Engine" Loader
     val imageLoader = remember {
         ImageLoader.Builder(context)
             .components { add(PdfPageFetcher.Factory(context)) }
             .memoryCache {
                 coil.memory.MemoryCache.Builder(context)
-                    .maxSizePercent(0.25) // Use 25% of available RAM for image cache
+                    .maxSizePercent(0.30) // Use 30% of available RAM for grid cache
                     .build()
             }
             .diskCache {
                 coil.disk.DiskCache.Builder()
                     .directory(context.cacheDir.resolve("pdf_previews"))
-                    .maxSizeBytes(100 * 1024 * 1024) // 100MB disk cache
+                    .maxSizeBytes(200 * 1024 * 1024) // 200MB disk cache
                     .build()
             }
-            .respectCacheHeaders(false)
-            .crossfade(true)
+            .crossfade(false) // Disable crossfade for maximum scroll speed
             .build()
     }
 
@@ -71,11 +70,12 @@ fun UnifiedPdfPreview(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(0.707f) // A4 Aspect Ratio
-                    .clickable { lightboxPage = 0 }, // Tap to zoom even on cover
+                    .clickable { lightboxPage = 0 },
                 shape = RoundedCornerShape(24.dp),
                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
             ) {
+                // INCREASE SCALE for cover mode to ensure images are crisp
                 val request = remember(uri, password) { PdfPageRequest(uri, 0, password, 1.2f) }
                 Box(Modifier.fillMaxSize()) {
                     Image(
@@ -85,7 +85,7 @@ fun UnifiedPdfPreview(
                         contentScale = ContentScale.Fit
                     )
                     
-                    // Zoom Hint Logo
+                    // Zoom Hint
                     Surface(
                         modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                         color = Color.Black.copy(0.3f),
@@ -102,13 +102,13 @@ fun UnifiedPdfPreview(
             }
         }
     } else {
-        // --- TYPE A: MINI PREVIEW GRID (2-Column Stable Mode) ---
+        // --- TYPE A: MINI PREVIEW GRID (Blitz Mode - Fixed 2-Column) ---
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(16.dp)
+            contentPadding = PaddingValues(bottom = 100.dp)
         ) {
             items(pageCount, key = { it }) { index ->
                 PdfPageItem(
@@ -122,7 +122,7 @@ fun UnifiedPdfPreview(
         }
     }
 
-    // --- SHARED LIGHTBOX (Zoom View) ---
+    // --- SHARED LIGHTBOX ---
     if (lightboxPage != null) {
         PageLightbox(
             uri = uri,
@@ -144,13 +144,13 @@ fun PdfPageItem(
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
-    // INCREASE SCALE slightly for better clarity on high-DPI screens
-    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.6f) }
+    // LOW-RES THUMBNAILS (0.2f) for blitz-fast scrolling
+    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.2f) }
     
     Box(
         modifier = modifier
             .aspectRatio(0.707f)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF4F4F5))
             .clickable { onClick() }
     ) {
@@ -161,7 +161,7 @@ fun PdfPageItem(
             contentScale = ContentScale.Crop
         )
         
-        // Page Number Overlay (Centralized like iLovePDF)
+        // Page Number Overlay (Centralized)
         Surface(
             modifier = Modifier
                 .align(Alignment.Center)

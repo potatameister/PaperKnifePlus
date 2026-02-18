@@ -19,7 +19,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -31,9 +30,7 @@ import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -50,9 +47,15 @@ fun PageLightbox(
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
     val scope = rememberCoroutineScope()
     
+    // Dedicated High-Res Loader for Lightbox
     val imageLoader = remember {
         ImageLoader.Builder(context)
             .components { add(PdfPageFetcher.Factory(context)) }
+            .memoryCache {
+                coil.memory.MemoryCache.Builder(context)
+                    .maxSizePercent(0.40) // Give more RAM to zoom view
+                    .build()
+            }
             .build()
     }
 
@@ -69,10 +72,12 @@ fun PageLightbox(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
                 pageSpacing = 16.dp,
-                beyondBoundsPageCount = 1 // Only keep neighbors in memory
+                beyondBoundsPageCount = 1
             ) { pageIndex ->
-                // Limit scale to 1.5f to prevent OOM on 500-page docs
-                val request = remember(uri, pageIndex, password) { PdfPageRequest(uri, pageIndex, password, 1.5f) }
+                // NATIVE RESOLUTION (1.5f - 2.0f) only here
+                val request = remember(uri, pageIndex, password) { 
+                    PdfPageRequest(uri, pageIndex, password, 2.0f, prefetch = false) 
+                }
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Image(
                         painter = rememberAsyncImagePainter(request, imageLoader),
