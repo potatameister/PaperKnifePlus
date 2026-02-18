@@ -46,13 +46,17 @@ object PreferencesManager {
     }
 }
 
-// Advanced Memory Cache for Bitmaps
+// Advanced Memory Cache and Pool for Bitmaps
 object BitmapCache {
     private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
-    private val cacheSize = maxMemory / 6 // Use 1/6th of available memory for raw bitmaps
+    private val cacheSize = maxMemory / 6 
     private val memoryCache = object : LruCache<String, Bitmap>(cacheSize) {
         override fun sizeOf(key: String, bitmap: Bitmap): Int {
             return bitmap.byteCount / 1024
+        }
+        override fun entryRemoved(evicted: Boolean, key: String, oldValue: Bitmap, newValue: Bitmap?) {
+            // Add to pool for reuse instead of letting it GC
+            if (oldValue.isMutable) BitmapPool.put(oldValue)
         }
     }
 
@@ -63,6 +67,33 @@ object BitmapCache {
         }
     }
     fun clear() = synchronized(this) { memoryCache.evictAll() }
+}
+
+// Bitmap Pool to reuse memory and eliminate scrolling lag (like Glide/Picasso)
+object BitmapPool {
+    private val pool = mutableListOf<Bitmap>()
+    private const val MAX_POOL_SIZE = 12
+
+    fun get(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+        synchronized(pool) {
+            val iterator = pool.iterator()
+            while (iterator.hasNext()) {
+                val bitmap = iterator.next()
+                if (bitmap.width == width && bitmap.height == height && bitmap.config == config) {
+                    iterator.remove()
+                    return bitmap
+                }
+            }
+        }
+        return Bitmap.createBitmap(width, height, config)
+    }
+
+    fun put(bitmap: Bitmap) {
+        if (!bitmap.isMutable) return
+        synchronized(pool) {
+            if (pool.size < MAX_POOL_SIZE) pool.add(bitmap)
+        }
+    }
 }
 
 @SuppressLint("Range")

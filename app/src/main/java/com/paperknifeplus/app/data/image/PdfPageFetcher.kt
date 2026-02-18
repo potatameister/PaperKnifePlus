@@ -12,6 +12,7 @@ import coil.fetch.FetchResult
 import coil.fetch.Fetcher
 import coil.request.Options
 import coil.size.Size
+import com.paperknifeplus.app.ui.components.BitmapPool
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.rendering.ImageType
 import com.tom_roush.pdfbox.rendering.PDFRenderer
@@ -32,7 +33,7 @@ class PdfPageFetcher(
 ) : Fetcher {
 
     override suspend fun fetch(): FetchResult? = withContext(Dispatchers.IO) {
-        // 1. Try Native Renderer (Fastest)
+        // 1. Try Native Renderer (Ultra Fast)
         if (data.password == null) {
             try {
                 context.contentResolver.openFileDescriptor(data.uri, "r")?.use { pfd ->
@@ -43,9 +44,10 @@ class PdfPageFetcher(
                         val width = (page.width * data.scale).toInt().coerceAtLeast(1)
                         val height = (page.height * data.scale).toInt().coerceAtLeast(1)
                         
-                        // Use RGB_565 for thumbnails to save 50% RAM if scale is low
+                        // REUSE BITMAP FROM POOL
                         val config = if (data.scale <= 0.5f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
-                        val bitmap = Bitmap.createBitmap(width, height, config)
+                        val bitmap = BitmapPool.get(width, height, config)
+                        
                         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         page.close()
                         renderer.close()

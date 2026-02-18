@@ -102,15 +102,15 @@ fun UnifiedPdfPreview(
             }
         }
     } else {
-        // --- TYPE A: MINI PREVIEW GRID ---
+        // --- TYPE A: MINI PREVIEW GRID (Optimized for Speed) ---
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Adaptive(minSize = 100.dp),
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(bottom = 100.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(16.dp)
         ) {
-            items(pageCount) { index ->
+            items(pageCount, key = { it }) { index ->
                 PdfPageItem(
                     uri = uri,
                     index = index,
