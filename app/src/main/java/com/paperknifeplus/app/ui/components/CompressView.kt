@@ -33,6 +33,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -48,13 +49,23 @@ fun CompressView(onBack: () -> Unit) {
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
-    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var savedFilePath by remember { mutableStateOf("") }
-    var processedFileName by remember { mutableStateOf("") }
     
-    var compressionLevel by remember { mutableStateOf("Balanced") }
+    var compressionLevel by remember { mutableStateOf("Recommended") }
+    var pageCount by remember { mutableIntStateOf(0) }
+    var progressPage by remember { mutableIntStateOf(0) }
+    var firstPagePreview by remember { mutableStateOf<Bitmap?>(null) }
+    var showLoadingWarning by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isFileLoading, currentState) {
+        if (isFileLoading || currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -72,9 +83,11 @@ fun CompressView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    val bitmap = loadPreview(context, it, null)
+                    val count = getPageCountLocal(context, it, null)
+                    val preview = loadPreview(context, it, null)
                     withContext(Dispatchers.Main) {
-                        previewBitmap = bitmap
+                        pageCount = count
+                        firstPagePreview = preview
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -89,32 +102,14 @@ fun CompressView(onBack: () -> Unit) {
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                        val document = if (unlockPassword.isNotEmpty()) {
-                            PDDocument.load(inputStream, unlockPassword)
-                        } else {
-                            PDDocument.load(inputStream)
-                        }
-                        
-                        // Compression logic
-                        // In PDFBox, we can't easily set a "compression level" globally.
-                        // But we can ensure all streams are compressed.
-                        
-                        context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
-                            document.save(outputStream)
-                            outputStream.flush()
-                        }
-                        document.close()
+                    compressPdf(context, selectedUri!!, saveUri, if (unlockPassword.isEmpty()) null else unlockPassword, compressionLevel) { current, total ->
+                        progressPage = current
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: fileName
-                        processedFileName = finalName
-                        savedFilePath = "Local Storage / $finalName"
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Compress", "Optimized", Icons.Outlined.Bolt)
+                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Outlined.Bolt)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -131,7 +126,7 @@ fun CompressView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -150,9 +145,7 @@ fun CompressView(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = accentColor)
-                }
+                LoadingStateView(accentColor, showLoadingWarning, "Analyzing file structure...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -174,25 +167,19 @@ fun CompressView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val bitmap = loadPreview(context, selectedUri!!, unlockPassword)
-                                    if (bitmap != null) {
-                                        previewBitmap = bitmap
-                                        withContext(Dispatchers.Main) { 
+                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
+                                    val preview = loadPreview(context, selectedUri!!, unlockPassword)
+                                    if (count > 0) {
+                                        withContext(Dispatchers.Main) {
+                                            pageCount = count
+                                            firstPagePreview = preview
                                             currentState = ToolState.CONFIGURING
-                                            isFileLoading = false 
+                                            isFileLoading = false
                                         }
                                     } else {
-                                        val isValid = verifyPasswordLocal(context, selectedUri!!, unlockPassword)
-                                        if (isValid) {
-                                            withContext(Dispatchers.Main) { 
-                                                currentState = ToolState.CONFIGURING
-                                                isFileLoading = false 
-                                            }
-                                        } else {
-                                            withContext(Dispatchers.Main) { 
-                                                Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                                isFileLoading = false 
-                                            }
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                            isFileLoading = false
                                         }
                                     }
                                 }
@@ -209,8 +196,8 @@ fun CompressView(onBack: () -> Unit) {
                                 shape = RoundedCornerShape(24.dp),
                                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
                             ) {
-                                if (previewBitmap != null) {
-                                    Image(bitmap = previewBitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                if (firstPagePreview != null) {
+                                    Image(bitmap = firstPagePreview!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                 } else {
                                     Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
                                         Icon(Icons.Outlined.Bolt, null, modifier = Modifier.size(48.dp).alpha(0.2f))
@@ -225,15 +212,32 @@ fun CompressView(onBack: () -> Unit) {
                             Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Spacer(Modifier.height(12.dp))
                             
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                listOf("Balanced", "Extreme").forEach { level ->
-                                    FilterChip(
-                                        selected = compressionLevel == level,
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf("Basic", "Recommended", "Extreme").forEach { level ->
+                                    val isSelected = compressionLevel == level
+                                    Surface(
                                         onClick = { compressionLevel = level },
-                                        label = { Text(level, fontWeight = FontWeight.Bold) },
-                                        modifier = Modifier.weight(1f),
-                                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = accentColor, selectedLabelColor = Color.White)
-                                    )
+                                        color = if (isSelected) accentColor.copy(alpha = 0.1f) else Color.Transparent,
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(1.dp, if (isSelected) accentColor else Color.Gray.copy(0.1f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            RadioButton(selected = isSelected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = accentColor))
+                                            Spacer(Modifier.width(12.dp))
+                                            Column {
+                                                Text(level, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                                Text(
+                                                    text = when(level) {
+                                                        "Extreme" -> "Smallest size, lower quality"
+                                                        "Recommended" -> "Great balance of size and quality"
+                                                        else -> "Minor reduction, keeps high quality"
+                                                    },
+                                                    fontSize = 10.sp, color = Color.Gray
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             
@@ -257,24 +261,22 @@ fun CompressView(onBack: () -> Unit) {
                         }
                     }
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = accentColor)
-                                Spacer(Modifier.height(16.dp))
-                                Text("Optimizing size...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = firstPagePreview,
+                            text = "Optimizing image data...",
+                            current = progressPage,
+                            total = pageCount,
+                            showWarning = showLoadingWarning
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = processedFileName,
-                            path = savedFilePath,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
                                 selectedUri = null
                                 unlockPassword = ""
-                                previewBitmap = null
                                 currentState = ToolState.SELECTING 
                             },
                             accentColor = accentColor
@@ -284,4 +286,15 @@ fun CompressView(onBack: () -> Unit) {
             }
         }
     }
+}
+
+private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val count = document.numberOfPages
+            document.close()
+            count
+        } ?: 0
+    } catch (e: Exception) { 0 }
 }

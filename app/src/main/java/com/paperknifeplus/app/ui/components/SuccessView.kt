@@ -19,8 +19,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
 fun SuccessView(
-    fileName: String, 
-    path: String = "", 
+    fileName: String = "", 
     processingTime: String = "", 
     onDone: () -> Unit, 
     onProcessMore: () -> Unit,
@@ -32,76 +31,72 @@ fun SuccessView(
         verticalArrangement = Arrangement.Center
     ) {
         Surface(
-            modifier = Modifier.size(80.dp), 
+            modifier = Modifier.size(100.dp), 
             shape = CircleShape, 
             color = Color(0xFF06D6A0).copy(alpha = 0.1f)
         ) {
-            Icon(Icons.Default.Check, null, tint = Color(0xFF06D6A0), modifier = Modifier.padding(20.dp))
+            Icon(
+                Icons.Default.Check, 
+                null, 
+                tint = Color(0xFF06D6A0), 
+                modifier = Modifier.padding(24.dp).size(48.dp)
+            )
         }
         
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(32.dp))
         
-        Text("Task Complete", fontWeight = FontWeight.Black, fontSize = 24.sp)
+        Text("Task Complete", fontWeight = FontWeight.Black, fontSize = 28.sp, letterSpacing = (-0.5).sp)
         
         if (processingTime.isNotEmpty()) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "PROCESSED IN $processingTime", 
-                fontSize = 9.sp, 
-                fontWeight = FontWeight.Black, 
-                color = Color(0xFF06D6A0),
-                letterSpacing = 1.sp
-            )
+            Spacer(Modifier.height(8.dp))
+            Surface(
+                color = Color(0xFF06D6A0).copy(alpha = 0.1f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    "PROCESSED IN $processingTime", 
+                    fontSize = 10.sp, 
+                    fontWeight = FontWeight.Black, 
+                    color = Color(0xFF06D6A0),
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
         }
         
         Spacer(Modifier.height(48.dp))
         
-        // Minimal Display of Processed File
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = fileName, 
-                fontWeight = FontWeight.Bold, 
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 15.sp,
-                maxLines = 1,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                Box(Modifier.size(4.dp).background(Color(0xFF06D6A0), CircleShape))
-                Spacer(Modifier.width(6.dp))
-                Text("Saved to Storage", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+        // Premium Buttons
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onProcessMore, 
+                modifier = Modifier.fillMaxWidth().height(60.dp), 
+                shape = RoundedCornerShape(20.dp), 
+                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+            ) {
+                Text("PROCESS MORE FILES", fontWeight = FontWeight.Black, color = Color.White, letterSpacing = 0.5.sp)
             }
-        }
-        
-        Spacer(Modifier.height(64.dp))
 
-        // New Future Button
-        OutlinedButton(
-            onClick = { /* Future functionality */ },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(0.2f))
-        ) {
-            Icon(Icons.Default.Visibility, null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(12.dp))
-            Text("PREVIEW (COMING SOON)", fontWeight = FontWeight.Bold, color = Color.Gray)
-        }
-        
-        Spacer(Modifier.height(12.dp))
-        
-        Button(
-            onClick = onProcessMore, 
-            modifier = Modifier.fillMaxWidth().height(56.dp), 
-            shape = RoundedCornerShape(16.dp), 
-            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-        ) {
-            Text("PROCESS MORE FILES", fontWeight = FontWeight.Black, color = Color.White)
-        }
-        
-        Spacer(Modifier.height(12.dp))
-        
-        TextButton(onClick = onDone) {
-            Text("BACK TO TOOLS", fontWeight = FontWeight.Bold, color = Color.Gray)
+            OutlinedButton(
+                onClick = { /* Future functionality */ },
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(20.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(0.2f))
+            ) {
+                Icon(Icons.Default.Visibility, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+                Spacer(Modifier.width(12.dp))
+                Text("PREVIEW (COMING SOON)", fontWeight = FontWeight.Bold, color = Color.Gray)
+            }
+            
+            TextButton(
+                onClick = onDone,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("BACK TO TOOLS CATALOG", fontWeight = FontWeight.Black, color = Color.Gray, fontSize = 11.sp, letterSpacing = 1.sp)
+            }
         }
     }
 }

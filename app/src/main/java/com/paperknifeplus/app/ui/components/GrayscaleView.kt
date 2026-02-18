@@ -57,13 +57,14 @@ fun GrayscaleView(onBack: () -> Unit) {
     var fileSize by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var resultFileName by remember { mutableStateOf("") }
-
+    
     var pageCount by remember { mutableStateOf(0) }
     var isGrayscalePreview by remember { mutableStateOf(true) }
     var showLoadingWarning by remember { mutableStateOf(false) }
+    
+    var progressPage by remember { mutableIntStateOf(0) }
+    var firstPagePreview by remember { mutableStateOf<Bitmap?>(null) }
 
-    // Loading Hint Logic
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
             delay(5000)
@@ -90,8 +91,10 @@ fun GrayscaleView(onBack: () -> Unit) {
                     }
                 } else {
                     val count = getPageCount(context, it, null)
+                    val preview = loadPreview(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
+                        firstPagePreview = preview
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -106,16 +109,14 @@ fun GrayscaleView(onBack: () -> Unit) {
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    performGrayscaleRewrite(context, selectedUri!!, saveUri, if (unlockPassword.isEmpty()) null else unlockPassword)
-                    
+                    performGrayscaleRewrite(context, selectedUri!!, saveUri, if (unlockPassword.isEmpty()) null else unlockPassword) { current, total ->
+                        progressPage = current
+                    }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalDetails = getUriDetails(context, saveUri)
-                        resultFileName = finalDetails.name
                         processingTime = timeStr
-                        SessionManager.addEntry(finalDetails.name, "Grayscale", "Converted", Icons.Outlined.Palette)
+                        SessionManager.addEntry(fileName, "Grayscale", "Converted", Icons.Outlined.Palette)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -132,7 +133,7 @@ fun GrayscaleView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -167,9 +168,7 @@ fun GrayscaleView(onBack: () -> Unit) {
                     contentColor = Color.White,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
-                ) {
-                    Icon(Icons.Default.Save, "Save")
-                }
+                ) { Icon(Icons.Default.Save, "Save") }
             }
         }
     ) { padding ->
@@ -198,9 +197,11 @@ fun GrayscaleView(onBack: () -> Unit) {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
                                     val count = getPageCount(context, selectedUri!!, unlockPassword)
+                                    val preview = loadPreview(context, selectedUri!!, unlockPassword)
                                     if (count > 0) {
                                         withContext(Dispatchers.Main) {
                                             pageCount = count
+                                            firstPagePreview = preview
                                             currentState = ToolState.CONFIGURING
                                             isFileLoading = false
                                         }
@@ -223,9 +224,7 @@ fun GrayscaleView(onBack: () -> Unit) {
                                 Spacer(Modifier.width(8.dp))
                                 Text("• $pageCount PAGES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
                             }
-                            
                             Spacer(Modifier.height(12.dp))
-                            
                             LazyColumn(
                                 modifier = Modifier.weight(1f).fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -245,11 +244,17 @@ fun GrayscaleView(onBack: () -> Unit) {
                         }
                     }
                     ToolState.PROCESSING -> {
-                        LoadingStateView(accentColor, showLoadingWarning, "Rebuilding as grayscale...")
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = firstPagePreview,
+                            text = "Rewriting document layers...",
+                            current = progressPage,
+                            total = pageCount,
+                            showWarning = showLoadingWarning
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            fileName = resultFileName,
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -259,6 +264,56 @@ fun GrayscaleView(onBack: () -> Unit) {
                             },
                             accentColor = accentColor
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProcessingStateView(
+    accentColor: Color, 
+    preview: Bitmap?,
+    text: String,
+    current: Int,
+    total: Int,
+    showWarning: Boolean
+) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+            Card(
+                modifier = Modifier.size(180.dp, 240.dp),
+                shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+            ) {
+                if (preview != null) {
+                    Image(bitmap = preview.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                } else {
+                    Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)))
+                }
+            }
+            
+            Spacer(Modifier.height(32.dp))
+            CircularProgressIndicator(color = accentColor)
+            Spacer(Modifier.height(24.dp))
+            
+            Text(text, fontSize = 16.sp, fontWeight = FontWeight.Black)
+            
+            if (total > 0) {
+                Spacer(Modifier.height(8.dp))
+                Text("Page $current of $total", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            }
+
+            AnimatedVisibility(visible = showWarning, enter = fadeIn(), exit = fadeOut()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Spacer(Modifier.height(24.dp))
+                    Surface(color = accentColor.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp)) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Info, null, tint = accentColor, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("This is a complex operation. Please keep the app open.", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor, textAlign = TextAlign.Center)
+                        }
                     }
                 }
             }
@@ -277,20 +332,11 @@ fun LoadingStateView(accentColor: Color, showWarning: Boolean, text: String) {
             AnimatedVisibility(visible = showWarning, enter = fadeIn(), exit = fadeOut()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Spacer(Modifier.height(16.dp))
-                    Surface(
-                        color = accentColor.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
+                    Surface(color = accentColor.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp)) {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Outlined.Info, null, tint = accentColor, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(
-                                "Large files may take a moment to process on your device.",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = accentColor,
-                                textAlign = TextAlign.Center
-                            )
+                            Text("Processing may take a moment depending on the device.", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor, textAlign = TextAlign.Center)
                         }
                     }
                 }
@@ -308,12 +354,12 @@ fun PagePreviewItem(
     isGrayscale: Boolean,
     accentColor: Color
 ) {
-    // Balanced quality preview: 0.5f scale
+    // Standard preview quality
     var bitmap by remember(uri, pageIndex, password) { mutableStateOf<Bitmap?>(null) }
     
     LaunchedEffect(uri, pageIndex, password) {
         withContext(Dispatchers.IO) {
-            val b = renderPageToBitmap(context, uri, pageIndex, password, 0.5f)
+            val b = renderPageToBitmap(context, uri, pageIndex, password, 0.4f)
             withContext(Dispatchers.Main) { bitmap = b }
         }
     }

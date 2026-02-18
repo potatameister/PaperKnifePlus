@@ -1,12 +1,12 @@
 package com.paperknifeplus.app.ui.components
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,10 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +30,7 @@ import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -45,10 +43,20 @@ fun MergeView(onBack: () -> Unit) {
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.CONFIGURING) }
     var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    var savedFilePath by remember { mutableStateOf("") }
-    var resultFileName by remember { mutableStateOf("") }
     var processingTime by remember { mutableStateOf("") }
+    var showLoadingWarning by remember { mutableStateOf(false) }
     
+    var progressCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(currentState) {
+        if (currentState == ToolState.PROCESSING) {
+            delay(5000)
+            showLoadingWarning = true
+        } else {
+            showLoadingWarning = false
+        }
+    }
+
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris -> 
         selectedUris = selectedUris + uris 
     }
@@ -61,8 +69,9 @@ fun MergeView(onBack: () -> Unit) {
                 try {
                     val merger = PDFMergerUtility()
                     context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
-                        selectedUris.forEach { pdfUri ->
-                            context.contentResolver.openInputStream(pdfUri)?.use { inputStream ->
+                        selectedUris.forEachIndexed { index, imgUri ->
+                            progressCount = index + 1
+                            context.contentResolver.openInputStream(imgUri)?.use { inputStream ->
                                 merger.addSource(inputStream)
                             }
                         }
@@ -72,13 +81,9 @@ fun MergeView(onBack: () -> Unit) {
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
                     withContext(Dispatchers.Main) {
-                        val finalName = saveUri.lastPathSegment?.substringAfterLast("/") ?: "merged.pdf"
-                        savedFilePath = "Local Storage / $finalName"
-                        resultFileName = finalName
                         processingTime = timeStr
-                        SessionManager.addEntry(finalName, "Merge", "${selectedUris.size} files", Icons.Default.Layers)
+                        SessionManager.addEntry("Merged Document", "Merge", "${selectedUris.size} files", Icons.Default.Layers)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -95,7 +100,7 @@ fun MergeView(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -105,8 +110,8 @@ fun MergeView(onBack: () -> Unit) {
                     }
                     Spacer(Modifier.width(16.dp))
                     Column {
-                        Text("Merge PDFs", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("COMBINE MULTIPLE DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        Text("Merge", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+                        Text("COMBINE MULTIPLE PDFS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
@@ -119,7 +124,7 @@ fun MergeView(onBack: () -> Unit) {
                     contentColor = Color.White,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
-                ) { Icon(Icons.Default.Add, "Add") }
+                ) { Icon(Icons.Default.Add, "Add PDF") }
             }
         }
     ) { padding ->
@@ -131,7 +136,7 @@ fun MergeView(onBack: () -> Unit) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(Icons.Default.Layers, null, modifier = Modifier.size(64.dp).alpha(0.1f))
                                 Spacer(Modifier.height(16.dp))
-                                Text("No PDFs selected.", fontWeight = FontWeight.Bold, color = Color.Gray)
+                                Text("No files selected.", fontWeight = FontWeight.Bold, color = Color.Gray)
                                 Text("TAP THE + BUTTON TO START", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.5f), letterSpacing = 1.sp)
                             }
                         }
@@ -139,22 +144,18 @@ fun MergeView(onBack: () -> Unit) {
                         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             item { Spacer(Modifier.height(16.dp)) }
                             items(selectedUris) { uri ->
-                                val details = getUriDetails(context, uri)
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(20.dp),
                                     colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
                                     border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
                                 ) {
-                                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Surface(Modifier.size(36.dp), shape = RoundedCornerShape(8.dp), color = accentColor.copy(alpha = 0.1f)) {
-                                            Icon(Icons.Default.PictureAsPdf, null, tint = accentColor, modifier = Modifier.padding(8.dp))
+                                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Surface(Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = accentColor.copy(alpha = 0.1f)) {
+                                            Icon(Icons.Default.Description, null, tint = accentColor, modifier = Modifier.padding(10.dp))
                                         }
-                                        Spacer(Modifier.width(16.dp))
-                                        Column(Modifier.weight(1f)) {
-                                            Text(details.name, maxLines = 1, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                            Text(details.size, fontSize = 10.sp, color = Color.Gray)
-                                        }
+                                        Spacer(Modifier.width(12.dp))
+                                        Text("Document", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         IconButton(onClick = { selectedUris = selectedUris - uri }) { 
                                             Icon(Icons.Default.DeleteOutline, null, tint = Color.Gray, modifier = Modifier.size(20.dp)) 
                                         }
@@ -165,36 +166,21 @@ fun MergeView(onBack: () -> Unit) {
                         }
                         
                         Button(
-                            onClick = { 
-                                val firstDetails = getUriDetails(context, selectedUris[0])
-                                val defaultName = firstDetails.name.replace(".pdf", "", true) + "-merged.pdf"
-                                saveLauncher.launch(defaultName) 
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp)
-                                .height(56.dp),
+                            onClick = { saveLauncher.launch("merged.pdf") },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
                             enabled = selectedUris.size > 1,
                             colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                             shape = RoundedCornerShape(20.dp)
                         ) {
-                            Text("Merge ${selectedUris.size} Files", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
+                            Text("Merge ${selectedUris.size} Files", fontWeight = FontWeight.Black)
                         }
                     }
                 }
                 ToolState.PROCESSING -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = accentColor)
-                            Spacer(Modifier.height(16.dp))
-                            Text("Merging documents...", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                        }
-                    }
+                    LoadingStateView(accentColor, showLoadingWarning, "Merging $progressCount of ${selectedUris.size} files...")
                 }
                 ToolState.SUCCESS -> {
                     SuccessView(
-                        fileName = resultFileName,
-                        path = savedFilePath,
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { 
