@@ -1,12 +1,9 @@
 package com.paperknifeplus.app.ui.components
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,11 +18,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,7 +53,6 @@ fun MetadataView(onBack: () -> Unit) {
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
-    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
@@ -88,7 +81,7 @@ fun MetadataView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
-                    val count = getPageCountLocal(context, it, null)
+                    val count = getPageCount(context, it, null)
                     loadMetadata(context, it, null) { t, a, s, k, c, p ->
                         title = t; author = a; subject = s; keywords = k; creator = c; producer = p
                         withContext(Dispatchers.Main) {
@@ -184,7 +177,7 @@ fun MetadataView(onBack: () -> Unit) {
                             onUnlock = {
                                 isFileLoading = true
                                 scope.launch(Dispatchers.IO) {
-                                    val count = getPageCountLocal(context, selectedUri!!, unlockPassword)
+                                    val count = getPageCount(context, selectedUri!!, unlockPassword)
                                     loadMetadata(context, selectedUri!!, unlockPassword) { t, a, s, k, c, p ->
                                         title = t; author = a; subject = s; keywords = k; creator = c; producer = p
                                         withContext(Dispatchers.Main) {
@@ -203,7 +196,6 @@ fun MetadataView(onBack: () -> Unit) {
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                             Spacer(Modifier.height(16.dp))
                             
-                            // UNIFIED PREVIEW
                             UnifiedPdfPreview(
                                 uri = selectedUri!!,
                                 pageCount = pageCount,
@@ -343,15 +335,4 @@ private suspend fun loadMetadata(
             onSuccess(t, a, s, k, c, p)
         }
     } catch (e: Exception) { }
-}
-
-private suspend fun getPageCountLocal(context: android.content.Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
-    try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val count = document.numberOfPages
-            document.close()
-            count
-        } ?: 0
-    } catch (e: Exception) { 0 }
 }
