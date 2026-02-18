@@ -41,10 +41,22 @@ fun UnifiedPdfPreview(
     val context = LocalContext.current
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
     
-    // The "Fast Engine" Loader
+    // Optimized "Turbo Engine" Loader
     val imageLoader = remember {
         ImageLoader.Builder(context)
             .components { add(PdfPageFetcher.Factory(context)) }
+            .memoryCache {
+                coil.memory.MemoryCache.Builder(context)
+                    .maxSizePercent(0.25) // Use 25% of available RAM for image cache
+                    .build()
+            }
+            .diskCache {
+                coil.disk.DiskCache.Builder()
+                    .directory(context.cacheDir.resolve("pdf_previews"))
+                    .maxSizeBytes(100 * 1024 * 1024) // 100MB disk cache
+                    .build()
+            }
+            .respectCacheHeaders(false)
             .crossfade(true)
             .build()
     }
@@ -62,28 +74,28 @@ fun UnifiedPdfPreview(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
             ) {
                 val request = remember(uri, password) { PdfPageRequest(uri, 0, password, 1.2f) }
-                Image(
-                    painter = rememberAsyncImagePainter(request, imageLoader),
-                    contentDescription = "Document Cover",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            }
-            
-            // Subtle Page Count Badge
-            Surface(
-                modifier = Modifier.padding(bottom = 16.dp),
-                color = Color.Black.copy(alpha = 0.6f),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Text(
-                    text = "$pageCount PAGES",
-                    color = Color.White,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    letterSpacing = 1.sp
-                )
+                Box(Modifier.fillMaxSize()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(request, imageLoader),
+                        contentDescription = "Document Cover",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                    
+                    // Zoom Hint Logo
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+                        color = Color.Black.copy(0.3f),
+                        shape = CircleShape
+                    ) {
+                        Icon(
+                            Icons.Default.ZoomIn, 
+                            null, 
+                            tint = Color.White, 
+                            modifier = Modifier.padding(8.dp).size(20.dp)
+                        )
+                    }
+                }
             }
         }
     } else {
@@ -134,7 +146,7 @@ fun PdfPageItem(
     Box(
         modifier = modifier
             .aspectRatio(0.707f)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF4F4F5))
             .clickable { onClick() }
     ) {
@@ -145,21 +157,22 @@ fun PdfPageItem(
             contentScale = ContentScale.Crop
         )
         
-        // Page Number Overlay
+        // Page Number Overlay (Centralized like iLovePDF)
         Surface(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(6.dp),
+                .align(Alignment.Center)
+                .size(32.dp),
             color = Color.Black.copy(0.5f),
-            shape = RoundedCornerShape(4.dp)
+            shape = RoundedCornerShape(6.dp)
         ) {
-            Text(
-                "${index + 1}", 
-                color = Color.White, 
-                fontSize = 9.sp, 
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    "${index + 1}", 
+                    color = Color.White, 
+                    fontSize = 12.sp, 
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         
         content()

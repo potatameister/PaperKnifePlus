@@ -245,17 +245,22 @@ fun RearrangeView(onBack: () -> Unit) {
                                         }
 
                                         Row(
-                                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .padding(bottom = 8.dp)
+                                                .background(Color.Black.copy(0.6f), RoundedCornerShape(12.dp))
+                                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             IconButton(
                                                 onClick = { if (i > 0) { val list = pageOrder.toMutableList(); val temp = list[i]; list[i] = list[i-1]; list[i-1] = temp; pageOrder = list } },
-                                                modifier = Modifier.size(28.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                                                modifier = Modifier.size(24.dp)
                                             ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, modifier = Modifier.size(14.dp), tint = Color.White) }
                                             
                                             IconButton(
                                                 onClick = { if (i < pageOrder.size - 1) { val list = pageOrder.toMutableList(); val temp = list[i]; list[i] = list[i+1]; list[i+1] = temp; pageOrder = list } },
-                                                modifier = Modifier.size(28.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                                                modifier = Modifier.size(24.dp)
                                             ) { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(14.dp), tint = Color.White) }
                                         }
                                     }

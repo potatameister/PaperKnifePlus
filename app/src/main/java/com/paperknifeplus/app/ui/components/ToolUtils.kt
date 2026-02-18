@@ -46,21 +46,23 @@ object PreferencesManager {
     }
 }
 
-// Simple Memory Cache for Bitmaps to prevent OOM
+// Advanced Memory Cache for Bitmaps
 object BitmapCache {
     private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
-    private val cacheSize = maxMemory / 4 // Use 1/4th of available memory
+    private val cacheSize = maxMemory / 6 // Use 1/6th of available memory for raw bitmaps
     private val memoryCache = object : LruCache<String, Bitmap>(cacheSize) {
         override fun sizeOf(key: String, bitmap: Bitmap): Int {
             return bitmap.byteCount / 1024
         }
     }
 
-    fun getBitmap(key: String): Bitmap? = memoryCache.get(key)
+    fun getBitmap(key: String): Bitmap? = synchronized(this) { memoryCache.get(key) }
     fun putBitmap(key: String, bitmap: Bitmap) {
-        if (getBitmap(key) == null) memoryCache.put(key, bitmap)
+        synchronized(this) {
+            if (getBitmap(key) == null) memoryCache.put(key, bitmap)
+        }
     }
-    fun clear() = memoryCache.evictAll()
+    fun clear() = synchronized(this) { memoryCache.evictAll() }
 }
 
 @SuppressLint("Range")

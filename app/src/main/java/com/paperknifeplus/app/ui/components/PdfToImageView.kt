@@ -215,15 +215,27 @@ fun PdfToImageView(onBack: () -> Unit) {
                                     index = index,
                                     password = unlockPassword.ifEmpty { null },
                                     imageLoader = imageLoader,
-                                    onClick = { 
-                                        selectedPages = if (isSelected) selectedPages - index else selectedPages + index 
-                                    },
+                                    onClick = { lightboxPage = index },
                                     modifier = Modifier.border(BorderStroke(2.dp, if (isSelected) accentColor else Color.Transparent), RoundedCornerShape(12.dp))
                                 ) {
-                                    if (isSelected) {
-                                        Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp), color = accentColor, shape = CircleShape) {
-                                            Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(14.dp).padding(2.dp))
-                                        }
+                                    // Selection toggle button
+                                    Surface(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(4.dp)
+                                            .size(24.dp)
+                                            .clickable { 
+                                                selectedPages = if (isSelected) selectedPages - index else selectedPages + index 
+                                            },
+                                        color = if (isSelected) accentColor else Color.Black.copy(0.3f),
+                                        shape = CircleShape
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Check, 
+                                            null, 
+                                            tint = Color.White, 
+                                            modifier = Modifier.padding(4.dp)
+                                        )
                                     }
                                 }
                             }
@@ -264,5 +276,19 @@ fun PdfToImageView(onBack: () -> Unit) {
                 else -> {}
             }
         }
+    }
+
+    if (lightboxPage != null && selectedUri != null) {
+        PageLightbox(
+            uri = selectedUri!!,
+            initialPage = lightboxPage!!,
+            totalCount = pageCount,
+            password = unlockPassword.ifEmpty { null },
+            onDismiss = { lightboxPage = null },
+            selectedPages = selectedPages,
+            onToggleSelection = { index ->
+                selectedPages = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
+            }
+        )
     }
 }

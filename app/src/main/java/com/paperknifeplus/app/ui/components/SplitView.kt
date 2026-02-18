@@ -53,6 +53,7 @@ fun SplitView(onBack: () -> Unit) {
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
+    var lightboxPage by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
@@ -267,5 +268,15 @@ fun SplitView(onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (lightboxPage != null && selectedUri != null) {
+        PageLightbox(
+            uri = selectedUri!!,
+            initialPage = lightboxPage!!,
+            totalCount = pageCount,
+            password = if (unlockPassword.isEmpty()) null else unlockPassword,
+            onDismiss = { lightboxPage = null }
+        )
     }
 }
