@@ -59,7 +59,7 @@ fun PdfToImageView(onBack: () -> Unit) {
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
 
     // Use Shared Global Loader (MainActivity)
-    val imageLoader = LocalImageLoader.current
+    val imageLoader = coil.compose.LocalImageLoader.current
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {

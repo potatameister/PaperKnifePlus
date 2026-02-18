@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -47,7 +48,7 @@ fun UnifiedPdfPreview(
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
     
     // NITRO ENGINE: Use Shared Global Loader (MainActivity)
-    val imageLoader = LocalImageLoader.current
+    val imageLoader = coil.compose.LocalImageLoader.current
 
     if (mode == PreviewMode.COVER) {
         // --- TYPE B: ONE PAGE PREVIEW ---
@@ -79,7 +80,7 @@ fun UnifiedPdfPreview(
                     } else if (painterState is AsyncImagePainter.State.Error && password != null) {
                         // Locked Placeholder
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Lock, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                            Icon(Icons.Filled.Lock, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
                             Spacer(Modifier.height(12.dp))
                             Text("Protected File", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
@@ -92,7 +93,7 @@ fun UnifiedPdfPreview(
                         shape = CircleShape
                     ) {
                         Icon(
-                            Icons.Default.ZoomIn, 
+                            Icons.Filled.ZoomIn, 
                             null, 
                             tint = Color.White, 
                             modifier = Modifier.padding(8.dp).size(20.dp)
@@ -170,7 +171,7 @@ fun PdfPageItem(
         if (painterState is AsyncImagePainter.State.Loading) {
             CircularProgressIndicator(color = accentColor, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
         } else if (painterState is AsyncImagePainter.State.Error && password != null) {
-             Icon(Icons.Default.Lock, null, tint = Color.Gray.copy(0.3f), modifier = Modifier.size(32.dp))
+             Icon(Icons.Filled.Lock, null, tint = Color.Gray.copy(0.3f), modifier = Modifier.size(32.dp))
         }
         
         // Page Number Overlay (Centralized)

@@ -68,7 +68,7 @@ fun ProcessingStateView(
 ) {
     val context = LocalContext.current
     // NITRO ENGINE: Use Shared Global Loader (MainActivity)
-    val imageLoader = LocalImageLoader.current
+    val imageLoader = coil.compose.LocalImageLoader.current
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.ImageLoader
+import coil.compose.LocalImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
@@ -53,7 +54,7 @@ fun GrayscaleView(onBack: () -> Unit) {
     var progressPage by remember { mutableIntStateOf(0) }
 
     // Use Shared Global Loader (MainActivity)
-    val imageLoader = LocalImageLoader.current
+    val imageLoader = coil.compose.LocalImageLoader.current
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {

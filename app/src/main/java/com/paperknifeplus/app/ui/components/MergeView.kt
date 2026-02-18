@@ -54,7 +54,7 @@ fun MergeView(onBack: () -> Unit) {
     var progressCount by remember { mutableIntStateOf(0) }
 
     // Use Shared Global Loader (MainActivity)
-    val imageLoader = LocalImageLoader.current
+    val imageLoader = coil.compose.LocalImageLoader.current
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {

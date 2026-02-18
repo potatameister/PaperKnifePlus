@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             var isDarkMode by remember { mutableStateOf(false) }
-            CompositionLocalProvider(LocalImageLoader provides nitroImageLoader) {
+            CompositionLocalProvider(coil.compose.LocalImageLoader provides nitroImageLoader) {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
                     var currentScreen by remember { mutableStateOf("home") }
                 val isMainView = currentScreen in listOf("home", "tools", "history", "settings", "about")
