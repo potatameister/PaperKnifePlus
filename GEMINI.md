@@ -30,6 +30,7 @@ To ensure byte-for-byte reproducibility:
 - **Privacy First:** Zero trackers, zero analytics. The app does not have the ability to reach the network.
 
 ## Major Evolutions
+- **2026-02-18:** Established "Proactive Build Troubleshooting" workflow—monitoring CI logs in real-time and applying hot-fixes while builds are in-flight to maximize iteration speed.
 - **2026-02-18:** Unified PDF Preview system (Type A/Grid & Type B/Cover) integrated across all PDF tools using high-performance Coil rendering.
 - **2026-02-17:** Implemented Search and Icon headers for Tools and History.
 - **2026-02-17:** Fixed 0-byte file saving issues by enforcing memory-only merging and explicit stream flushing.
