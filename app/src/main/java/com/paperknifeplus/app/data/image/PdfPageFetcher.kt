@@ -5,22 +5,20 @@ import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.util.LruCache
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.fetch.DrawableResult
 import coil.fetch.FetchResult
 import coil.fetch.Fetcher
 import coil.request.Options
-import coil.size.Size
 import com.paperknifeplus.app.ui.components.BitmapPool
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.rendering.ImageType
-import com.tom_roush.pdfbox.rendering.PDFRenderer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.File
 import kotlinx.coroutines.isActive
 
 data class PdfPageRequest(
@@ -31,35 +29,32 @@ data class PdfPageRequest(
 )
 
 /**
- * High-performance Cache for the Native Engine.
- * This ensures we only parse the PDF structure ONCE per document, 
- * matching the speed of iLovePDF and original PaperKnife.
+ * Robust, Multi-Document Cache for the Native Engine.
+ * Replicates the "Blitz" speed of original PaperKnife by keeping the C++ engine open.
  */
 object NativeRendererCache {
     private val mutex = Mutex()
-    private var currentUri: Uri? = null
-    private var renderer: PdfRenderer? = null
-    private var pfd: ParcelFileDescriptor? = null
+    
+    private class CacheEntry(val renderer: PdfRenderer, val pfd: ParcelFileDescriptor)
+    
+    private val cache = object : LruCache<Uri, CacheEntry>(3) {
+        override fun entryRemoved(evicted: Boolean, key: Uri?, oldValue: CacheEntry?, newValue: CacheEntry?) {
+            oldValue?.renderer?.close()
+            oldValue?.pfd?.close()
+        }
+    }
 
     suspend fun getRenderer(context: Context, uri: Uri): PdfRenderer? {
-        if (currentUri == uri && renderer != null) return renderer
-        
         mutex.withLock {
-            // double check after lock
-            if (currentUri == uri && renderer != null) return renderer
+            cache.get(uri)?.let { return it.renderer }
             
-            // Close old
-            renderer?.close()
-            pfd?.close()
-            
-            // Open new
             return try {
-                val newPfd = context.contentResolver.openFileDescriptor(uri, "r")
-                val newRenderer = PdfRenderer(newPfd!!)
-                pfd = newPfd
-                renderer = newRenderer
-                currentUri = uri
-                newRenderer
+                val pfd = context.contentResolver.openFileDescriptor(uri, "r")
+                if (pfd != null) {
+                    val renderer = PdfRenderer(pfd)
+                    cache.put(uri, CacheEntry(renderer, pfd))
+                    renderer
+                } else null
             } catch (e: Exception) {
                 null
             }
@@ -67,7 +62,7 @@ object NativeRendererCache {
     }
 }
 
-// Separate mutex for the actual drawing to prevent thread conflicts in the native layer
+// Global Mutex for serialized rendering - Native PdfRenderer is NOT thread-safe
 private val drawMutex = Mutex()
 
 class PdfPageFetcher(
@@ -76,7 +71,7 @@ class PdfPageFetcher(
 ) : Fetcher {
 
     override suspend fun fetch(): FetchResult? = withContext(Dispatchers.IO) {
-        // 1. Try Native Renderer (Turbo Mode)
+        // 1. Try Native Renderer (Ultra Fast)
         if (data.password == null) {
             try {
                 val renderer = NativeRendererCache.getRenderer(context, data.uri)
@@ -87,27 +82,30 @@ class PdfPageFetcher(
                         
                         if (data.pageIndex < renderer.pageCount) {
                             val page = renderer.openPage(data.pageIndex)
-                            
-                            val width = (page.width * data.scale).toInt().coerceAtLeast(1)
-                            val height = (page.height * data.scale).toInt().coerceAtLeast(1)
-                            
-                            // ZERO ALLOCATION: Reuse bitmap from pool
-                            val config = if (data.scale <= 0.5f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
-                            val bitmap = BitmapPool.get(width, height, config)
-                            
-                            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                            page.close()
-                            
-                            return@withContext DrawableResult(
-                                drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
-                                isSampled = data.scale < 1.0f,
-                                dataSource = DataSource.DISK
-                            )
+                            try {
+                                val width = (page.width * data.scale).toInt().coerceAtLeast(1)
+                                val height = (page.height * data.scale).toInt().coerceAtLeast(1)
+                                
+                                // BITMAP POOLING: Prevents GC stutter
+                                val config = if (data.scale <= 0.6f) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
+                                val bitmap = BitmapPool.get(width, height, config)
+                                
+                                // Hardware-accelerated native render
+                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                
+                                return@withContext DrawableResult(
+                                    drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
+                                    isSampled = data.scale < 1.0f,
+                                    dataSource = DataSource.DISK
+                                )
+                            } finally {
+                                page.close()
+                            }
                         }
                     }
                 }
             } catch (e: Exception) {
-                // Fallback to PDFBox if native fails
+                // Fallback to PDFBox
             }
         }
 
