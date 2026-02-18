@@ -32,11 +32,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
+import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @Composable
 fun PdfToImageView(onBack: () -> Unit) {
@@ -171,11 +174,17 @@ fun PdfToImageView(onBack: () -> Unit) {
                                     val bitmap = renderPageToBitmap(context, selectedUri!!, i, unlockPassword, 0.3f)
                                     if (bitmap != null) thumbs[i] = bitmap
                                 }
-                                withContext(Dispatchers.Main) {
-                                    pageCount = count
-                                    selectedPages = (0 until count).toSet()
-                                    thumbnails = thumbs
-                                    currentState = ToolState.CONFIGURING
+                                if (count > 0) {
+                                    withContext(Dispatchers.Main) {
+                                        pageCount = count
+                                        selectedPages = (0 until count).toSet()
+                                        thumbnails = thumbs
+                                        currentState = ToolState.CONFIGURING
+                                    }
+                                } else {
+                                    withContext(Dispatchers.Main) { 
+                                        Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                         },
