@@ -90,7 +90,6 @@ suspend fun verifyPasswordLocal(context: Context, uri: Uri, password: String): B
 }
 
 suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? = withContext(Dispatchers.IO) {
-    // Native PdfRenderer is MUCH more efficient for previews than PDFBox
     try {
         context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
             val renderer = android.graphics.pdf.PdfRenderer(pfd)
@@ -102,7 +101,6 @@ suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? 
             return@withContext bitmap
         }
     } catch (e: Exception) {
-        // Fallback to PDFBox if locked
         renderPageToBitmap(context, uri, 0, password, 0.5f)
     }
     null
@@ -131,17 +129,22 @@ fun toGrayscaleBitmap(src: Bitmap): Bitmap {
     return bmpGrayscale
 }
 
+suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
+    context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
+        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        document.isAllSecurityToBeRemoved = true 
+        saveAndFlush(context, document, outputUri)
+    }
+}
+
 suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: Uri, password: String?, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
         val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
         val total = document.numberOfPages
-        
         for (i in 0 until total) {
             onProgress(i + 1, total)
-            val page = document.getPage(i)
-            processResourcesForGrayscale(document, page.resources)
+            processResourcesForGrayscale(document, document.getPage(i).resources)
         }
-        
         saveAndFlush(context, document, outputUri)
     }
 }
@@ -165,25 +168,13 @@ private fun processResourcesForGrayscale(document: PDDocument, resources: PDReso
 suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?, level: String, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
         val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        
-        val quality = when(level) {
-            "Extreme" -> 0.3f
-            "Recommended" -> 0.6f
-            else -> 0.85f
-        }
-        val scale = when(level) {
-            "Extreme" -> 0.5f
-            "Recommended" -> 0.75f
-            else -> 1.0f
-        }
-
+        val quality = when(level) { "Extreme" -> 0.3f; "Recommended" -> 0.6f; else -> 0.85f }
+        val scale = when(level) { "Extreme" -> 0.5f; "Recommended" -> 0.75f; else -> 1.0f }
         val total = document.numberOfPages
         for (i in 0 until total) {
             onProgress(i + 1, total)
-            val page = document.getPage(i)
-            processResourcesForCompression(document, page.resources, scale, quality)
+            processResourcesForCompression(document, document.getPage(i).resources, scale, quality)
         }
-        
         saveAndFlush(context, document, outputUri)
     }
 }
@@ -196,10 +187,8 @@ private fun processResourcesForCompression(document: PDDocument, resources: PDRe
                 val bitmap = xobject.image
                 val newWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
                 val newHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
-                
                 val scaledBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
                 val compressedImage = JPEGFactory.createFromImage(document, scaledBitmap, quality)
-                
                 resources.put(name, compressedImage)
                 bitmap.recycle()
                 scaledBitmap.recycle()
@@ -212,10 +201,8 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
     val info = document.documentInformation
     info.creator = "PaperKnife+"
     info.producer = "PaperKnife+ Native Engine"
-    
     val autoAuthor = PreferencesManager.getDefaultAuthor(context)
     if (autoAuthor.isNotEmpty()) info.author = autoAuthor
-
     context.contentResolver.openOutputStream(outputUri, "rwt")?.use { outputStream ->
         document.save(outputStream)
         outputStream.flush()
@@ -224,7 +211,6 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
         }
     }
     document.close()
-    
     try {
         val values = ContentValues()
         values.put(MediaStore.MediaColumns.IS_PENDING, 0)
