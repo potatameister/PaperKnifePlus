@@ -30,69 +30,68 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 @Composable
 fun ToolsView(onToolClick: (String) -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
-    val allTools = listOf(
-        // EDIT - Rose
-        Tool("merge", "Merge PDF", "Combine multiple PDFs", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("split", "Split PDF", "Extract specific pages", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("rotate", "Rotate PDF", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("rearrange", "Rearrange", "Reorder pages", Icons.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("page-numbers", "Page Numbers", "Add numbering", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("watermark", "Watermark", "Add text overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("signature", "Signature", "Sign documents", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        
-        // OPTIMIZE - Amber
-        Tool("compress", "Compress", "Optimize size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-        Tool("grayscale", "Grayscale", "Remove colors", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-        Tool("repair", "Repair PDF", "Fix corrupted files", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-        
-        // SECURE - Indigo
-        Tool("protect", "Protect PDF", "Add password", Icons.Outlined.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-        Tool("unlock", "Unlock PDF", "Remove password", Icons.Outlined.LockOpen, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-        Tool("metadata", "Metadata", "Edit properties", Icons.Outlined.Fingerprint, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-        
-        // CONVERT - Teal
-        Tool("pdf2img", "PDF to Image", "Export as JPG", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-        Tool("img2pdf", "Image to PDF", "Photos to PDF", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-        Tool("extract-images", "Extract Images", "Save all images", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-        Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Outlined.Article, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
-    )
-
-    val filteredTools = allTools.filter { 
-        it.name.contains(searchQuery, ignoreCase = true) || 
-        it.description.contains(searchQuery, ignoreCase = true) 
+    val allTools = remember {
+        listOf(
+            // EDIT - Rose
+            Tool("merge", "Merge PDF", "Combine multiple PDFs", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("split", "Split PDF", "Extract specific pages", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("rotate", "Rotate PDF", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("rearrange", "Rearrange", "Reorder pages", Icons.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("page-numbers", "Page Numbers", "Add numbering", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("watermark", "Watermark", "Add text overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("signature", "Signature", "Sign documents", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            
+            // OPTIMIZE - Amber
+            Tool("compress", "Compress", "Optimize size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("grayscale", "Grayscale", "Remove colors", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("repair", "Repair PDF", "Fix corrupted files", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            
+            // SECURE - Indigo
+            Tool("protect", "Protect PDF", "Add password", Icons.Outlined.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+            Tool("unlock", "Unlock PDF", "Remove password", Icons.Outlined.LockOpen, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+            Tool("metadata", "Metadata", "Edit properties", Icons.Outlined.Fingerprint, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+            
+            // CONVERT - Teal
+            Tool("pdf2img", "PDF to Image", "Export as JPG", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("img2pdf", "Image to PDF", "Photos to PDF", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("extract-images", "Extract Images", "Save all images", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Outlined.Article, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
+        )
     }
 
-    val categories = listOf("Edit", "Optimize", "Secure", "Convert")
+    val filteredTools = remember(searchQuery, allTools) {
+        allTools.filter { 
+            it.name.contains(searchQuery, ignoreCase = true) || 
+            it.description.contains(searchQuery, ignoreCase = true) 
+        }
+    }
+
+    val categories = remember { listOf("Edit", "Optimize", "Secure", "Convert") }
 
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
-            val header = remember {
-                @Composable {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(PaperPink.copy(alpha = 0.1f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Outlined.GridView, null, tint = PaperPink, modifier = Modifier.size(20.dp))
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = buildAnnotatedString {
-                                append("All Tools")
-                                withStyle(SpanStyle(color = PaperPink)) { append(".") }
-                            },
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            letterSpacing = (-1.5).sp
-                        )
-                    }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(PaperPink.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.GridView, null, tint = PaperPink, modifier = Modifier.size(20.dp))
                 }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        append("All Tools")
+                        withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                    },
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = (-1.5).sp
+                )
             }
-            header()
             
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -114,7 +113,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         }
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize().graphicsLayer { clip = true },
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -138,7 +137,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
                 }
             }
 
-            item {
+            item(key = "footer_spacer") {
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }

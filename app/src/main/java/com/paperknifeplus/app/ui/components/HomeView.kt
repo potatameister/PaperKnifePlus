@@ -43,12 +43,14 @@ fun HomeView(
     onThemeToggle: () -> Unit,
     onToolClick: (String) -> Unit
 ) {
-    val coreEngines = listOf(
-        Tool("merge", "Merge", "COMBINE", Icons.Default.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("compress", "Compress", "OPTIMIZE", Icons.Default.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-        Tool("split", "Split", "EXTRACT", Icons.Default.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("protect", "Protect", "SECURE", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
-    )
+    val coreEngines = remember {
+        listOf(
+            Tool("merge", "Merge", "COMBINE", Icons.Default.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("compress", "Compress", "OPTIMIZE", Icons.Default.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("split", "Split", "EXTRACT", Icons.Default.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("protect", "Protect", "SECURE", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
+        )
+    }
 
     val history = SessionManager.history
 
@@ -58,30 +60,21 @@ fun HomeView(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-            modifier = Modifier.fillMaxSize().graphicsLayer { 
-                // Caches the entire grid layer for smoother scrolling
-                clip = true
-            }
+            modifier = Modifier.fillMaxSize()
         ) {
-            item(span = { GridItemSpan(2) }) {
-                val header = remember(isDarkMode) {
-                    @Composable { HomeHeader(isDarkMode, onThemeToggle) }
-                }
-                header()
+            item(span = { GridItemSpan(2) }, key = "header") {
+                HomeHeader(isDarkMode, onThemeToggle)
             }
 
-            item(span = { GridItemSpan(2) }) {
-                val hero = remember {
-                    @Composable { HeroCard(onSelectPdf = { onToolClick("tools") }) }
-                }
-                hero()
+            item(span = { GridItemSpan(2) }, key = "hero") {
+                HeroCard(onSelectPdf = { onToolClick("tools") })
             }
 
-            item(span = { GridItemSpan(2) }) {
+            item(span = { GridItemSpan(2) }, key = "history") {
                 MiniHistoryBar(history, onHistoryClick = { onToolClick("history") })
             }
 
-            item(span = { GridItemSpan(2) }) {
+            item(span = { GridItemSpan(2) }, key = "label") {
                 Row(
                     modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -100,11 +93,11 @@ fun HomeView(
                 BentoCard(tool = tool, onClick = { onToolClick(tool.id) })
             }
 
-            item(span = { GridItemSpan(2) }) {
+            item(span = { GridItemSpan(2) }, key = "more") {
                 MoreEnginesCard(onClick = { onToolClick("tools") })
             }
             
-            item(span = { GridItemSpan(2) }) {
+            item(span = { GridItemSpan(2) }, key = "footer") {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "PaperKnife+ v1.0.0",

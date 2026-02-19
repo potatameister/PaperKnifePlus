@@ -64,12 +64,16 @@ fun PageLightbox(
             .build()
     }
 
+    // NITRO: Track zoom per page to intelligently enable/disable pager scroll
+    val zoomLevels = remember { mutableStateMapOf<Int, Float>() }
+    val isCurrentPageZoomed by remember {
+        derivedStateOf { (zoomLevels[pagerState.currentPage] ?: 1f) > 1.05f }
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        var isAnyPageZoomed by remember { mutableStateOf(false) }
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,7 +84,7 @@ fun PageLightbox(
                 modifier = Modifier.fillMaxSize(),
                 pageSpacing = 16.dp,
                 beyondBoundsPageCount = 1,
-                userScrollEnabled = !isAnyPageZoomed
+                userScrollEnabled = !isCurrentPageZoomed
             ) { pageIndex ->
                 val request = remember(uri, pageIndex, password) { 
                     PdfPageRequest(uri, pageIndex, password, 2.0f, prefetch = false) 
@@ -89,6 +93,11 @@ fun PageLightbox(
                 var scale by remember { mutableFloatStateOf(1f) }
                 var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
                 
+                // Sync local scale with global zoom tracker
+                LaunchedEffect(scale) {
+                    zoomLevels[pageIndex] = scale
+                }
+
                 // NITRO: Smooth Animated Zoom
                 val animatedScale by animateFloatAsState(
                     targetValue = scale,
@@ -108,12 +117,6 @@ fun PageLightbox(
                     }
                 }
 
-                LaunchedEffect(scale) {
-                    if (pagerState.currentPage == pageIndex) {
-                        isAnyPageZoomed = scale > 1.0f // Strict scale check
-                    }
-                }
-
                 BoxWithConstraints(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -121,7 +124,7 @@ fun PageLightbox(
                     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
                         scale = (scale * zoomChange).coerceIn(1f, 4f)
                         
-                        if (scale > 1f) {
+                        if (scale > 1.05f) {
                             val maxX = (constraints.maxWidth * (scale - 1) / 2)
                             val maxY = (constraints.maxHeight * (scale - 1) / 2)
                             val newOffset = offset + offsetChange
@@ -140,7 +143,7 @@ fun PageLightbox(
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onDoubleTap = { tapOffset ->
-                                        if (scale > 1f) {
+                                        if (scale > 1.05f) {
                                             scale = 1f
                                             offset = androidx.compose.ui.geometry.Offset.Zero
                                         } else {
@@ -178,6 +181,7 @@ fun PageLightbox(
                     }
                 }
             }
+
 
             // Top Bar
             Row(
