@@ -58,7 +58,7 @@ fun PageLightbox(
             .components { add(PdfPageFetcher.Factory(context)) }
             .memoryCache {
                 coil.memory.MemoryCache.Builder(context)
-                    .maxSizePercent(0.40) // Give more RAM to zoom view
+                    .maxSizePercent(0.40)
                     .build()
             }
             .build()
@@ -68,7 +68,6 @@ fun PageLightbox(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        // Track overall zoom state to disable pager when any page is zoomed
         var isAnyPageZoomed by remember { mutableStateOf(false) }
 
         Box(
@@ -93,12 +92,12 @@ fun PageLightbox(
                 // NITRO: Smooth Animated Zoom
                 val animatedScale by animateFloatAsState(
                     targetValue = scale,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
                     label = "scale"
                 )
                 val animatedOffset by animateOffsetAsState(
                     targetValue = offset,
-                    animationSpec = spring(stiffness = Spring.StiffnessLow),
+                    animationSpec = spring(stiffness = Spring.StiffnessMedium),
                     label = "offset"
                 )
 
@@ -111,7 +110,7 @@ fun PageLightbox(
 
                 LaunchedEffect(scale) {
                     if (pagerState.currentPage == pageIndex) {
-                        isAnyPageZoomed = scale > 1.01f // Very tight threshold for better sliding
+                        isAnyPageZoomed = scale > 1.1f // Lenient threshold for sliding
                     }
                 }
 
@@ -124,10 +123,15 @@ fun PageLightbox(
                         val maxX = (constraints.maxWidth * (scale - 1) / 2)
                         val maxY = (constraints.maxHeight * (scale - 1) / 2)
                         val newOffset = offset + offsetChange
-                        offset = androidx.compose.ui.geometry.Offset(
-                            newOffset.x.coerceIn(-maxX, maxX),
-                            newOffset.y.coerceIn(-maxY, maxY)
-                        )
+                        
+                        if (scale > 1.1f) {
+                            offset = androidx.compose.ui.geometry.Offset(
+                                newOffset.x.coerceIn(-maxX, maxX),
+                                newOffset.y.coerceIn(-maxY, maxY)
+                            )
+                        } else {
+                            offset = androidx.compose.ui.geometry.Offset.Zero
+                        }
                     }
 
                     Box(
@@ -136,18 +140,14 @@ fun PageLightbox(
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onDoubleTap = { tapOffset ->
-                                        if (scale > 1.01f) {
+                                        if (scale > 1.1f) {
                                             scale = 1f
                                             offset = androidx.compose.ui.geometry.Offset.Zero
                                         } else {
                                             scale = 2.5f
-                                            // Focal point zoom calculation
-                                            val centerX = size.width / 2
-                                            val centerY = size.height / 2
-                                            offset = androidx.compose.ui.geometry.Offset(
-                                                (centerX - tapOffset.x) * (2.5f - 1f),
-                                                (centerY - tapOffset.y) * (2.5f - 1f)
-                                            )
+                                            val x = (size.width / 2 - tapOffset.x) * 1.5f
+                                            val y = (size.height / 2 - tapOffset.y) * 1.5f
+                                            offset = androidx.compose.ui.geometry.Offset(x, y)
                                         }
                                     }
                                 )
