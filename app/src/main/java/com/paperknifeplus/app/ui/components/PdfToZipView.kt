@@ -129,7 +129,7 @@ fun PdfToZipView(onBack: () -> Unit) {
                             border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
                         ) {
                             Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.PictureAsPdf, null, tint = accentColor, modifier = Modifier.size(40.dp))
+                                Icon(Icons.Filled.PictureAsPdf, null, tint = accentColor, modifier = Modifier.size(40.dp))
                                 Spacer(Modifier.width(16.dp))
                                 Column {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)

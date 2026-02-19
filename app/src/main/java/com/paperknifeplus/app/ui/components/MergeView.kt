@@ -118,12 +118,11 @@ fun MergeView(onBack: () -> Unit) {
                     
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    withContext(Dispatchers.Main) {
-                        processingTime = timeStr
-                        SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Default.Layers)
-                        currentState = ToolState.SUCCESS
-                    }
-                } catch (e: Exception) {
+                                            withContext(Dispatchers.Main) {
+                                            processingTime = timeStr
+                                            SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers)
+                                            currentState = ToolState.SUCCESS
+                                        }                } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Merge failed: ${e.message}", Toast.LENGTH_LONG).show()
                         currentState = ToolState.CONFIGURING
@@ -160,7 +159,7 @@ fun MergeView(onBack: () -> Unit) {
                     SelectionGrid(
                         onSelect = { pickLauncher.launch("application/pdf") },
                         isDark = isDark,
-                        icon = Icons.Default.Layers,
+                        icon = Icons.Filled.Layers,
                         title = "Tap to choose files",
                         subtitle = "SELECT MULTIPLE PDFS",
                         accentColor = accentColor,
@@ -210,7 +209,7 @@ fun MergeView(onBack: () -> Unit) {
                                     border = BorderStroke(1.dp, accentColor.copy(alpha = 0.3f)),
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor)
                                 ) {
-                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
                                     Text("ADD MORE FILES", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
                                 }
@@ -355,7 +354,7 @@ fun MergeFileItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (file.isLocked && !file.isUnlocked) {
                     IconButton(onClick = onUnlock) {
-                        Icon(Icons.Default.Key, null, tint = accentColor, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Filled.VpnKey, null, tint = accentColor, modifier = Modifier.size(20.dp))
                     }
                 }
                 
@@ -365,19 +364,19 @@ fun MergeFileItem(
                         enabled = index > 0,
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Default.KeyboardArrowUp, null, tint = if (index > 0) Color.Gray else Color.Gray.copy(alpha = 0.2f))
+                        Icon(Icons.Filled.KeyboardArrowUp, null, tint = if (index > 0) Color.Gray else Color.Gray.copy(alpha = 0.2f))
                     }
                     IconButton(
                         onClick = onMoveDown,
                         enabled = index < totalCount - 1,
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Default.KeyboardArrowDown, null, tint = if (index < totalCount - 1) Color.Gray else Color.Gray.copy(alpha = 0.2f))
+                        Icon(Icons.Filled.KeyboardArrowDown, null, tint = if (index < totalCount - 1) Color.Gray else Color.Gray.copy(alpha = 0.2f))
                     }
                 }
                 
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.DeleteOutline, null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                    Icon(Icons.Filled.Delete, null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                 }
             }
         }
