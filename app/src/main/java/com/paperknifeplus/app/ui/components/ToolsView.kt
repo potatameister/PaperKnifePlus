@@ -66,27 +66,32 @@ fun ToolsView(onToolClick: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(PaperPink.copy(alpha = 0.1f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Outlined.GridView, null, tint = PaperPink, modifier = Modifier.size(20.dp))
+            val header = remember {
+                @Composable {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(PaperPink.copy(alpha = 0.1f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Outlined.GridView, null, tint = PaperPink, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = buildAnnotatedString {
+                                append("All Tools")
+                                withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                            },
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            letterSpacing = (-1.5).sp
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = buildAnnotatedString {
-                        append("All Tools")
-                        withStyle(SpanStyle(color = PaperPink)) { append(".") }
-                    },
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    letterSpacing = (-1.5).sp
-                )
             }
+            header()
             
             Spacer(modifier = Modifier.height(24.dp))
             

@@ -61,11 +61,17 @@ fun HomeView(
             modifier = Modifier.fillMaxSize()
         ) {
             item(span = { GridItemSpan(2) }) {
-                HomeHeader(isDarkMode, onThemeToggle)
+                val header = remember(isDarkMode) {
+                    @Composable { HomeHeader(isDarkMode, onThemeToggle) }
+                }
+                Box(Modifier.graphicsLayer { renderEffect = null }) { header() }
             }
 
             item(span = { GridItemSpan(2) }) {
-                HeroCard(onSelectPdf = { onToolClick("tools") })
+                val hero = remember {
+                    @Composable { HeroCard(onSelectPdf = { onToolClick("tools") }) }
+                }
+                Box(Modifier.graphicsLayer { clip = true; shape = RoundedCornerShape(32.dp) }) { hero() }
             }
 
             item(span = { GridItemSpan(2) }) {

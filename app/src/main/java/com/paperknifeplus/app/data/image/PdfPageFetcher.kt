@@ -44,6 +44,14 @@ object NativeRendererPool {
     private val inUse = mutableSetOf<PdfRenderer>()
 
     suspend fun acquire(context: Context, uri: Uri): PdfRenderer? = mutex.withLock {
+        // CLEANUP: If pool is too large (more than 10 documents), purge oldest
+        if (pool.size > 10) {
+            val oldest = pool.keys.first()
+            pool.remove(oldest)?.forEach { (r, p) -> 
+                try { r.close(); p.close() } catch (e: Exception) {}
+            }
+        }
+
         val list = pool.getOrPut(uri) { mutableListOf() }
         
         // Find an idle renderer
@@ -53,7 +61,7 @@ object NativeRendererPool {
             return idle.first
         }
 
-        // Create new if pool is small (allow up to 4 per document for "Nitro" speed)
+        // Create new if doc pool is small (allow up to 4 per document for "Nitro" speed)
         if (list.size < 4) {
             try {
                 val pfd = context.contentResolver.openFileDescriptor(uri, "r")
@@ -103,13 +111,13 @@ class PdfPageFetcher(
                                     val canvas = Canvas(bitmap)
                                     canvas.drawColor(Color.WHITE)
                                     
-                                    // Use PRINT mode which is often more robust for complex PDFs
+                                    // Hardware-accelerated native render
                                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
                                     
                                     return@withContext DrawableResult(
                                         drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
                                         isSampled = data.scale < 1.0f,
-                                        dataSource = DataSource.DISK
+                                        dataSource = DataSource.DISK // Mark as Disk to prevent immediate eviction
                                     )
                                 } finally {
                                     try { page.close() } catch (e: Exception) {}
@@ -122,7 +130,7 @@ class PdfPageFetcher(
                 }
             }
 
-            // 2. Fallback to PDFBox (For Passwords)
+            // 2. Fallback to PDFBox (For Passwords / Legacy)
             if (!isActive) return@withContext null
             context.contentResolver.openInputStream(data.uri)?.use { inputStream ->
                 val document = if (data.password != null) {

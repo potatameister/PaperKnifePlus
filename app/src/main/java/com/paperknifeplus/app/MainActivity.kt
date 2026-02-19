@@ -63,85 +63,114 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             var isDarkMode by remember { mutableStateOf(false) }
+            var isInitialized by remember { mutableStateOf(false) }
+
+            // NITRO: Background Initialization
+            LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(1200) // Branding dwell time
+                isInitialized = true
+            }
+
             CompositionLocalProvider(coil.compose.LocalImageLoader provides nitroImageLoader) {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
-                    var currentTool by remember { mutableStateOf<String?>(null) }
-                    
-                    val mainScreens = listOf("home", "tools", "history", "settings")
-                    val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
-                    val scope = rememberCoroutineScope()
+                    Box(Modifier.fillMaxSize()) {
+                        var currentTool by remember { mutableStateOf<String?>(null) }
+                        
+                        val mainScreens = listOf("home", "tools", "history", "settings")
+                        val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
+                        val scope = rememberCoroutineScope()
 
-                    Box(modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                    ) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            // Main Navigation Pager (Slidable & Lazy)
-                            androidx.compose.foundation.pager.HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier.weight(1f),
-                                userScrollEnabled = currentTool == null,
-                                beyondBoundsPageCount = 1 // Pre-load 1 page each side for smooth sliding
-                            ) { page ->
-                                when (mainScreens[page]) {
-                                    "home" -> HomeView(
-                                        isDarkMode = isDarkMode,
-                                        onThemeToggle = { isDarkMode = !isDarkMode },
-                                        onToolClick = { currentTool = it }
-                                    )
-                                    "tools" -> ToolsView(onToolClick = { currentTool = it })
-                                    "history" -> HistoryView()
-                                    "settings" -> SettingsView(onNavigateToAbout = { currentTool = "about" })
-                                }
-                            }
-                            
-                            // Bottom Nav Spacer
-                            if (currentTool == null) {
-                                Spacer(modifier = Modifier.height(72.dp).navigationBarsPadding())
-                            }
-                        }
-
-                        // Bottom Bar
-                        if (currentTool == null) {
-                            FixedTitanBottomBar(
-                                modifier = Modifier.align(Alignment.BottomCenter),
-                                currentScreen = mainScreens[pagerState.currentPage],
-                                onNavigate = { screen ->
-                                    val index = mainScreens.indexOf(screen)
-                                    if (index != -1) {
-                                        // Use scrollToPage (instant) for bar clicks to avoid rendering in-between pages
-                                        scope.launch { pagerState.scrollToPage(index) }
+                        Box(modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                        ) {
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                // Main Navigation Pager (Slidable & Lazy)
+                                androidx.compose.foundation.pager.HorizontalPager(
+                                    state = pagerState,
+                                    modifier = Modifier.weight(1f),
+                                    userScrollEnabled = currentTool == null,
+                                    beyondBoundsPageCount = 1 // Pre-load 1 page each side for smooth sliding
+                                ) { page ->
+                                    when (mainScreens[page]) {
+                                        "home" -> HomeView(
+                                            isDarkMode = isDarkMode,
+                                            onThemeToggle = { isDarkMode = !isDarkMode },
+                                            onToolClick = { currentTool = it }
+                                        )
+                                        "tools" -> ToolsView(onToolClick = { currentTool = it })
+                                        "history" -> HistoryView()
+                                        "settings" -> SettingsView(onNavigateToAbout = { currentTool = "about" })
                                     }
                                 }
-                            )
+                                
+                                // Bottom Nav Spacer
+                                if (currentTool == null) {
+                                    Spacer(modifier = Modifier.height(72.dp).navigationBarsPadding())
+                                }
+                            }
+
+                            // Bottom Bar
+                            if (currentTool == null) {
+                                FixedTitanBottomBar(
+                                    modifier = Modifier.align(Alignment.BottomCenter),
+                                    currentScreen = mainScreens[pagerState.currentPage],
+                                    onNavigate = { screen ->
+                                        val index = mainScreens.indexOf(screen)
+                                        if (index != -1) {
+                                            // Use scrollToPage (instant) for bar clicks to avoid rendering in-between pages
+                                            scope.launch { pagerState.scrollToPage(index) }
+                                        }
+                                    }
+                                )
+                            }
+
+                            // NITRO TOOL OVERLAY
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = currentTool != null,
+                                enter = androidx.compose.animation.fadeIn(),
+                                exit = androidx.compose.animation.fadeOut()
+                            ) {
+                                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                                    when (currentTool) {
+                                        "about" -> AboutView()
+                                        "merge" -> MergeView(onBack = { currentTool = null })
+                                        "split" -> SplitView(onBack = { currentTool = null })
+                                        "compress" -> CompressView(onBack = { currentTool = null })
+                                        "repair" -> RepairView(onBack = { currentTool = null })
+                                        "rotate" -> RotateView(onBack = { currentTool = null })
+                                        "rearrange" -> RearrangeView(onBack = { currentTool = null })
+                                        "protect" -> ProtectView(onBack = { currentTool = null })
+                                        "unlock" -> UnlockView(onBack = { currentTool = null })
+                                        "grayscale" -> GrayscaleView(onBack = { currentTool = null })
+                                        "metadata" -> MetadataView(onBack = { currentTool = null })
+                                        "img2pdf" -> ImageToPdfView(onBack = { currentTool = null })
+                                        "pdf2img" -> PdfToImageView(onBack = { currentTool = null })
+                                        "pdf2text" -> PdfToTextView(onBack = { currentTool = null })
+                                        "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
+                                        "page-numbers" -> ComingSoonView("Page Numbers", onBack = { currentTool = null })
+                                        "watermark" -> ComingSoonView("Watermark", onBack = { currentTool = null })
+                                        "signature" -> ComingSoonView("Signature", onBack = { currentTool = null })
+                                    }
+                                }
+                            }
                         }
 
-                        // NITRO TOOL OVERLAY
+                        // BLITZ SPLASH OVERLAY
                         androidx.compose.animation.AnimatedVisibility(
-                            visible = currentTool != null,
-                            enter = androidx.compose.animation.fadeIn(),
-                            exit = androidx.compose.animation.fadeOut()
+                            visible = !isInitialized,
+                            exit = androidx.compose.animation.fadeOut(animationSpec = tween(500))
                         ) {
-                            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                                when (currentTool) {
-                                    "about" -> AboutView()
-                                    "merge" -> MergeView(onBack = { currentTool = null })
-                                    "split" -> SplitView(onBack = { currentTool = null })
-                                    "compress" -> CompressView(onBack = { currentTool = null })
-                                    "repair" -> RepairView(onBack = { currentTool = null })
-                                    "rotate" -> RotateView(onBack = { currentTool = null })
-                                    "rearrange" -> RearrangeView(onBack = { currentTool = null })
-                                    "protect" -> ProtectView(onBack = { currentTool = null })
-                                    "unlock" -> UnlockView(onBack = { currentTool = null })
-                                    "grayscale" -> GrayscaleView(onBack = { currentTool = null })
-                                    "metadata" -> MetadataView(onBack = { currentTool = null })
-                                    "img2pdf" -> ImageToPdfView(onBack = { currentTool = null })
-                                    "pdf2img" -> PdfToImageView(onBack = { currentTool = null })
-                                    "pdf2text" -> PdfToTextView(onBack = { currentTool = null })
-                                    "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
-                                    "page-numbers" -> ComingSoonView("Page Numbers", onBack = { currentTool = null })
-                                    "watermark" -> ComingSoonView("Watermark", onBack = { currentTool = null })
-                                    "signature" -> ComingSoonView("Signature", onBack = { currentTool = null })
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(if (isDarkMode) Color.Black else Color.White),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Logo(modifier = Modifier.size(64.dp), partColor = if (isDarkMode) Color.White else Color.Black)
+                                    Spacer(Modifier.height(24.dp))
+                                    CircularProgressIndicator(color = PaperPink, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                                 }
                             }
                         }
