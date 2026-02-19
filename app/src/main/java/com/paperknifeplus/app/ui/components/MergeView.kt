@@ -245,11 +245,11 @@ fun MergeView(onBack: () -> Unit) {
                                             .graphicsLayer { translationY = itemOffset }
                                             .animateItemPlacement(
                                                 animationSpec = spring(
-                                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                                    stiffness = Spring.StiffnessLow
+                                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                                    stiffness = Spring.StiffnessMedium
                                                 )
                                             )
-                                            .shadow(if (isDragging) 8.dp else 0.dp, RoundedCornerShape(20.dp))
+                                            .shadow(if (isDragging) 12.dp else 0.dp, RoundedCornerShape(20.dp))
                                             .pointerInput(Unit) {
                                                 detectDragGesturesAfterLongPress(
                                                     onDragStart = { draggedIndex = index },
@@ -257,7 +257,7 @@ fun MergeView(onBack: () -> Unit) {
                                                         change.consume()
                                                         dragOffset += dragAmount.y
                                                         
-                                                        val threshold = 120f
+                                                        val threshold = 180f // height of card + spacing
                                                         val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                                         
                                                         if (dragOffset > threshold && currentIndex < selectedFiles.size - 1) {
