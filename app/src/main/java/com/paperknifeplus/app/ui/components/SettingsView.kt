@@ -207,7 +207,7 @@ fun SettingsItem(
             Text(subtitle, fontSize = 11.sp, color = Color.Gray)
         }
         Icon(
-            imageVector = Icons.Default.ChevronRight,
+            imageVector = Icons.Filled.ChevronRight,
             contentDescription = null,
             tint = Color.Gray.copy(alpha = 0.3f),
             modifier = Modifier.size(18.dp)

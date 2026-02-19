@@ -80,7 +80,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Default.PictureAsPdf)
+                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Filled.PictureAsPdf)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -121,7 +121,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                     contentColor = Color.White,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
-                ) { Icon(Icons.Default.Add, "Add") }
+                ) { Icon(Icons.Filled.Add, "Add") }
             }
         }
     ) { padding ->
@@ -132,7 +132,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("image/*") },
                             isDark = isDark,
-                            icon = Icons.Default.AddPhotoAlternate,
+                            icon = Icons.Filled.AddPhotoAlternate,
                             title = "Tap to select images",
                             subtitle = "JPG, PNG, OR WEBP",
                             accentColor = accentColor,
@@ -170,7 +170,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                                     
                                     // Subtle Controls
                                     Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(20.dp).clickable { selectedUris = selectedUris.filterIndexed { i, _ -> i != index } }, color = Color.Black.copy(0.5f), shape = CircleShape) {
-                                        Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                        Icon(Icons.Filled.Close, null, tint = Color.White, modifier = Modifier.padding(4.dp))
                                     }
 
                                     Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {

@@ -45,10 +45,10 @@ fun HomeView(
 ) {
     val coreEngines = remember {
         listOf(
-            Tool("merge", "Merge", "COMBINE", Icons.Default.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("compress", "Compress", "OPTIMIZE", Icons.Default.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("split", "Split", "EXTRACT", Icons.Default.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("protect", "Protect", "SECURE", Icons.Default.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
+            Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("split", "Split", "EXTRACT", Icons.Filled.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("protect", "Protect", "SECURE", Icons.Filled.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
         )
     }
 
@@ -118,7 +118,7 @@ fun HomeView(
                             modifier = Modifier.size(36.dp).background(PaperPink, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Favorite, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.Favorite, null, tint = Color.White, modifier = Modifier.size(18.dp))
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
@@ -180,7 +180,7 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                    imageVector = if (isDarkMode) Icons.Filled.LightMode else Icons.Filled.DarkMode,
                     contentDescription = "Toggle Theme",
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurface
@@ -295,7 +295,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.History, null, modifier = Modifier.size(11.dp), tint = Color.Gray)
+                Icon(Icons.Filled.History, null, modifier = Modifier.size(11.dp), tint = Color.Gray)
                 Spacer(Modifier.width(6.dp))
                 Text("RECENT ACTIVITY", fontSize = 7.5.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.6f), letterSpacing = 0.8.sp)
             }
@@ -357,7 +357,7 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = tool.icon ?: Icons.Default.Build,
+                    imageVector = tool.icon ?: Icons.Filled.Build,
                     contentDescription = null,
                     tint = tool.color,
                     modifier = Modifier.size(18.dp)
@@ -397,7 +397,7 @@ fun MoreEnginesCard(onClick: () -> Unit) {
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Icon(
-                imageVector = Icons.Default.GridView,
+                imageVector = Icons.Filled.GridView,
                 null,
                 modifier = Modifier
                     .size(100.dp)
@@ -420,7 +420,7 @@ fun MoreEnginesCard(onClick: () -> Unit) {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Default.GridView,
+                            Icons.Filled.GridView,
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(18.dp)
@@ -446,7 +446,7 @@ fun MoreEnginesCard(onClick: () -> Unit) {
                 }
                 
                 Icon(
-                    imageVector = Icons.Default.ChevronRight,
+                    imageVector = Icons.Filled.ChevronRight,
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)

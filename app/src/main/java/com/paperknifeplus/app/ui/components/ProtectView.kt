@@ -292,7 +292,7 @@ fun ProtectConfiguringView(
         Spacer(Modifier.height(16.dp))
         Surface(color = Color(0xFFFFF1F2), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
                 Text("PaperKnife+ cannot recover lost passwords. Ensure you keep it safe.", fontSize = 11.sp, color = Color(0xFF9F1239), fontWeight = FontWeight.Bold, lineHeight = 16.sp)
             }

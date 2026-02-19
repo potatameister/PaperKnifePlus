@@ -194,7 +194,7 @@ fun PageLightbox(
                             onClick = onDismiss,
                             modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)
                         ) {
-                            Icon(Icons.Default.Close, null, tint = Color.White)
+                            Icon(Icons.Filled.Close, null, tint = Color.White)
                         }
                         
                         if (isSearching) {
@@ -231,7 +231,7 @@ fun PageLightbox(
                                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                     } else {
                                         IconButton(onClick = { isSearching = false; searchQuery = "" }, modifier = Modifier.size(20.dp)) {
-                                            Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                                            Icon(Icons.Filled.Close, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
                                         }
                                     }
                                 }
@@ -242,7 +242,7 @@ fun PageLightbox(
                     if (!isSearching) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { isSearching = true }, modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)) {
-                                Icon(Icons.Default.Search, null, tint = Color.White)
+                                Icon(Icons.Filled.Search, null, tint = Color.White)
                             }
                             Spacer(Modifier.width(8.dp))
                             IconButton(onClick = {
@@ -253,7 +253,7 @@ fun PageLightbox(
                                 }
                                 context.startActivity(Intent.createChooser(intent, "Share PDF"))
                             }, modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)) {
-                                Icon(Icons.Default.Share, null, tint = Color.White)
+                                Icon(Icons.Filled.Share, null, tint = Color.White)
                             }
                             Spacer(Modifier.width(8.dp))
                             Surface(color = Color.White.copy(0.1f), shape = RoundedCornerShape(12.dp)) {
@@ -283,7 +283,7 @@ fun PageLightbox(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         if (isSelected) {
-                            Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.Check, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
                         }
                         Text(if (isSelected) "SELECTED" else "SELECT", fontSize = 11.sp, fontWeight = FontWeight.Black)

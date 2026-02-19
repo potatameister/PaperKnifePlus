@@ -264,7 +264,7 @@ fun FixedTitanBottomBar(
             color = PaperPink
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(32.dp))
             }
         }
     }

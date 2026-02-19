@@ -37,7 +37,7 @@ fun SuccessView(
             color = Color(0xFF06D6A0).copy(alpha = 0.1f)
         ) {
             Icon(
-                Icons.Default.Check, 
+                Icons.Filled.Check, 
                 null, 
                 tint = Color(0xFF06D6A0), 
                 modifier = Modifier.padding(24.dp).size(48.dp)
@@ -89,7 +89,7 @@ fun SuccessView(
                 shape = RoundedCornerShape(20.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(0.2f))
             ) {
-                Icon(Icons.Default.Visibility, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+                Icon(Icons.Filled.Visibility, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
                 Spacer(Modifier.width(12.dp))
                 Text("PREVIEW (COMING SOON)", fontWeight = FontWeight.Bold, color = Color.Gray)
             }

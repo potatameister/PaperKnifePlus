@@ -237,7 +237,7 @@ fun PdfToImageView(onBack: () -> Unit) {
                                             shape = CircleShape
                                         ) {
                                             Icon(
-                                                Icons.Default.Check, 
+                                                Icons.Filled.Check, 
                                                 null, 
                                                 tint = Color.White, 
                                                 modifier = Modifier.padding(4.dp)

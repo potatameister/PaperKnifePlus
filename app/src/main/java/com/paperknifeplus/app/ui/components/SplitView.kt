@@ -117,7 +117,7 @@ fun SplitView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Split", "Extracted pages", Icons.Default.ContentCut)
+                        SessionManager.addEntry(fileName, "Split", "Extracted pages", Icons.Filled.ContentCut)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -160,7 +160,7 @@ fun SplitView(onBack: () -> Unit) {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Default.ContentCut,
+                            icon = Icons.Filled.ContentCut,
                             title = "Tap to enter file",
                             subtitle = "SPLIT PDF INTO PARTS",
                             accentColor = accentColor,

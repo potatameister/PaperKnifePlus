@@ -107,7 +107,7 @@ fun DeleteView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Delete", "Removed pages", Icons.Default.Delete)
+                        SessionManager.addEntry(fileName, "Delete", "Removed pages", Icons.Filled.Delete)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -148,7 +148,7 @@ fun DeleteView(onBack: () -> Unit) {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Default.Delete,
+                            icon = Icons.Filled.Delete,
                             title = "Tap to enter file",
                             subtitle = "DELETE PAGES INSTANTLY",
                             accentColor = accentColor,

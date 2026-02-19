@@ -106,7 +106,7 @@ fun RotateView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Rotate", "$rotation°", Icons.Default.RotateRight)
+                        SessionManager.addEntry(fileName, "Rotate", "$rotation°", Icons.Filled.RotateRight)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -149,7 +149,7 @@ fun RotateView(onBack: () -> Unit) {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Default.RotateRight,
+                            icon = Icons.Filled.RotateRight,
                             title = "Tap to enter file",
                             subtitle = "ROTATE ANY PDF DOCUMENT",
                             accentColor = accentColor,

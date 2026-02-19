@@ -159,10 +159,10 @@ fun PdfToTextView(onBack: () -> Unit) {
                                     clipboard.setPrimaryClip(clip)
                                     Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                                 }) {
-                                    Icon(Icons.Default.ContentCopy, null, tint = accentColor)
+                                    Icon(Icons.Filled.ContentCopy, null, tint = accentColor)
                                 }
                                 IconButton(onClick = { saveTxtLauncher.launch(fileName.replace(".pdf", ".txt")) }) {
-                                    Icon(Icons.Default.Save, null, tint = accentColor)
+                                    Icon(Icons.Filled.Save, null, tint = accentColor)
                                 }
                             }
                         }
@@ -177,7 +177,7 @@ fun PdfToTextView(onBack: () -> Unit) {
                                 if (extractedText.trim().isEmpty()) {
                                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(Icons.Default.AutoFixOff, null, modifier = Modifier.size(48.dp).alpha(0.2f))
+                                            Icon(Icons.Filled.AutoFixOff, null, modifier = Modifier.size(48.dp).alpha(0.2f))
                                             Text("No text found. Document might be a scan.", fontSize = 12.sp, color = Color.Gray, textAlign = TextAlign.Center)
                                         }
                                     }

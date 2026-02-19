@@ -147,7 +147,7 @@ fun GrayscaleView(onBack: () -> Unit) {
                     contentColor = Color.White,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
-                ) { Icon(Icons.Default.Save, "Save") }
+                ) { Icon(Icons.Filled.Save, "Save") }
             }
         }
     ) { padding ->

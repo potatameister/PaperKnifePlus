@@ -36,7 +36,7 @@ fun ComingSoonView(toolName: String, onBack: () -> Unit) {
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Construction, null, modifier = Modifier.size(80.dp).alpha(0.1f), tint = PaperPink)
+                Icon(Icons.Filled.Construction, null, modifier = Modifier.size(80.dp).alpha(0.1f), tint = PaperPink)
                 Spacer(Modifier.height(24.dp))
                 Text("Coming Soon", fontWeight = FontWeight.Black, fontSize = 24.sp, letterSpacing = (-1).sp)
                 Text("WE ARE WORKING ON THIS ENGINE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
