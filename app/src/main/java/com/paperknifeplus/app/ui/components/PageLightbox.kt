@@ -59,9 +59,8 @@ fun PageLightbox(
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
     val scope = rememberCoroutineScope()
     
-    var isSearching by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    var isSearchLoading by remember { mutableStateOf(false) }
+    var showJumpDialog by remember { mutableStateOf(false) }
+    var jumpPageInput by remember { mutableStateOf("") }
 
     // Dedicated High-Res Loader for Lightbox
     val imageLoader = remember {
@@ -189,85 +188,91 @@ fun PageLightbox(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = onDismiss,
                             modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)
                         ) {
                             Icon(Icons.Filled.Close, null, tint = Color.White)
                         }
-                        
-                        if (isSearching) {
-                            Spacer(Modifier.width(8.dp))
-                            Surface(
-                                modifier = Modifier.height(40.dp).fillMaxWidth(),
-                                color = Color.White.copy(0.15f),
-                                shape = RoundedCornerShape(20.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp)) {
-                                    androidx.compose.foundation.text.BasicTextField(
-                                        value = searchQuery,
-                                        onValueChange = { searchQuery = it },
-                                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp),
-                                        singleLine = true,
-                                        modifier = Modifier.weight(1f),
-                                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Search),
-                                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = {
-                                            if (searchQuery.isNotEmpty()) {
-                                                isSearchLoading = true
-                                                scope.launch {
-                                                    val foundPage = findTextInPdf(context, uri, password, searchQuery, pagerState.currentPage + 1)
-                                                    if (foundPage != -1) {
-                                                        pagerState.animateScrollToPage(foundPage)
-                                                    } else {
-                                                        Toast.makeText(context, "No matches found", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                    isSearchLoading = false
-                                                }
-                                            }
-                                        })
-                                    )
-                                    if (isSearchLoading) {
-                                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                    } else {
-                                        IconButton(onClick = { isSearching = false; searchQuery = "" }, modifier = Modifier.size(20.dp)) {
-                                            Icon(Icons.Filled.Close, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                     
-                    if (!isSearching) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { isSearching = true }, modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)) {
-                                Icon(Icons.Filled.Search, null, tint = Color.White)
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            IconButton(onClick = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = {
+                            try {
                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                     type = "application/pdf"
                                     putExtra(Intent.EXTRA_STREAM, uri)
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
                                 context.startActivity(Intent.createChooser(intent, "Share PDF"))
-                            }, modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)) {
-                                Icon(Icons.Filled.Share, null, tint = Color.White)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Cannot share this file", Toast.LENGTH_SHORT).show()
                             }
-                            Spacer(Modifier.width(8.dp))
-                            Surface(color = Color.White.copy(0.1f), shape = RoundedCornerShape(12.dp)) {
-                                Text(
-                                    "${pagerState.currentPage + 1} / $totalCount",
-                                    color = Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                )
-                            }
+                        }, modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)) {
+                            Icon(Icons.Filled.Share, null, tint = Color.White)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Surface(
+                            onClick = { 
+                                jumpPageInput = (pagerState.currentPage + 1).toString()
+                                showJumpDialog = true 
+                            },
+                            color = Color.White.copy(0.1f), 
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                "${pagerState.currentPage + 1} / $totalCount",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
                         }
                     }
                 }
+            }
+            
+            // Jump to Page Dialog
+            if (showJumpDialog) {
+                AlertDialog(
+                    onDismissRequest = { showJumpDialog = false },
+                    title = { Text("Go to Page", fontWeight = FontWeight.Black) },
+                    text = {
+                        OutlinedTextField(
+                            value = jumpPageInput,
+                            onValueChange = { if (it.all { char -> char.isDigit() }) jumpPageInput = it },
+                            label = { Text("Page Number (1-$totalCount)") },
+                            singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+                                imeAction = ImeAction.Go
+                            ),
+                            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onGo = {
+                                val pageNum = jumpPageInput.toIntOrNull()
+                                if (pageNum != null && pageNum in 1..totalCount) {
+                                    scope.launch { pagerState.scrollToPage(pageNum - 1) }
+                                    showJumpDialog = false
+                                }
+                            })
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val pageNum = jumpPageInput.toIntOrNull()
+                            if (pageNum != null && pageNum in 1..totalCount) {
+                                scope.launch { pagerState.scrollToPage(pageNum - 1) }
+                                showJumpDialog = false
+                            }
+                        }) { Text("GO", fontWeight = FontWeight.Black, color = PaperPink) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showJumpDialog = false }) { Text("CANCEL", color = Color.Gray) }
+                    },
+                    shape = RoundedCornerShape(28.dp),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 6.dp
+                )
             }
             
             if (onToggleSelection != null && selectedPages != null) {

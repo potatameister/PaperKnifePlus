@@ -72,6 +72,7 @@ fun MergeView(onBack: () -> Unit) {
     var selectedFiles by remember { mutableStateOf<List<MergeFile>>(emptyList()) }
     var processingTime by remember { mutableStateOf("") }
     var progressCount by remember { mutableIntStateOf(0) }
+    var isFileLoading by remember { mutableStateOf(false) }
     
     // UI State
     var fileToUnlock by remember { mutableStateOf<MergeFile?>(null) }
@@ -82,6 +83,7 @@ fun MergeView(onBack: () -> Unit) {
     // Launcher for picking multiple files
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         if (uris.isNotEmpty()) {
+            isFileLoading = true
             scope.launch {
                 val currentUris = selectedFiles.map { it.uri }
                 val duplicates = uris.filter { it in currentUris }
@@ -101,6 +103,7 @@ fun MergeView(onBack: () -> Unit) {
                     selectedFiles = selectedFiles + newFiles
                     currentState = ToolState.CONFIGURING
                 }
+                isFileLoading = false
             }
         }
     }
@@ -184,133 +187,158 @@ fun MergeView(onBack: () -> Unit) {
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when (currentState) {
-                ToolState.SELECTING -> {
-                    SelectionGrid(
-                        onSelect = { pickLauncher.launch("application/pdf") },
-                        isDark = isDark,
-                        icon = Icons.Filled.Layers,
-                        title = "Tap to choose files",
-                        subtitle = "SELECT MULTIPLE PDFS",
-                        accentColor = accentColor,
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)
-                    )
-                }
-                
-                ToolState.CONFIGURING -> {
-                    val listState = rememberLazyListState()
-                    var draggedIndex by remember { mutableStateOf<Int?>(null) }
-                    var dragOffset by remember { mutableStateOf(0f) }
+            if (isFileLoading) {
+                LoadingStateView(accentColor, false, "Processing files...")
+            } else {
+                when (currentState) {
+                    ToolState.SELECTING -> {
+                        SelectionGrid(
+                            onSelect = { pickLauncher.launch("application/pdf") },
+                            isDark = isDark,
+                            icon = Icons.Filled.Layers,
+                            title = "Tap to choose files",
+                            subtitle = "SELECT MULTIPLE PDFS",
+                            accentColor = accentColor,
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)
+                        )
+                    }
+                    
+                    ToolState.CONFIGURING -> {
+                        val listState = rememberLazyListState()
+                        var draggedIndex by remember { mutableStateOf<Int?>(null) }
+                        var dragOffset by remember { mutableStateOf(0f) }
 
-                    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(vertical = 16.dp)
-                        ) {
-                            itemsIndexed(selectedFiles, key = { _, file -> file.uri.toString() }) { index, file ->
-                                val isDragging = draggedIndex == index
-                                val itemOffset = if (isDragging) dragOffset else 0f
-                                
-                                Box(
-                                    modifier = Modifier
-                                        .zIndex(if (isDragging) 1f else 0f)
-                                        .graphicsLayer { translationY = itemOffset }
-                                        .shadow(if (isDragging) 8.dp else 0.dp, RoundedCornerShape(20.dp))
-                                        .pointerInput(selectedFiles) {
-                                            detectDragGesturesAfterLongPress(
-                                                onDragStart = { draggedIndex = index },
-                                                onDrag = { change, dragAmount ->
-                                                    change.consume()
-                                                    dragOffset += dragAmount.y
-                                                    
-                                                    // Simple Swap Logic
-                                                    val itemHeight = size.height.toFloat() // approx
-                                                    val threshold = 100f // height of card + spacing
-                                                    
-                                                    if (dragOffset > threshold && index < selectedFiles.size - 1) {
-                                                        val newList = selectedFiles.toMutableList()
-                                                        Collections.swap(newList, index, index + 1)
-                                                        selectedFiles = newList
-                                                        draggedIndex = index + 1
-                                                        dragOffset -= threshold
-                                                    } else if (dragOffset < -threshold && index > 0) {
-                                                        val newList = selectedFiles.toMutableList()
-                                                        Collections.swap(newList, index, index - 1)
-                                                        selectedFiles = newList
-                                                        draggedIndex = index - 1
-                                                        dragOffset += threshold
+                        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                contentPadding = PaddingValues(vertical = 16.dp)
+                            ) {
+                                itemsIndexed(selectedFiles, key = { _, file -> file.uri.toString() }) { index, file ->
+                                    val isDragging = draggedIndex == index
+                                    val itemOffset = if (isDragging) dragOffset else 0f
+                                    
+                                    Box(
+                                        modifier = Modifier
+                                            .zIndex(if (isDragging) 1f else 0f)
+                                            .graphicsLayer { translationY = itemOffset }
+                                            .shadow(if (isDragging) 8.dp else 0.dp, RoundedCornerShape(20.dp))
+                                            .pointerInput(selectedFiles) {
+                                                detectDragGesturesAfterLongPress(
+                                                    onDragStart = { draggedIndex = index },
+                                                    onDrag = { change, dragAmount ->
+                                                        change.consume()
+                                                        dragOffset += dragAmount.y
+                                                        
+                                                        val threshold = 120f
+                                                        
+                                                        if (dragOffset > threshold && index < selectedFiles.size - 1) {
+                                                            val newList = selectedFiles.toMutableList()
+                                                            Collections.swap(newList, index, index + 1)
+                                                            selectedFiles = newList
+                                                            draggedIndex = index + 1
+                                                            dragOffset -= threshold
+                                                        } else if (dragOffset < -threshold && index > 0) {
+                                                            val newList = selectedFiles.toMutableList()
+                                                            Collections.swap(newList, index, index - 1)
+                                                            selectedFiles = newList
+                                                            draggedIndex = index - 1
+                                                            dragOffset += threshold
+                                                        }
+                                                    },
+                                                    onDragEnd = {
+                                                        draggedIndex = null
+                                                        dragOffset = 0f
+                                                    },
+                                                    onDragCancel = {
+                                                        draggedIndex = null
+                                                        dragOffset = 0f
                                                     }
-                                                },
-                                                onDragEnd = {
-                                                    draggedIndex = null
-                                                    dragOffset = 0f
-                                                },
-                                                onDragCancel = {
-                                                    draggedIndex = null
-                                                    dragOffset = 0f
-                                                }
-                                            )
-                                        }
-                                ) {
-                                    MergeFileItem(
-                                        file = file,
-                                        index = index,
-                                        totalCount = selectedFiles.size,
-                                        isDark = isDark,
-                                        accentColor = accentColor,
-                                        imageLoader = imageLoader,
-                                        onDelete = { selectedFiles = selectedFiles.filterIndexed { i, _ -> i != index } },
-                                        onUnlock = { fileToUnlock = file },
-                                        onClick = { lightboxFile = file }
-                                    )
+                                                )
+                                            }
+                                    ) {
+                                        MergeFileItem(
+                                            file = file,
+                                            index = index,
+                                            totalCount = selectedFiles.size,
+                                            isDark = isDark,
+                                            accentColor = accentColor,
+                                            imageLoader = imageLoader,
+                                            onDelete = { selectedFiles = selectedFiles.filterIndexed { i, _ -> i != index } },
+                                            onUnlock = { fileToUnlock = file },
+                                            onClick = { lightboxFile = file }
+                                        )
+                                    }
                                 }
+                                
+                                item {
+                                    OutlinedButton(
+                                        onClick = { pickLauncher.launch("application/pdf") },
+                                        modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 4.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.3f)),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor)
+                                    ) {
+                                        Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("ADD MORE FILES", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
+                                    }
+                                }
+                                
+                                item { Spacer(Modifier.height(100.dp)) }
                             }
                             
-                            item {
-                                OutlinedButton(
-                                    onClick = { pickLauncher.launch("application/pdf") },
-                                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 4.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.3f)),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor)
-                                ) {
-                                    Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("ADD MORE FILES", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
-                                }
-                            }
+                            val allReady = selectedFiles.size > 1 && selectedFiles.all { !it.isLocked || it.isUnlocked }
                             
-                            item { Spacer(Modifier.height(100.dp)) }
-                        }
-                        
-                        val allReady = selectedFiles.size > 1 && selectedFiles.all { !it.isLocked || it.isUnlocked }
-                        
-                        Button(
-                            onClick = { saveLauncher.launch("merged_${System.currentTimeMillis() / 1000}.pdf") },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
-                            enabled = allReady,
-                            shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = accentColor,
-                                disabledContainerColor = accentColor.copy(alpha = 0.3f)
-                            )
-                        ) {
-                            if (allReady) {
-                                Text("MERGE ${selectedFiles.size} FILES", fontWeight = FontWeight.Black)
-                            } else if (selectedFiles.size < 2) {
-                                Text("SELECT AT LEAST 2 FILES", fontWeight = FontWeight.Black)
-                            } else {
-                                Text("UNLOCK ALL FILES FIRST", fontWeight = FontWeight.Black)
+                            Button(
+                                onClick = { saveLauncher.launch("merged_${System.currentTimeMillis() / 1000}.pdf") },
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
+                                enabled = allReady,
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = accentColor,
+                                    disabledContainerColor = accentColor.copy(alpha = 0.3f)
+                                )
+                            ) {
+                                if (allReady) {
+                                    Text("MERGE ${selectedFiles.size} FILES", fontWeight = FontWeight.Black)
+                                } else if (selectedFiles.size < 2) {
+                                    Text("SELECT AT LEAST 2 FILES", fontWeight = FontWeight.Black)
+                                } else {
+                                    Text("UNLOCK ALL FILES FIRST", fontWeight = FontWeight.Black)
+                                }
                             }
                         }
                     }
-                }
-                
-                ToolState.PROCESSING -> {
-                    LoadingStateView(accentColor, false, "Merging document $progressCount of ${selectedFiles.size}...")
-                }
+                    
+                    ToolState.PROCESSING -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                if (selectedFiles.isNotEmpty()) {
+                                    val firstFile = selectedFiles.first()
+                                    Surface(
+                                        modifier = Modifier.size(120.dp),
+                                        shape = RoundedCornerShape(24.dp),
+                                        color = accentColor.copy(alpha = 0.1f),
+                                        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.2f))
+                                    ) {
+                                        val request = remember(firstFile.uri, firstFile.decryptedUri) { 
+                                            PdfPageRequest(firstFile.decryptedUri ?: firstFile.uri, 0, if (firstFile.decryptedUri != null) null else firstFile.password, 0.5f) 
+                                        }
+                                        Image(
+                                            painter = rememberAsyncImagePainter(request, imageLoader),
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                    Spacer(Modifier.height(24.dp))
+                                }
+                                LoadingStateView(accentColor, false, "Merging document $progressCount of ${selectedFiles.size}...")
+                            }
+                        }
+                    }
                 
                 ToolState.SUCCESS -> {
                     SuccessView(
@@ -335,6 +363,7 @@ fun MergeView(onBack: () -> Unit) {
                     onDismiss = { fileToUnlock = null },
                     onUnlocked = { password ->
                         val targetFile = fileToUnlock!!
+                        isFileLoading = true
                         scope.launch(Dispatchers.IO) {
                             val decryptedUri = decryptToCache(context, targetFile.uri, password)
                             if (decryptedUri != null) {
@@ -347,10 +376,12 @@ fun MergeView(onBack: () -> Unit) {
                                     }
                                     selectedFiles = newList
                                     fileToUnlock = null
+                                    isFileLoading = false
                                 }
                             } else {
                                 withContext(Dispatchers.Main) {
                                     Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    isFileLoading = false
                                 }
                             }
                         }
