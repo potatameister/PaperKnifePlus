@@ -177,7 +177,7 @@ fun PdfToTextView(onBack: () -> Unit) {
                                 if (extractedText.trim().isEmpty()) {
                                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(Icons.Filled.AutoFixOff, null, modifier = Modifier.size(48.dp).alpha(0.2f))
+                                            Icon(Icons.Filled.Build, null, modifier = Modifier.size(48.dp).alpha(0.2f))
                                             Text("No text found. Document might be a scan.", fontSize = 12.sp, color = Color.Gray, textAlign = TextAlign.Center)
                                         }
                                     }

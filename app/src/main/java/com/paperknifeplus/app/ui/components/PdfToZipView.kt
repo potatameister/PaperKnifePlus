@@ -73,7 +73,7 @@ fun PdfToZipView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "To ZIP", "Archived PDF", Icons.Filled.FolderZip)
+                        SessionManager.addEntry(fileName, "To ZIP", "Archived PDF", Icons.Filled.Build)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -111,7 +111,7 @@ fun PdfToZipView(onBack: () -> Unit) {
                     SelectionGrid(
                         onSelect = { pickLauncher.launch("application/pdf") }, 
                         isDark = isDark,
-                        icon = Icons.Filled.FolderZip,
+                        icon = Icons.Filled.Build,
                         title = "Tap to enter file",
                         subtitle = "CREATE ZIP ARCHIVE",
                         accentColor = accentColor,
@@ -129,7 +129,7 @@ fun PdfToZipView(onBack: () -> Unit) {
                             border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
                         ) {
                             Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.PictureAsPdf, null, tint = accentColor, modifier = Modifier.size(40.dp))
+                                Icon(Icons.Filled.Description, null, tint = accentColor, modifier = Modifier.size(40.dp))
                                 Spacer(Modifier.width(16.dp))
                                 Column {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)

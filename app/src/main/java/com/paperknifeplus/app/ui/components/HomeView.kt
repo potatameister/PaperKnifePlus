@@ -45,8 +45,8 @@ fun HomeView(
 ) {
     val coreEngines = remember {
         listOf(
-            Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("merge", "Merge", "COMBINE", Icons.Filled.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.FlashOn, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("split", "Split", "EXTRACT", Icons.Filled.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("protect", "Protect", "SECURE", Icons.Filled.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
         )
@@ -180,7 +180,7 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = if (isDarkMode) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                    imageVector = if (isDarkMode) Icons.Filled.Lightbulb else Icons.Filled.Bedtime,
                     contentDescription = "Toggle Theme",
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurface

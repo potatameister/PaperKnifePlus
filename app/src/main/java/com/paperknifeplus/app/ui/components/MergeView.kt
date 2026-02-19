@@ -116,7 +116,7 @@ fun MergeView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers)
+                        SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Filled.List)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -156,7 +156,7 @@ fun MergeView(onBack: () -> Unit) {
                     SelectionGrid(
                         onSelect = { pickLauncher.launch("application/pdf") },
                         isDark = isDark,
-                        icon = Icons.Filled.Layers,
+                        icon = Icons.Filled.List,
                         title = "Tap to choose files",
                         subtitle = "SELECT MULTIPLE PDFS",
                         accentColor = accentColor,

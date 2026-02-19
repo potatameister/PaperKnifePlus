@@ -80,7 +80,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Filled.PictureAsPdf)
+                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Filled.Description)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -132,7 +132,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("image/*") },
                             isDark = isDark,
-                            icon = Icons.Filled.AddPhotoAlternate,
+                            icon = Icons.Filled.AddCircle,
                             title = "Tap to select images",
                             subtitle = "JPG, PNG, OR WEBP",
                             accentColor = accentColor,

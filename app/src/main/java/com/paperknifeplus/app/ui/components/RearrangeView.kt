@@ -115,7 +115,7 @@ fun RearrangeView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", Icons.Filled.ViewQuilt)
+                        SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", Icons.Filled.GridView)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -158,7 +158,7 @@ fun RearrangeView(onBack: () -> Unit) {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.ViewQuilt,
+                            icon = Icons.Filled.GridView,
                             title = "Tap to enter file",
                             subtitle = "REARRANGE ANY PDF DOCUMENT",
                             accentColor = accentColor,
@@ -204,7 +204,7 @@ fun RearrangeView(onBack: () -> Unit) {
                             ) {
                                 Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Surface(Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = accentColor.copy(alpha = 0.1f)) {
-                                        Icon(Icons.Filled.PictureAsPdf, null, tint = accentColor, modifier = Modifier.padding(10.dp))
+                                        Icon(Icons.Filled.Description, null, tint = accentColor, modifier = Modifier.padding(10.dp))
                                     }
                                     Spacer(Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
