@@ -51,6 +51,7 @@ fun PdfToTextView(onBack: () -> Unit) {
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
+    var isFileLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {
@@ -66,14 +67,19 @@ fun PdfToTextView(onBack: () -> Unit) {
             selectedUri = it
             val details = getUriDetails(context, it)
             fileName = details.name
+            isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     withContext(Dispatchers.Main) { 
                         fileToUnlock = fileName
+                        isFileLoading = false
                     }
                 } else {
-                    withContext(Dispatchers.Main) { currentState = ToolState.PROCESSING }
+                    withContext(Dispatchers.Main) { 
+                        currentState = ToolState.PROCESSING 
+                        isFileLoading = false
+                    }
                     processText(context, it, null) { text, time ->
                         extractedText = text
                         processingTime = time
@@ -117,8 +123,11 @@ fun PdfToTextView(onBack: () -> Unit) {
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
-            when (currentState) {
-                ToolState.SELECTING -> {
+            if (isFileLoading) {
+                LoadingStateView(accentColor, showLoadingWarning, "Preparing document...")
+            } else {
+                when (currentState) {
+                    ToolState.SELECTING -> {
                     SelectionGrid(
                         onSelect = { pickLauncher.launch("application/pdf") }, 
                         isDark = isDark,
@@ -183,26 +192,31 @@ fun PdfToTextView(onBack: () -> Unit) {
                 }
                 else -> {}
             }
+        }
 
-            if (fileToUnlock != null) {
+        if (fileToUnlock != null) {
                 LockedFilePrompt(
                     fileName = fileToUnlock!!,
                     onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
                     onUnlocked = { pass ->
                         unlockPassword = pass
+                        isFileLoading = true
                         scope.launch(Dispatchers.IO) {
                             withContext(Dispatchers.Main) { 
-                                currentState = ToolState.PROCESSING
                                 fileToUnlock = null
                             }
                             processText(context, selectedUri!!, pass) { text, time ->
                                 extractedText = text
                                 processingTime = time
-                                withContext(Dispatchers.Main) { currentState = ToolState.SUCCESS }
+                                withContext(Dispatchers.Main) { 
+                                    currentState = ToolState.SUCCESS 
+                                    isFileLoading = false
+                                }
                             }
                         }
                     },
-                    accentColor = accentColor
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }

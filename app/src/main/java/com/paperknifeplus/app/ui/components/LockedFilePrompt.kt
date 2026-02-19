@@ -21,7 +21,8 @@ fun LockedFilePrompt(
     fileName: String,
     onDismiss: () -> Unit,
     onUnlocked: (String) -> Unit,
-    accentColor: Color = Color(0xFF6366F1)
+    accentColor: Color = Color(0xFF6366F1),
+    isLoading: Boolean = false
 ) {
     var password by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
@@ -82,6 +83,7 @@ fun LockedFilePrompt(
                     shape = RoundedCornerShape(16.dp),
                     singleLine = true,
                     isError = isError,
+                    enabled = !isLoading,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
                         focusedLabelColor = accentColor,
@@ -103,14 +105,20 @@ fun LockedFilePrompt(
                 Button(
                     onClick = { onUnlocked(password) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
+                    enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                 ) {
-                    Text("UNLOCK FILE", fontWeight = FontWeight.Black, color = Color.White)
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
+                    } else {
+                        Text("UNLOCK FILE", fontWeight = FontWeight.Black, color = Color.White)
+                    }
                 }
                 
                 TextButton(
                     onClick = onDismiss,
+                    enabled = !isLoading,
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text("CANCEL", color = Color.Gray, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)

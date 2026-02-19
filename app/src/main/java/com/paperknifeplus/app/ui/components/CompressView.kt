@@ -279,7 +279,8 @@ fun CompressView(onBack: () -> Unit) {
                             }
                         }
                     },
-                    accentColor = accentColor
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }

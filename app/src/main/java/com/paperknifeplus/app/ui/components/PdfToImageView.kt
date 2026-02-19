@@ -58,6 +58,7 @@ fun PdfToImageView(onBack: () -> Unit) {
     var showLoadingWarning by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
+    var isFileLoading by remember { mutableStateOf(false) }
 
     // Use Shared Global Loader (MainActivity)
     val imageLoader = coil.compose.LocalImageLoader.current
@@ -77,11 +78,13 @@ fun PdfToImageView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
+            isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     withContext(Dispatchers.Main) { 
                         fileToUnlock = fileName
+                        isFileLoading = false
                     }
                 } else {
                     val count = getPageCount(context, it, null)
@@ -89,6 +92,7 @@ fun PdfToImageView(onBack: () -> Unit) {
                         pageCount = count
                         selectedPages = (0 until count).toSet()
                         currentState = ToolState.CONFIGURING
+                        isFileLoading = false
                     }
                 }
             }
@@ -267,6 +271,7 @@ fun PdfToImageView(onBack: () -> Unit) {
                     onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
                     onUnlocked = { pass ->
                         unlockPassword = pass
+                        isFileLoading = true
                         scope.launch(Dispatchers.IO) {
                             val count = getPageCount(context, selectedUri!!, pass)
                             if (count > 0) {
@@ -275,15 +280,18 @@ fun PdfToImageView(onBack: () -> Unit) {
                                     selectedPages = (0 until count).toSet()
                                     currentState = ToolState.CONFIGURING
                                     fileToUnlock = null
+                                    isFileLoading = false
                                 }
                             } else {
                                 withContext(Dispatchers.Main) { 
                                     Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    isFileLoading = false
                                 }
                             }
                         }
                     },
-                    accentColor = accentColor
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }

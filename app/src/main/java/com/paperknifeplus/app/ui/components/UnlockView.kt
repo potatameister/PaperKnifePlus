@@ -247,7 +247,8 @@ fun UnlockView(onBack: () -> Unit) {
                             }
                         }
                     },
-                    accentColor = accentColor
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }

@@ -46,15 +46,17 @@ fun SplitView(onBack: () -> Unit) {
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
-    var range by remember { mutableStateOf("1-2") }
+    var rangeText by remember { mutableStateOf("") }
+    var selectedPages by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
-    var lightboxPage by remember { mutableStateOf<Int?>(null) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
+    var showRangeInput by remember { mutableStateOf(false) }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
@@ -63,6 +65,49 @@ fun SplitView(onBack: () -> Unit) {
         } else {
             showLoadingWarning = false
         }
+    }
+
+    // Range Parser
+    fun parseRange(input: String, max: Int): Set<Int> {
+        val pages = mutableSetOf<Int>()
+        try {
+            input.split(",").forEach { part ->
+                if (part.contains("-")) {
+                    val split = part.split("-")
+                    val start = split[0].trim().toInt().coerceIn(1, max)
+                    val end = split[1].trim().toInt().coerceIn(1, max)
+                    for (i in start..end) pages.add(i - 1)
+                } else {
+                    val p = part.trim().toIntOrNull()
+                    if (p != null && p in 1..max) pages.add(p - 1)
+                }
+            }
+        } catch (e: Exception) {}
+        return pages
+    }
+
+    // Set to Range String
+    fun generateRangeString(pages: Set<Int>): String {
+        if (pages.isEmpty()) return ""
+        val sorted = pages.toList().sorted()
+        val result = mutableListOf<String>()
+        var start = sorted[0]
+        var prev = start
+        
+        for (i in 1 until sorted.size) {
+            if (sorted[i] == prev + 1) {
+                prev = sorted[i]
+            } else {
+                if (start == prev) result.add("${start + 1}")
+                else result.add("${start + 1}-${prev + 1}")
+                start = sorted[i]
+                prev = start
+            }
+        }
+        if (start == prev) result.add("${start + 1}")
+        else result.add("${start + 1}-${prev + 1}")
+        
+        return result.joinToString(", ")
     }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -83,6 +128,8 @@ fun SplitView(onBack: () -> Unit) {
                     val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
+                        selectedPages = emptySet()
+                        rangeText = ""
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -100,17 +147,13 @@ fun SplitView(onBack: () -> Unit) {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                         val newDocument = PDDocument()
-                        val parts = range.split(",").flatMap { part ->
-                            if (part.contains("-")) {
-                                val split = part.split("-")
-                                (split[0].toInt()..split[1].toInt()).toList()
-                            } else listOf(part.trim().toInt())
-                        }
-                        parts.forEach { pageNum ->
-                            if (pageNum <= document.numberOfPages) {
-                                newDocument.addPage(document.getPage(pageNum - 1))
+                        
+                        selectedPages.toList().sorted().forEach { index ->
+                            if (index < document.numberOfPages) {
+                                newDocument.addPage(document.getPage(index))
                             }
                         }
+                        
                         saveAndFlush(context, newDocument, saveUri)
                         document.close()
                     }
@@ -118,7 +161,7 @@ fun SplitView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Split", "Extracted pages", Icons.Filled.ContentCut)
+                        SessionManager.addEntry(fileName, "Split", "${selectedPages.size} pages extracted", Icons.Filled.ContentCut)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -152,7 +195,7 @@ fun SplitView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (isFileLoading) {
                 LoadingStateView(accentColor, showLoadingWarning, "Preparing document...")
             } else {
@@ -165,69 +208,88 @@ fun SplitView(onBack: () -> Unit) {
                             title = "Tap to enter file",
                             subtitle = "SPLIT PDF INTO PARTS",
                             accentColor = accentColor,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                            Spacer(Modifier.height(16.dp))
-                            
-                            UnifiedPdfPreview(
-                                uri = selectedUri!!,
-                                pageCount = pageCount,
-                                mode = PreviewMode.COVER,
-                                password = null, // Already decrypted
-                                accentColor = accentColor
-                            )
-                            
-                            Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            
-                            Spacer(Modifier.height(32.dp))
-                            Text("PAGE RANGE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Spacer(Modifier.height(12.dp))
-                            
-                            OutlinedTextField(
-                                value = range,
-                                onValueChange = { range = it },
-                                label = { Text("Example: 1-5, 8, 11-13") },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = TextFieldDefaults.colors(
-                                    focusedIndicatorColor = accentColor,
-                                    cursorColor = accentColor,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedContainerColor = Color.Transparent
+                        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+                            // Header Info
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
+                                    Text("${selectedPages.size} / $pageCount PAGES SELECTED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                }
+                                
+                                TextButton(onClick = { showRangeInput = !showRangeInput }) {
+                                    Icon(if (showRangeInput) Icons.Filled.KeyboardArrowUp else Icons.Filled.Create, null, modifier = Modifier.size(16.dp), tint = accentColor)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(if (showRangeInput) "HIDE RANGE" else "ENTER RANGE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
+                                }
+                            }
+
+                            if (showRangeInput) {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Column(Modifier.padding(16.dp)) {
+                                        OutlinedTextField(
+                                            value = rangeText,
+                                            onValueChange = { 
+                                                rangeText = it
+                                                selectedPages = parseRange(it, pageCount)
+                                            },
+                                            label = { Text("Example: 1-5, 8, 11-13") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp),
+                                            singleLine = true,
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = accentColor,
+                                                cursorColor = accentColor
+                                            )
+                                        )
+                                        Spacer(Modifier.height(8.dp))
+                                        Text("Tip: Use commas for lists and dashes for spans.", fontSize = 10.sp, color = Color.Gray)
+                                    }
+                                }
+                            }
+
+                            Box(modifier = Modifier.weight(1f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.GRID,
+                                    password = null, 
+                                    accentColor = accentColor,
+                                    selectedPages = selectedPages,
+                                    onToggleSelection = { index ->
+                                        val newSet = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
+                                        selectedPages = newSet
+                                        rangeText = generateRangeString(newSet)
+                                    }
                                 )
-                            )
-                            
-                            Spacer(Modifier.height(32.dp))
+                            }
                             
                             Button(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-split.pdf") }, 
-                                modifier = Modifier.fillMaxWidth().height(60.dp), 
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp), 
+                                enabled = selectedPages.isNotEmpty(),
                                 shape = RoundedCornerShape(20.dp), 
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {
-                                Text("EXTRACT & SAVE", fontWeight = FontWeight.Black, color = Color.White)
+                                Text("EXTRACT ${selectedPages.size} PAGES", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                                Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                            Spacer(Modifier.height(100.dp))
                         }
                     }
                     ToolState.PROCESSING -> {
-                        ProcessingStateView(
-                            accentColor = accentColor,
-                            uri = selectedUri,
-                            password = unlockPassword.ifEmpty { null },
-                            text = "Extracting specified pages...",
-                            current = 0,
-                            total = 0,
-                            showWarning = showLoadingWarning
-                        )
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            LoadingStateView(accentColor, false, "Extracting specified pages...")
+                        }
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
@@ -269,19 +331,10 @@ fun SplitView(onBack: () -> Unit) {
                             }
                         }
                     },
-                    accentColor = accentColor
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }
-    }
-
-    if (lightboxPage != null && selectedUri != null) {
-        PageLightbox(
-            uri = selectedUri!!,
-            initialPage = lightboxPage!!,
-            totalCount = pageCount,
-            password = if (unlockPassword.isEmpty()) null else unlockPassword,
-            onDismiss = { lightboxPage = null }
-        )
     }
 }

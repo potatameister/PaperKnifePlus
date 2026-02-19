@@ -213,11 +213,27 @@ fun MergeView(onBack: () -> Unit) {
                         var dragOffset by remember { mutableStateOf(0f) }
 
                         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+                            // Unified Hint Text
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Filled.Info, null, tint = accentColor.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Long-press handle to reorder • Tap preview to inspect",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Gray
+                                )
+                            }
+
                             LazyColumn(
                                 state = listState,
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                                contentPadding = PaddingValues(vertical = 16.dp)
+                                contentPadding = PaddingValues(bottom = 16.dp)
                             ) {
                                 itemsIndexed(selectedFiles, key = { _, file -> file.uri.toString() }) { index, file ->
                                     val isDragging = draggedIndex == index
@@ -234,7 +250,7 @@ fun MergeView(onBack: () -> Unit) {
                                                 )
                                             )
                                             .shadow(if (isDragging) 8.dp else 0.dp, RoundedCornerShape(20.dp))
-                                            .pointerInput(selectedFiles) {
+                                            .pointerInput(Unit) {
                                                 detectDragGesturesAfterLongPress(
                                                     onDragStart = { draggedIndex = index },
                                                     onDrag = { change, dragAmount ->
@@ -242,18 +258,19 @@ fun MergeView(onBack: () -> Unit) {
                                                         dragOffset += dragAmount.y
                                                         
                                                         val threshold = 120f
+                                                        val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                                         
-                                                        if (dragOffset > threshold && index < selectedFiles.size - 1) {
+                                                        if (dragOffset > threshold && currentIndex < selectedFiles.size - 1) {
                                                             val newList = selectedFiles.toMutableList()
-                                                            Collections.swap(newList, index, index + 1)
+                                                            Collections.swap(newList, currentIndex, currentIndex + 1)
                                                             selectedFiles = newList
-                                                            draggedIndex = index + 1
+                                                            draggedIndex = currentIndex + 1
                                                             dragOffset -= threshold
-                                                        } else if (dragOffset < -threshold && index > 0) {
+                                                        } else if (dragOffset < -threshold && currentIndex > 0) {
                                                             val newList = selectedFiles.toMutableList()
-                                                            Collections.swap(newList, index, index - 1)
+                                                            Collections.swap(newList, currentIndex, currentIndex - 1)
                                                             selectedFiles = newList
-                                                            draggedIndex = index - 1
+                                                            draggedIndex = currentIndex - 1
                                                             dragOffset += threshold
                                                         }
                                                     },
@@ -327,25 +344,24 @@ fun MergeView(onBack: () -> Unit) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 if (selectedFiles.isNotEmpty()) {
                                     val firstFile = selectedFiles.first()
-                                    Surface(
-                                        modifier = Modifier.size(120.dp),
-                                        shape = RoundedCornerShape(24.dp),
-                                        color = accentColor.copy(alpha = 0.1f),
-                                        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.2f))
+                                    Card(
+                                        modifier = Modifier.size(160.dp, 226.dp), // A4 aspect ratio
+                                        shape = RoundedCornerShape(16.dp),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
                                     ) {
                                         val request = remember(firstFile.uri, firstFile.decryptedUri) { 
-                                            PdfPageRequest(firstFile.decryptedUri ?: firstFile.uri, 0, if (firstFile.decryptedUri != null) null else firstFile.password, 0.5f) 
+                                            PdfPageRequest(firstFile.decryptedUri ?: firstFile.uri, 0, if (firstFile.decryptedUri != null) null else firstFile.password, 0.8f) 
                                         }
                                         Image(
                                             painter = rememberAsyncImagePainter(request, imageLoader),
                                             contentDescription = null,
                                             modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop
+                                            contentScale = ContentScale.Fit
                                         )
                                     }
-                                    Spacer(Modifier.height(24.dp))
+                                    Spacer(Modifier.height(32.dp))
                                 }
-                                LoadingStateView(accentColor, false, "Merging document $progressCount of ${selectedFiles.size}...")
+                                LoadingStateView(accentColor, false, "Merging ${selectedFiles.size} documents...")
                             }
                         }
                     }
@@ -396,7 +412,9 @@ fun MergeView(onBack: () -> Unit) {
                                 }
                             }
                         }
-                    }
+                    },
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }

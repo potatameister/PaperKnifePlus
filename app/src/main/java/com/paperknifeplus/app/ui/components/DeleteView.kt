@@ -259,7 +259,8 @@ fun DeleteView(onBack: () -> Unit) {
                             }
                         }
                     },
-                    accentColor = accentColor
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }

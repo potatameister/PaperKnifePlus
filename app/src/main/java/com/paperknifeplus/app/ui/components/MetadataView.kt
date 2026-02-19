@@ -280,7 +280,8 @@ fun MetadataView(onBack: () -> Unit) {
                             }
                         }
                     },
-                    accentColor = accentColor
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }

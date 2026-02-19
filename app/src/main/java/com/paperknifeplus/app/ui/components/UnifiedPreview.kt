@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -42,7 +43,9 @@ fun UnifiedPdfPreview(
     pageCount: Int,
     mode: PreviewMode = PreviewMode.GRID,
     password: String? = null,
-    accentColor: Color = MaterialTheme.colorScheme.primary
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+    selectedPages: Set<Int>? = null,
+    onToggleSelection: ((Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
@@ -51,7 +54,7 @@ fun UnifiedPdfPreview(
     val imageLoader = coil.compose.LocalImageLoader.current
 
     if (mode == PreviewMode.COVER) {
-        // --- TYPE B: ONE PAGE PREVIEW ---
+        // ... TYPE B: ONE PAGE PREVIEW ---
         Box(contentAlignment = Alignment.BottomCenter) {
             Card(
                 modifier = Modifier
@@ -112,14 +115,64 @@ fun UnifiedPdfPreview(
             contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
         ) {
             items(pageCount, key = { it }) { index ->
+                val isSelected = selectedPages?.contains(index) == true
+                
                 PdfPageItem(
                     uri = uri,
                     index = index,
                     password = password,
                     imageLoader = imageLoader,
                     accentColor = accentColor,
-                    onClick = { lightboxPage = index }
-                )
+                    onClick = { 
+                        if (onToggleSelection != null) onToggleSelection(index)
+                        else lightboxPage = index 
+                    },
+                    modifier = if (isSelected) Modifier.border(BorderStroke(3.dp, accentColor), RoundedCornerShape(12.dp)) else Modifier
+                ) {
+                    if (onToggleSelection != null) {
+                        // Selection UI Overlays
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(if (isSelected) accentColor.copy(alpha = 0.15f) else Color.Transparent)
+                        )
+                        
+                        // Checkmark
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(24.dp),
+                            color = if (isSelected) accentColor else Color.Black.copy(0.3f),
+                            shape = CircleShape
+                        ) {
+                            Icon(
+                                Icons.Filled.Check, 
+                                null, 
+                                tint = Color.White, 
+                                modifier = Modifier.padding(4.dp)
+                            )
+                        }
+
+                        // Maximize Button (Top Left)
+                        Surface(
+                            onClick = { lightboxPage = index },
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(8.dp)
+                                .size(24.dp),
+                            color = Color.Black.copy(0.3f),
+                            shape = CircleShape
+                        ) {
+                            Icon(
+                                Icons.Filled.Fullscreen, 
+                                null, 
+                                tint = Color.White, 
+                                modifier = Modifier.padding(4.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -131,7 +184,9 @@ fun UnifiedPdfPreview(
             initialPage = lightboxPage!!,
             totalCount = pageCount,
             password = password,
-            onDismiss = { lightboxPage = null }
+            onDismiss = { lightboxPage = null },
+            selectedPages = selectedPages,
+            onToggleSelection = onToggleSelection
         )
     }
 }
