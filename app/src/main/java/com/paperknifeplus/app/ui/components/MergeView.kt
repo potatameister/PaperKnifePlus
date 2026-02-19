@@ -110,7 +110,7 @@ fun MergeView(onBack: () -> Unit) {
             currentState = ToolState.PROCESSING
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
-                val openDocs = mutableListOf<PDDocument>()
+                val sourcesToClose = mutableListOf<InputStream>()
                 try {
                     val merger = PDFMergerUtility()
                     context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
@@ -119,15 +119,23 @@ fun MergeView(onBack: () -> Unit) {
                         selectedFiles.forEachIndexed { index, file ->
                             withContext(Dispatchers.Main) { progressCount = index + 1 }
                             val uriToLoad = file.decryptedUri ?: file.uri
-                            context.contentResolver.openInputStream(uriToLoad)?.use { inputStream ->
-                                val doc = if (file.password != null && file.decryptedUri == null) {
-                                    PDDocument.load(inputStream, file.password)
-                                } else {
-                                    PDDocument.load(inputStream)
+                            
+                            if (file.password != null && file.decryptedUri == null) {
+                                context.contentResolver.openInputStream(uriToLoad)?.use { pSourceStream ->
+                                    PDDocument.load(pSourceStream, file.password).use { doc ->
+                                        doc.isAllSecurityToBeRemoved = true
+                                        val baos = ByteArrayOutputStream()
+                                        doc.save(baos)
+                                        val bais = ByteArrayInputStream(baos.toByteArray())
+                                        sourcesToClose.add(bais)
+                                        merger.addSource(bais)
+                                    }
                                 }
-                                doc.isAllSecurityToBeRemoved = true
-                                openDocs.add(doc)
-                                merger.addSource(doc)
+                            } else {
+                                context.contentResolver.openInputStream(uriToLoad)?.let { inputStream ->
+                                    sourcesToClose.add(inputStream)
+                                    merger.addSource(inputStream)
+                                }
                             }
                         }
                         
@@ -148,7 +156,7 @@ fun MergeView(onBack: () -> Unit) {
                         currentState = ToolState.CONFIGURING
                     }
                 } finally {
-                    openDocs.forEach { try { it.close() } catch (e: Exception) {} }
+                    sourcesToClose.forEach { try { it.close() } catch (e: Exception) {} }
                 }
             }
         }
