@@ -4,18 +4,14 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -118,11 +114,12 @@ fun MergeView(onBack: () -> Unit) {
                     
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                                            withContext(Dispatchers.Main) {
-                                            processingTime = timeStr
-                                            SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers)
-                                            currentState = ToolState.SUCCESS
-                                        }                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        processingTime = timeStr
+                        SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers)
+                        currentState = ToolState.SUCCESS
+                    }
+                } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Merge failed: ${e.message}", Toast.LENGTH_LONG).show()
                         currentState = ToolState.CONFIGURING
@@ -142,7 +139,7 @@ fun MergeView(onBack: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
+                        Icon(Icons.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
                     }
                     Spacer(Modifier.width(16.dp))
                     Column {
@@ -354,7 +351,7 @@ fun MergeFileItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (file.isLocked && !file.isUnlocked) {
                     IconButton(onClick = onUnlock) {
-                        Icon(Icons.Filled.VpnKey, null, tint = accentColor, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Filled.LockOpen, null, tint = accentColor, modifier = Modifier.size(20.dp))
                     }
                 }
                 
