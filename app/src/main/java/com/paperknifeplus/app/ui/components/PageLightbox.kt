@@ -1,6 +1,8 @@
 package com.paperknifeplus.app.ui.components
 
 import android.net.Uri
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -14,8 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,15 +36,12 @@ import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
-import kotlinx.coroutines.launch
-
-import android.content.Intent
-import android.widget.Toast
+import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.text.input.ImeAction
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -353,53 +351,4 @@ private suspend fun findTextInPdf(context: android.content.Context, uri: Uri, pa
         }
     } catch (e: Exception) { }
     -1
-}
-                    val isSelected = selectedPages.contains(pagerState.currentPage)
-                    Button(
-                        onClick = { onToggleSelection(pagerState.currentPage) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSelected) Color(0xFF10B981) else Color.White.copy(0.1f),
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        if (isSelected) {
-                            Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                        }
-                        Text(if (isSelected) "SELECTED" else "SELECT", fontSize = 11.sp, fontWeight = FontWeight.Black)
-                    }
-                } else {
-                    Spacer(Modifier.width(48.dp))
-                }
-            }
-
-            // Navigation
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 24.dp)
-                    .background(Color.Black.copy(0.5f), RoundedCornerShape(24.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
-                    enabled = pagerState.currentPage > 0
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = if (pagerState.currentPage > 0) Color.White else Color.White.copy(0.3f))
-                }
-
-                IconButton(
-                    onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
-                    enabled = pagerState.currentPage < totalCount - 1
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = if (pagerState.currentPage < totalCount - 1) Color.White else Color.White.copy(0.3f))
-                }
-            }
-        }
-    }
 }
