@@ -2,6 +2,7 @@ package com.paperknifeplus.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -81,7 +82,7 @@ class MainActivity : ComponentActivity() {
                         val scope = rememberCoroutineScope()
 
                         // --- INTELLIGENT BACK NAVIGATION ---
-                        androidx.activity.compose.BackHandler(enabled = currentTool != null || pagerState.currentPage != 0) {
+                        BackHandler(enabled = currentTool != null || pagerState.currentPage != 0) {
                             if (currentTool != null) {
                                 currentTool = null
                             } else if (pagerState.currentPage != 0) {

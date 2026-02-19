@@ -7,9 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.outlined.Lock
@@ -361,14 +361,14 @@ fun MergeFileItem(
                         enabled = index > 0,
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Filled.KeyboardArrowUp, null, tint = if (index > 0) Color.Gray else Color.Gray.copy(alpha = 0.2f))
+                        Icon(Icons.Filled.ArrowUpward, null, tint = if (index > 0) Color.Gray else Color.Gray.copy(alpha = 0.2f))
                     }
                     IconButton(
                         onClick = onMoveDown,
                         enabled = index < totalCount - 1,
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Filled.KeyboardArrowDown, null, tint = if (index < totalCount - 1) Color.Gray else Color.Gray.copy(alpha = 0.2f))
+                        Icon(Icons.Filled.ArrowDownward, null, tint = if (index < totalCount - 1) Color.Gray else Color.Gray.copy(alpha = 0.2f))
                     }
                 }
                 
