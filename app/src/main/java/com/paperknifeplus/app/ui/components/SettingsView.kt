@@ -31,79 +31,109 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
     
     var autoAuthor by remember { mutableStateOf(PreferencesManager.getDefaultAuthor(context)) }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = buildAnnotatedString {
-                    append("Settings")
-                    withStyle(SpanStyle(color = PaperPink)) { append(".") }
-                },
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onBackground,
-                letterSpacing = (-1.5).sp
-            )
-        }
-        
-        Spacer(Modifier.height(32.dp))
-        
-        SettingsGroup("GENERAL") {
-            Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                Text("AUTO AUTHOR NAME", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
-                Spacer(Modifier.height(8.dp))
-                TextField(
-                    value = autoAuthor,
-                    onValueChange = { 
-                        autoAuthor = it
-                        PreferencesManager.setDefaultAuthor(context, it)
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(PaperPink.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.Settings, null, tint = PaperPink, modifier = Modifier.size(20.dp))
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        append("Settings")
+                        withStyle(SpanStyle(color = PaperPink)) { append(".") }
                     },
-                    placeholder = { Text("e.g. John Doe") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = PaperPink
-                    ),
-                    singleLine = true
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = (-1.5).sp
                 )
-                Text("Applied to all processed documents automatically.", fontSize = 9.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
             }
         }
         
-        Spacer(Modifier.height(24.dp))
-        
-        SettingsGroup("SYSTEM") {
-            SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Remove all temporary PDF fragments") {
-                android.widget.Toast.makeText(context, "Cache cleared", android.widget.Toast.LENGTH_SHORT).show()
-            }
-            SettingsItem(Icons.Outlined.Palette, "Appearance", "Adaptive dynamic colors")
-        }
-        
-        Spacer(Modifier.height(24.dp))
-        
-        SettingsGroup("PROJECT") {
-            SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Credits, License, and Privacy Policy", onClick = onNavigateToAbout)
-            SettingsItem(Icons.Outlined.Shield, "Privacy First", "100% Local processing verified") {
-                android.widget.Toast.makeText(context, "All processing is 100% offline", android.widget.Toast.LENGTH_SHORT).show()
-            }
-        }
-        
-        Spacer(Modifier.weight(1f))
-        
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 110.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Logo(modifier = Modifier.size(24.dp), partColor = if (isDark) Color.White else Color.Black)
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "PaperKnife+ v1.0.0",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp
-            )
+            item {
+                SettingsGroup("USER PROFILE") {
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        Text("DEFAULT AUTHOR", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                        Spacer(Modifier.height(8.dp))
+                        TextField(
+                            value = autoAuthor,
+                            onValueChange = { 
+                                autoAuthor = it
+                                PreferencesManager.setDefaultAuthor(context, it)
+                            },
+                            placeholder = { Text("e.g. John Doe", fontSize = 14.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = PaperPink,
+                                cursorColor = PaperPink
+                            ),
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        )
+                        Text("This name will be added to metadata of all saved PDFs.", fontSize = 9.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
+            }
+
+            item {
+                SettingsGroup("PREFERENCES") {
+                    SettingsItem(Icons.Outlined.Palette, "Dark Mode", "Toggle application theme") {
+                        // This would need a callback to MainActivity to actually toggle
+                        android.widget.Toast.makeText(context, "Use the toggle on Home screen", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    SettingsItem(Icons.Outlined.Memory, "Nitro Engine", "Hardware-accelerated rendering (ON)", enabled = false)
+                }
+            }
+
+            item {
+                SettingsGroup("STORAGE & PRIVACY") {
+                    SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Purge all temporary PDF fragments") {
+                        val cacheDir = context.cacheDir.resolve("pdf_previews")
+                        val deleted = if (cacheDir.exists()) cacheDir.deleteRecursively() else true
+                        val msg = if (deleted) "Cache cleared successfully" else "Cache already empty"
+                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    SettingsItem(Icons.Outlined.Shield, "Incognito Mode", "No files ever leave your device")
+                }
+            }
+
+            item {
+                SettingsGroup("SUPPORT") {
+                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "App version, licenses, and credits", onClick = onNavigateToAbout)
+                    SettingsItem(Icons.Outlined.StarOutline, "Source Code", "View on GitHub (potatameister)")
+                }
+            }
+
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 100.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Logo(modifier = Modifier.size(24.dp), partColor = if (isDark) Color.White else Color.Black)
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = "PAPERKNIFE+ VERSION 1.0.0",
+                        fontSize = 8.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 2.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -133,12 +163,19 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun SettingsItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit = {}) {
+fun SettingsItem(
+    icon: ImageVector, 
+    title: String, 
+    subtitle: String, 
+    enabled: Boolean = true,
+    onClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .clickable(enabled = enabled) { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .alpha(if (enabled) 1f else 0.5f),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(

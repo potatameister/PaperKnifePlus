@@ -113,14 +113,14 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         }
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().graphicsLayer { clip = true },
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             categories.forEach { category ->
                 val categoryTools = filteredTools.filter { it.category == category }
                 if (categoryTools.isNotEmpty()) {
-                    item {
+                    item(key = category) {
                         Text(
                             text = "${category.uppercase()} TOOLS",
                             fontSize = 9.sp,
@@ -131,7 +131,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
                         )
                     }
                     
-                    items(categoryTools) { tool ->
+                    items(categoryTools, key = { it.id }) { tool ->
                         ListToolItem(tool = tool, onClick = { onToolClick(tool.id) })
                     }
                 }

@@ -58,20 +58,23 @@ fun HomeView(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().graphicsLayer { 
+                // Caches the entire grid layer for smoother scrolling
+                clip = true
+            }
         ) {
             item(span = { GridItemSpan(2) }) {
                 val header = remember(isDarkMode) {
                     @Composable { HomeHeader(isDarkMode, onThemeToggle) }
                 }
-                Box(Modifier.graphicsLayer { renderEffect = null }) { header() }
+                header()
             }
 
             item(span = { GridItemSpan(2) }) {
                 val hero = remember {
                     @Composable { HeroCard(onSelectPdf = { onToolClick("tools") }) }
                 }
-                Box(Modifier.graphicsLayer { clip = true; shape = RoundedCornerShape(32.dp) }) { hero() }
+                hero()
             }
 
             item(span = { GridItemSpan(2) }) {
@@ -93,7 +96,7 @@ fun HomeView(
                 }
             }
 
-            items(coreEngines) { tool ->
+            items(coreEngines, key = { it.id }) { tool ->
                 BentoCard(tool = tool, onClick = { onToolClick(tool.id) })
             }
 
