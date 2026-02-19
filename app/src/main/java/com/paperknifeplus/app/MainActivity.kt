@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
                                 state = pagerState,
                                 modifier = Modifier.weight(1f),
                                 userScrollEnabled = currentTool == null,
-                                beyondBoundsPageCount = 0
+                                beyondBoundsPageCount = 1 // Pre-load 1 page each side for smooth sliding
                             ) { page ->
                                 when (mainScreens[page]) {
                                     "home" -> HomeView(
@@ -109,7 +109,8 @@ class MainActivity : ComponentActivity() {
                                 onNavigate = { screen ->
                                     val index = mainScreens.indexOf(screen)
                                     if (index != -1) {
-                                        scope.launch { pagerState.animateScrollToPage(index) }
+                                        // Use scrollToPage (instant) for bar clicks to avoid rendering in-between pages
+                                        scope.launch { pagerState.scrollToPage(index) }
                                     }
                                 }
                             )

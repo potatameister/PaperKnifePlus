@@ -147,8 +147,8 @@ fun PdfPageItem(
     accentColor: Color = MaterialTheme.colorScheme.primary,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
-    // INCREASED SCALE (0.4f) for better text readability in grids
-    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.4f) }
+    // INCREASED SCALE (0.6f) for high-clarity text in grids
+    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.6f) }
     
     Box(
         modifier = modifier
@@ -158,7 +158,10 @@ fun PdfPageItem(
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        val painter = rememberAsyncImagePainter(request, imageLoader)
+        val painter = rememberAsyncImagePainter(
+            model = request,
+            imageLoader = imageLoader
+        )
         val painterState = painter.state
 
         Image(

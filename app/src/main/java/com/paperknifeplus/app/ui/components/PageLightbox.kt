@@ -1,6 +1,7 @@
 package com.paperknifeplus.app.ui.components
 
 import android.net.Uri
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -80,9 +81,8 @@ fun PageLightbox(
                 modifier = Modifier.fillMaxSize(),
                 pageSpacing = 16.dp,
                 beyondBoundsPageCount = 1,
-                userScrollEnabled = !isAnyPageZoomed 
+                userScrollEnabled = !isAnyPageZoomed
             ) { pageIndex ->
-                // NATIVE RESOLUTION (1.5f - 2.0f) only here
                 val request = remember(uri, pageIndex, password) { 
                     PdfPageRequest(uri, pageIndex, password, 2.0f, prefetch = false) 
                 }
@@ -90,7 +90,18 @@ fun PageLightbox(
                 var scale by remember { mutableFloatStateOf(1f) }
                 var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
                 
-                // Reset zoom when this page is no longer the current page
+                // NITRO: Smooth Animated Zoom
+                val animatedScale by animateFloatAsState(
+                    targetValue = scale,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+                    label = "scale"
+                )
+                val animatedOffset by animateOffsetAsState(
+                    targetValue = offset,
+                    animationSpec = spring(stiffness = Spring.StiffnessLow),
+                    label = "offset"
+                )
+
                 LaunchedEffect(pagerState.currentPage) {
                     if (pagerState.currentPage != pageIndex) {
                         scale = 1f
@@ -98,10 +109,9 @@ fun PageLightbox(
                     }
                 }
 
-                // Update global zoom state (only disable pager if significantly zoomed)
                 LaunchedEffect(scale) {
                     if (pagerState.currentPage == pageIndex) {
-                        isAnyPageZoomed = scale > 1.05f
+                        isAnyPageZoomed = scale > 1.01f // Very tight threshold for better sliding
                     }
                 }
 
@@ -111,11 +121,8 @@ fun PageLightbox(
                 ) {
                     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
                         scale = (scale * zoomChange).coerceIn(1f, 4f)
-                        
-                        // Strict bound-aware panning
                         val maxX = (constraints.maxWidth * (scale - 1) / 2)
                         val maxY = (constraints.maxHeight * (scale - 1) / 2)
-                        
                         val newOffset = offset + offsetChange
                         offset = androidx.compose.ui.geometry.Offset(
                             newOffset.x.coerceIn(-maxX, maxX),
@@ -128,12 +135,19 @@ fun PageLightbox(
                             .fillMaxSize()
                             .pointerInput(Unit) {
                                 detectTapGestures(
-                                    onDoubleTap = { 
-                                        if (scale > 1f) {
+                                    onDoubleTap = { tapOffset ->
+                                        if (scale > 1.01f) {
                                             scale = 1f
                                             offset = androidx.compose.ui.geometry.Offset.Zero
                                         } else {
                                             scale = 2.5f
+                                            // Focal point zoom calculation
+                                            val centerX = size.width / 2
+                                            val centerY = size.height / 2
+                                            offset = androidx.compose.ui.geometry.Offset(
+                                                (centerX - tapOffset.x) * (2.5f - 1f),
+                                                (centerY - tapOffset.y) * (2.5f - 1f)
+                                            )
                                         }
                                     }
                                 )
@@ -149,10 +163,10 @@ fun PageLightbox(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer(
-                                    scaleX = scale,
-                                    scaleY = scale,
-                                    translationX = offset.x,
-                                    translationY = offset.y
+                                    scaleX = animatedScale,
+                                    scaleY = animatedScale,
+                                    translationX = animatedOffset.x,
+                                    translationY = animatedOffset.y
                                 ),
                             contentScale = ContentScale.Fit
                         )
