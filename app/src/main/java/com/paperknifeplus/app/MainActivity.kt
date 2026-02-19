@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
                                     state = pagerState,
                                     modifier = Modifier.weight(1f),
                                     userScrollEnabled = currentTool == null,
-                                    beyondBoundsPageCount = 1 // Pre-load 1 page each side for smooth sliding
+                                    beyondBoundsPageCount = 0 // NITRO: Only render current page to save CPU/GPU
                                 ) { page ->
                                     when (mainScreens[page]) {
                                         "home" -> HomeView(

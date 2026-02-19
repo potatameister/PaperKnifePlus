@@ -30,9 +30,11 @@ fun HistoryView() {
     
     val historyItems = SessionManager.history
 
-    val filteredItems = historyItems.filter { 
-        it.name.contains(searchQuery, ignoreCase = true) || 
-        it.tool.contains(searchQuery, ignoreCase = true) 
+    val filteredItems = remember(searchQuery, historyItems.size) {
+        historyItems.filter { 
+            it.name.contains(searchQuery, ignoreCase = true) || 
+            it.tool.contains(searchQuery, ignoreCase = true) 
+        }
     }
 
     Column(
@@ -113,10 +115,10 @@ fun HistoryView() {
                 contentPadding = PaddingValues(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(filteredItems) { item ->
+                items(filteredItems, key = { it.id }) { item ->
                     HistoryItem(item)
                 }
-                item { Spacer(modifier = Modifier.height(100.dp)) }
+                item(key = "footer_spacer") { Spacer(modifier = Modifier.height(100.dp)) }
             }
         }
     }
