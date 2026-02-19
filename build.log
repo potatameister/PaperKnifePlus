@@ -1,0 +1,642 @@
+build	Set up job	﻿2026-02-19T10:28:34.6957661Z Current runner version: '2.331.0'
+build	Set up job	2026-02-19T10:28:34.6983057Z ##[group]Runner Image Provisioner
+build	Set up job	2026-02-19T10:28:34.6983918Z Hosted Compute Agent
+build	Set up job	2026-02-19T10:28:34.6984506Z Version: 20260123.484
+build	Set up job	2026-02-19T10:28:34.6985200Z Commit: 6bd6555ca37d84114959e1c76d2c01448ff61c5d
+build	Set up job	2026-02-19T10:28:34.6985850Z Build Date: 2026-01-23T19:41:17Z
+build	Set up job	2026-02-19T10:28:34.6986499Z Worker ID: {a06fa661-e549-4610-9953-ea078d5bc41d}
+build	Set up job	2026-02-19T10:28:34.6987229Z Azure Region: centralus
+build	Set up job	2026-02-19T10:28:34.6987788Z ##[endgroup]
+build	Set up job	2026-02-19T10:28:34.6989140Z ##[group]Operating System
+build	Set up job	2026-02-19T10:28:34.6989834Z Ubuntu
+build	Set up job	2026-02-19T10:28:34.6990272Z 24.04.3
+build	Set up job	2026-02-19T10:28:34.6990739Z LTS
+build	Set up job	2026-02-19T10:28:34.6991445Z ##[endgroup]
+build	Set up job	2026-02-19T10:28:34.6991923Z ##[group]Runner Image
+build	Set up job	2026-02-19T10:28:34.6992811Z Image: ubuntu-24.04
+build	Set up job	2026-02-19T10:28:34.6993894Z Version: 20260209.23.1
+build	Set up job	2026-02-19T10:28:34.6995743Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260209.23/images/ubuntu/Ubuntu2404-Readme.md
+build	Set up job	2026-02-19T10:28:34.6998762Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260209.23
+build	Set up job	2026-02-19T10:28:34.7000557Z ##[endgroup]
+build	Set up job	2026-02-19T10:28:34.7002635Z ##[group]GITHUB_TOKEN Permissions
+build	Set up job	2026-02-19T10:28:34.7005590Z Contents: read
+build	Set up job	2026-02-19T10:28:34.7006507Z Metadata: read
+build	Set up job	2026-02-19T10:28:34.7007257Z Packages: read
+build	Set up job	2026-02-19T10:28:34.7008338Z ##[endgroup]
+build	Set up job	2026-02-19T10:28:34.7011446Z Secret source: Actions
+build	Set up job	2026-02-19T10:28:34.7012817Z Prepare workflow directory
+build	Set up job	2026-02-19T10:28:34.7390067Z Prepare all required actions
+build	Set up job	2026-02-19T10:28:34.7427065Z Getting action download info
+build	Set up job	2026-02-19T10:28:35.1980525Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build	Set up job	2026-02-19T10:28:35.3657182Z Download action repository 'actions/setup-java@v4' (SHA:c1e323688fd81a25caa38c78aa6df2d33d3e20d9)
+build	Set up job	2026-02-19T10:28:36.0499326Z Download action repository 'gradle/actions@v3' (SHA:d9c87d481d55275bb5441eef3fe0e46805f9ef70)
+build	Set up job	2026-02-19T10:28:37.0905160Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build	Set up job	2026-02-19T10:28:37.3387413Z Complete job name: build
+build	Run actions/checkout@v4	﻿2026-02-19T10:28:37.4128435Z ##[group]Run actions/checkout@v4
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4129514Z with:
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4130230Z   repository: potatameister/PaperKnifePlus
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4131448Z   token: ***
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4132181Z   ssh-strict: true
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4132831Z   ssh-user: git
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4133509Z   persist-credentials: true
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4134223Z   clean: true
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4134890Z   sparse-checkout-cone-mode: true
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4135611Z   fetch-depth: 1
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4136261Z   fetch-tags: false
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4136920Z   show-progress: true
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4137569Z   lfs: false
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4138205Z   submodules: false
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4138871Z   set-safe-directory: true
+build	Run actions/checkout@v4	2026-02-19T10:28:37.4139834Z ##[endgroup]
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5244605Z Syncing repository: potatameister/PaperKnifePlus
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5246982Z ##[group]Getting Git version info
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5247963Z Working directory is '/home/runner/work/PaperKnifePlus/PaperKnifePlus'
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5249378Z [command]/usr/bin/git version
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5255275Z git version 2.52.0
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5282379Z ##[endgroup]
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5296565Z Temporarily overriding HOME='/home/runner/work/_temp/c0777df5-be81-4cf1-8196-d6812fdac155' before making global git config changes
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5298888Z Adding repository directory to the temporary git global config as a safe directory
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5309230Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/PaperKnifePlus/PaperKnifePlus
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5349665Z Deleting the contents of '/home/runner/work/PaperKnifePlus/PaperKnifePlus'
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5354040Z ##[group]Initializing the repository
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5357915Z [command]/usr/bin/git init /home/runner/work/PaperKnifePlus/PaperKnifePlus
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5453851Z hint: Using 'master' as the name for the initial branch. This default branch name
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5455262Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5456447Z hint: to use in all of your new repositories, which will suppress this warning,
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5457555Z hint: call:
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5458641Z hint:
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5459854Z hint: 	git config --global init.defaultBranch <name>
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5461164Z hint:
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5462574Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5464124Z hint: 'development'. The just-created branch can be renamed via this command:
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5465382Z hint:
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5466050Z hint: 	git branch -m <name>
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5466977Z hint:
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5467817Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5469680Z Initialized empty Git repository in /home/runner/work/PaperKnifePlus/PaperKnifePlus/.git/
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5472196Z [command]/usr/bin/git remote add origin https://github.com/potatameister/PaperKnifePlus
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5505310Z ##[endgroup]
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5506457Z ##[group]Disabling automatic garbage collection
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5509384Z [command]/usr/bin/git config --local gc.auto 0
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5539106Z ##[endgroup]
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5540174Z ##[group]Setting up auth
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5547062Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5580180Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5912019Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Run actions/checkout@v4	2026-02-19T10:28:37.5944339Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	Run actions/checkout@v4	2026-02-19T10:28:37.6180785Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Run actions/checkout@v4	2026-02-19T10:28:37.6223421Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	Run actions/checkout@v4	2026-02-19T10:28:37.6463005Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build	Run actions/checkout@v4	2026-02-19T10:28:37.6499916Z ##[endgroup]
+build	Run actions/checkout@v4	2026-02-19T10:28:37.6501123Z ##[group]Fetching the repository
+build	Run actions/checkout@v4	2026-02-19T10:28:37.6508606Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +87c1ab407477b2044f9bd2d8d44a8e41be9b4399:refs/remotes/origin/main
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2489705Z From https://github.com/potatameister/PaperKnifePlus
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2490748Z  * [new ref]         87c1ab407477b2044f9bd2d8d44a8e41be9b4399 -> origin/main
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2528315Z ##[endgroup]
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2529118Z ##[group]Determining the checkout info
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2532101Z ##[endgroup]
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2538358Z [command]/usr/bin/git sparse-checkout disable
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2585006Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2615242Z ##[group]Checking out the ref
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2619770Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2804734Z Switched to a new branch 'main'
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2807372Z branch 'main' set up to track 'origin/main'.
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2814776Z ##[endgroup]
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2854133Z [command]/usr/bin/git log -1 --format=%H
+build	Run actions/checkout@v4	2026-02-19T10:28:38.2879541Z 87c1ab407477b2044f9bd2d8d44a8e41be9b4399
+build	set up JDK 17	﻿2026-02-19T10:28:38.3204448Z ##[group]Run actions/setup-java@v4
+build	set up JDK 17	2026-02-19T10:28:38.3204817Z with:
+build	set up JDK 17	2026-02-19T10:28:38.3205034Z   java-version: 17
+build	set up JDK 17	2026-02-19T10:28:38.3205271Z   distribution: temurin
+build	set up JDK 17	2026-02-19T10:28:38.3205702Z   java-package: jdk
+build	set up JDK 17	2026-02-19T10:28:38.3205934Z   check-latest: false
+build	set up JDK 17	2026-02-19T10:28:38.3206168Z   server-id: github
+build	set up JDK 17	2026-02-19T10:28:38.3206403Z   server-username: GITHUB_ACTOR
+build	set up JDK 17	2026-02-19T10:28:38.3206681Z   server-password: GITHUB_TOKEN
+build	set up JDK 17	2026-02-19T10:28:38.3206958Z   overwrite-settings: true
+build	set up JDK 17	2026-02-19T10:28:38.3207228Z   job-status: success
+build	set up JDK 17	2026-02-19T10:28:38.3207647Z   token: ***
+build	set up JDK 17	2026-02-19T10:28:38.3207859Z ##[endgroup]
+build	set up JDK 17	2026-02-19T10:28:38.5201960Z ##[group]Installed distributions
+build	set up JDK 17	2026-02-19T10:28:38.5261632Z Resolved Java 17.0.18+8 from tool-cache
+build	set up JDK 17	2026-02-19T10:28:38.5263431Z Setting Java 17.0.18+8 as the default
+build	set up JDK 17	2026-02-19T10:28:38.5278680Z Creating toolchains.xml for JDK version 17 from temurin
+build	set up JDK 17	2026-02-19T10:28:38.5359346Z Writing to /home/runner/.m2/toolchains.xml
+build	set up JDK 17	2026-02-19T10:28:38.5359836Z 
+build	set up JDK 17	2026-02-19T10:28:38.5360116Z Java configuration:
+build	set up JDK 17	2026-02-19T10:28:38.5361924Z   Distribution: temurin
+build	set up JDK 17	2026-02-19T10:28:38.5362417Z   Version: 17.0.18+8
+build	set up JDK 17	2026-02-19T10:28:38.5363425Z   Path: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+build	set up JDK 17	2026-02-19T10:28:38.5364073Z 
+build	set up JDK 17	2026-02-19T10:28:38.5364774Z ##[endgroup]
+build	set up JDK 17	2026-02-19T10:28:38.5380166Z Creating settings.xml with server-id: github
+build	set up JDK 17	2026-02-19T10:28:38.5386621Z Writing to /home/runner/.m2/settings.xml
+build	Setup Gradle	﻿2026-02-19T10:28:38.5605197Z ##[group]Run gradle/actions/setup-gradle@v3
+build	Setup Gradle	2026-02-19T10:28:38.5605559Z with:
+build	Setup Gradle	2026-02-19T10:28:38.5605776Z   gradle-version: 8.7
+build	Setup Gradle	2026-02-19T10:28:38.5606025Z   cache-disabled: true
+build	Setup Gradle	2026-02-19T10:28:38.5606267Z   cache-read-only: false
+build	Setup Gradle	2026-02-19T10:28:38.5606530Z   cache-write-only: false
+build	Setup Gradle	2026-02-19T10:28:38.5606800Z   cache-overwrite-existing: false
+build	Setup Gradle	2026-02-19T10:28:38.5607147Z   gradle-home-cache-includes: caches
+build	Setup Gradle	notifications
+build	Setup Gradle	
+build	Setup Gradle	2026-02-19T10:28:38.5607512Z   gradle-home-cache-cleanup: false
+build	Setup Gradle	2026-02-19T10:28:38.5607807Z   add-job-summary: always
+build	Setup Gradle	2026-02-19T10:28:38.5608095Z   add-job-summary-as-pr-comment: never
+build	Setup Gradle	2026-02-19T10:28:38.5608406Z   dependency-graph: disabled
+build	Setup Gradle	2026-02-19T10:28:38.5608718Z   dependency-graph-continue-on-failure: true
+build	Setup Gradle	2026-02-19T10:28:38.5609060Z   build-scan-publish: false
+build	Setup Gradle	2026-02-19T10:28:38.5609340Z   validate-wrappers: false
+build	Setup Gradle	2026-02-19T10:28:38.5609613Z   generate-job-summary: true
+build	Setup Gradle	2026-02-19T10:28:38.5609905Z   gradle-home-cache-strict-match: false
+build	Setup Gradle	2026-02-19T10:28:38.5610212Z   workflow-job-context: null
+build	Setup Gradle	2026-02-19T10:28:38.5610760Z   github-token: ***
+build	Setup Gradle	2026-02-19T10:28:38.5610996Z env:
+build	Setup Gradle	2026-02-19T10:28:38.5611679Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+build	Setup Gradle	2026-02-19T10:28:38.5612283Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+build	Setup Gradle	2026-02-19T10:28:38.5612692Z ##[endgroup]
+build	Setup Gradle	2026-02-19T10:28:40.0865483Z Cache is disabled: will not restore state from previous builds.
+build	Setup Gradle	2026-02-19T10:28:40.0880666Z Merged default JDK locations into /home/runner/.m2/toolchains.xml
+build	Setup Gradle	2026-02-19T10:28:40.2260093Z ##[group]Provision Gradle 8.7
+build	Setup Gradle	2026-02-19T10:28:41.3074277Z Downloaded https://services.gradle.org/distributions/gradle-8.7-bin.zip to /home/runner/gradle-installations/downloads/gradle-8.7-bin.zip (size 134184980)
+build	Setup Gradle	2026-02-19T10:28:41.3141744Z [command]/usr/bin/unzip -o -q /home/runner/gradle-installations/downloads/gradle-8.7-bin.zip
+build	Setup Gradle	2026-02-19T10:28:42.3132312Z Extracted Gradle 8.7 to /home/runner/gradle-installations/installs/gradle-8.7
+build	Setup Gradle	2026-02-19T10:28:42.3135555Z Provisioned Gradle executable /home/runner/gradle-installations/installs/gradle-8.7/bin/gradle
+build	Setup Gradle	2026-02-19T10:28:42.3137124Z ##[endgroup]
+build	Build Debug APK	﻿2026-02-19T10:28:42.3261783Z ##[group]Run gradle clean assembleDebug --stacktrace --no-daemon --console=plain
+build	Build Debug APK	2026-02-19T10:28:42.3262788Z [36;1mgradle clean assembleDebug --stacktrace --no-daemon --console=plain[0m
+build	Build Debug APK	2026-02-19T10:28:42.3314415Z shell: /usr/bin/bash -e {0}
+build	Build Debug APK	2026-02-19T10:28:42.3314686Z env:
+build	Build Debug APK	2026-02-19T10:28:42.3314985Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+build	Build Debug APK	2026-02-19T10:28:42.3315498Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+build	Build Debug APK	2026-02-19T10:28:42.3316263Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+build	Build Debug APK	2026-02-19T10:28:42.3316615Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+build	Build Debug APK	2026-02-19T10:28:42.3316896Z   GRADLE_BUILD_ACTION_CACHE_RESTORED: true
+build	Build Debug APK	2026-02-19T10:28:42.3317337Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+build	Build Debug APK	2026-02-19T10:28:42.3317822Z   DEVELOCITY_AUTO_INJECTION_CUSTOM_VALUE: gradle-actions
+build	Build Debug APK	2026-02-19T10:28:42.3318154Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+build	Build Debug APK	2026-02-19T10:28:42.3318405Z ##[endgroup]
+build	Build Debug APK	2026-02-19T10:28:43.3798660Z 
+build	Build Debug APK	2026-02-19T10:28:43.3800587Z Welcome to Gradle 8.7!
+build	Build Debug APK	2026-02-19T10:28:43.3801094Z 
+build	Build Debug APK	2026-02-19T10:28:43.3803845Z Here are the highlights of this release:
+build	Build Debug APK	2026-02-19T10:28:43.3804578Z  - Compiling and testing with Java 22
+build	Build Debug APK	2026-02-19T10:28:43.3811480Z  - Cacheable Groovy script compilation
+build	Build Debug APK	2026-02-19T10:28:43.3812584Z  - New methods in lazy collection properties
+build	Build Debug APK	2026-02-19T10:28:43.3813044Z 
+build	Build Debug APK	2026-02-19T10:28:43.3820489Z For more details see https://docs.gradle.org/8.7/release-notes.html
+build	Build Debug APK	2026-02-19T10:28:43.3821133Z 
+build	Build Debug APK	2026-02-19T10:28:43.6788851Z To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.7/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+build	Build Debug APK	2026-02-19T10:28:45.4784853Z Daemon will be stopped at the end of the build 
+build	Build Debug APK	2026-02-19T10:30:31.5820047Z > Task :app:clean UP-TO-DATE
+build	Build Debug APK	2026-02-19T10:30:31.5820634Z > Task :app:preBuild UP-TO-DATE
+build	Build Debug APK	2026-02-19T10:30:31.5821944Z > Task :app:preDebugBuild UP-TO-DATE
+build	Build Debug APK	2026-02-19T10:30:31.5822517Z > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+build	Build Debug APK	2026-02-19T10:30:31.5823239Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+build	Build Debug APK	2026-02-19T10:31:01.5785831Z > Task :app:checkDebugAarMetadata
+build	Build Debug APK	2026-02-19T10:32:02.0794652Z > Task :app:generateDebugResValues
+build	Build Debug APK	2026-02-19T10:32:02.1785430Z > Task :app:mapDebugSourceSetPaths
+build	Build Debug APK	2026-02-19T10:32:02.1788828Z > Task :app:generateDebugResources
+build	Build Debug APK	2026-02-19T10:32:02.9819315Z > Task :app:packageDebugResources
+build	Build Debug APK	2026-02-19T10:32:03.5785529Z > Task :app:mergeDebugResources
+build	Build Debug APK	2026-02-19T10:32:04.0786051Z > Task :app:createDebugCompatibleScreenManifests
+build	Build Debug APK	2026-02-19T10:32:04.0798444Z > Task :app:extractDeepLinksDebug
+build	Build Debug APK	2026-02-19T10:32:04.0799193Z > Task :app:parseDebugLocalResources
+build	Build Debug APK	2026-02-19T10:32:04.3788893Z > Task :app:processDebugMainManifest
+build	Build Debug APK	2026-02-19T10:32:04.4816838Z > Task :app:processDebugManifest
+build	Build Debug APK	2026-02-19T10:32:04.4824732Z > Task :app:javaPreCompileDebug
+build	Build Debug APK	2026-02-19T10:32:04.4828561Z > Task :app:mergeDebugShaders
+build	Build Debug APK	2026-02-19T10:32:04.4829041Z > Task :app:compileDebugShaders NO-SOURCE
+build	Build Debug APK	2026-02-19T10:32:04.4836178Z > Task :app:generateDebugAssets UP-TO-DATE
+build	Build Debug APK	2026-02-19T10:32:04.6788598Z > Task :app:mergeDebugAssets
+build	Build Debug APK	2026-02-19T10:32:04.6789850Z > Task :app:processDebugManifestForPackage
+build	Build Debug APK	2026-02-19T10:32:06.4822385Z > Task :app:desugarDebugFileDependencies
+build	Build Debug APK	2026-02-19T10:32:06.8793634Z > Task :app:compressDebugAssets
+build	Build Debug APK	2026-02-19T10:32:06.9822635Z > Task :app:processDebugResources
+build	Build Debug APK	2026-02-19T10:32:10.3802484Z > Task :app:checkDebugDuplicateClasses
+build	Build Debug APK	2026-02-19T10:32:20.4794650Z > Task :app:mergeDebugStartupProfile
+build	Build Debug APK	2026-02-19T10:32:40.2784222Z > Task :app:compileDebugKotlin
+build	Build Debug APK	2026-02-19T10:32:50.4784473Z > Task :app:mergeExtDexDebug
+build	Build Debug APK	2026-02-19T10:33:10.3812199Z 
+build	Build Debug APK	2026-02-19T10:33:10.3843151Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/CompressView.kt:172:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.3845635Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/CompressView.kt:173:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.3848568Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/CompressView.kt:173:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.3850909Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/CompressView.kt:174:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.3853981Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/CompressView.kt:194:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.3856413Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/CompressView.kt:195:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.3857867Z > Task :app:compileDebugKotlin
+build	Build Debug APK	2026-02-19T10:33:10.3859356Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/CompressView.kt:195:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.3861982Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/DeleteView.kt:161:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.3864466Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/DeleteView.kt:162:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.3866830Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/DeleteView.kt:162:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.3869026Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/DeleteView.kt:163:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.3871384Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/DeleteView.kt:183:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.3873723Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/DeleteView.kt:184:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.3876041Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/DeleteView.kt:184:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.3878411Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ExtractImagesView.kt:190:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.3880850Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ExtractImagesView.kt:191:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.3883413Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ExtractImagesView.kt:191:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.3885723Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ExtractImagesView.kt:192:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.3888100Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ExtractImagesView.kt:210:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.3890491Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ExtractImagesView.kt:211:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.3893144Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ExtractImagesView.kt:211:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.3895826Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/GrayscaleView.kt:173:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.3898171Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/GrayscaleView.kt:174:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.3900446Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/GrayscaleView.kt:174:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.3903255Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/GrayscaleView.kt:175:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.3905775Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/GrayscaleView.kt:195:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.3908226Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/GrayscaleView.kt:196:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.3910694Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/GrayscaleView.kt:196:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.4012306Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:137:17 Unresolved reference 'Row'.
+build	Build Debug APK	2026-02-19T10:33:10.4014667Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:138:41 Unresolved reference 'fillMaxWidth'.
+build	Build Debug APK	2026-02-19T10:33:10.4017295Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:141:21 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4019920Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:141:70 Unresolved reference 'background'.
+build	Build Debug APK	2026-02-19T10:33:10.4022651Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:141:95 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4025195Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:141:142 Unresolved reference 'CircleShape'.
+build	Build Debug APK	2026-02-19T10:33:10.4027403Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:142:82 Unresolved reference 'size'.
+build	Build Debug APK	2026-02-19T10:33:10.4029555Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:144:21 Unresolved reference 'Spacer'.
+build	Build Debug APK	2026-02-19T10:33:10.4061892Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:144:37 Unresolved reference 'width'.
+build	Build Debug APK	2026-02-19T10:33:10.4063742Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:145:21 Unresolved reference 'Column'.
+build	Build Debug APK	2026-02-19T10:33:10.4065771Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:146:25 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4068218Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:147:25 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4070251Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:153:9 Unresolved reference 'Box'.
+build	Build Debug APK	2026-02-19T10:33:10.4072580Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:153:33 Unresolved reference 'fillMaxSize'.
+build	Build Debug APK	2026-02-19T10:33:10.4074847Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:156:21 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4077500Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:163:45 Unresolved reference 'fillMaxSize'.
+build	Build Debug APK	2026-02-19T10:33:10.4079638Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:168:21 Unresolved reference 'Column'.
+build	Build Debug APK	2026-02-19T10:33:10.4081914Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:168:37 Unresolved reference 'fillMaxSize'.
+build	Build Debug APK	2026-02-19T10:33:10.4084070Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:169:25 Unresolved reference 'LazyColumn'.
+build	Build Debug APK	2026-02-19T10:33:10.4086145Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:170:49 Unresolved reference 'weight'.
+build	Build Debug APK	2026-02-19T10:33:10.4088270Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:171:51 Unresolved reference 'Arrangement'.
+build	Build Debug APK	2026-02-19T10:33:10.4090472Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:172:46 Unresolved reference 'PaddingValues'.
+build	Build Debug APK	2026-02-19T10:33:10.4134229Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:174:29 Unresolved reference 'itemsIndexed'.
+build	Build Debug APK	2026-02-19T10:33:10.4136651Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:174:65 Cannot infer type for this parameter. Please specify it explicitly.
+build	Build Debug APK	2026-02-19T10:33:10.4139153Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:174:68 Cannot infer type for this parameter. Please specify it explicitly.
+build	Build Debug APK	2026-02-19T10:33:10.4141636Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:174:81 Unresolved reference 'uri'.
+build	Build Debug APK	2026-02-19T10:33:10.4143727Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:174:103 Unresolved reference 'name'.
+build	Build Debug APK	2026-02-19T10:33:10.4146043Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:174:113 Cannot infer type for this parameter. Please specify it explicitly.
+build	Build Debug APK	2026-02-19T10:33:10.4148693Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:174:120 Cannot infer type for this parameter. Please specify it explicitly.
+build	Build Debug APK	2026-02-19T10:33:10.4151556Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:175:33 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4154356Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:184:51 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+build	Build Debug APK	2026-02-19T10:33:10.4157172Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:186:84 Overload resolution ambiguity between candidates:
+build	Build Debug APK	2026-02-19T10:33:10.4158988Z fun <T> Iterable<T>.minus(element: T): List<T>
+build	Build Debug APK	2026-02-19T10:33:10.4159642Z @SinceKotlin(...) fun <K, V> Map<out K, V>.minus(key: K): Map<K, V>
+build	Build Debug APK	2026-02-19T10:33:10.4160268Z fun <T> Set<T>.minus(element: T): Set<T>
+build	Build Debug APK	2026-02-19T10:33:10.4161005Z fun <T> Sequence<T>.minus(element: T): Sequence<T>
+build	Build Debug APK	2026-02-19T10:33:10.4163120Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:191:51 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+build	Build Debug APK	2026-02-19T10:33:10.4166182Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:193:84 Overload resolution ambiguity between candidates:
+build	Build Debug APK	2026-02-19T10:33:10.4167651Z fun String?.plus(other: Any?): String
+build	Build Debug APK	2026-02-19T10:33:10.4168127Z fun <T> Array<T>.plus(element: T): Array<T>
+build	Build Debug APK	2026-02-19T10:33:10.4168644Z fun ByteArray.plus(element: Byte): ByteArray
+build	Build Debug APK	2026-02-19T10:33:10.4169136Z fun IntArray.plus(element: Int): IntArray
+build	Build Debug APK	2026-02-19T10:33:10.4169593Z fun LongArray.plus(element: Long): LongArray
+build	Build Debug APK	2026-02-19T10:33:10.4170101Z fun ShortArray.plus(element: Short): ShortArray
+build	Build Debug APK	2026-02-19T10:33:10.4170565Z fun <T> Collection<T>.plus(element: T): List<T>
+build	Build Debug APK	2026-02-19T10:33:10.4171039Z fun <T> Iterable<T>.plus(element: T): List<T>
+build	Build Debug APK	2026-02-19T10:33:10.4171732Z fun <T> Set<T>.plus(element: T): Set<T>
+build	Build Debug APK	2026-02-19T10:33:10.4172251Z fun <T> Sequence<T>.plus(element: T): Sequence<T>
+build	Build Debug APK	2026-02-19T10:33:10.4173635Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:201:29 Unresolved reference 'item'.
+build	Build Debug APK	2026-02-19T10:33:10.4176192Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:202:33 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4178819Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:204:57 Unresolved reference 'fillMaxWidth'.
+build	Build Debug APK	2026-02-19T10:33:10.4231754Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:205:45 Unresolved reference 'RoundedCornerShape'.
+build	Build Debug APK	2026-02-19T10:33:10.4234215Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:206:46 Unresolved reference 'BorderStroke'.
+build	Build Debug APK	2026-02-19T10:33:10.4236834Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:207:61 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4239444Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:209:86 Unresolved reference 'size'.
+build	Build Debug APK	2026-02-19T10:33:10.4241828Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:210:37 Unresolved reference 'Spacer'.
+build	Build Debug APK	2026-02-19T10:33:10.4244070Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:210:53 Unresolved reference 'width'.
+build	Build Debug APK	2026-02-19T10:33:10.4246311Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:215:29 Unresolved reference 'item'.
+build	Build Debug APK	2026-02-19T10:33:10.4248539Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:215:36 Unresolved reference 'Spacer'.
+build	Build Debug APK	2026-02-19T10:33:10.4250767Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:215:52 Unresolved reference 'height'.
+build	Build Debug APK	2026-02-19T10:33:10.4253526Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:220:25 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4256395Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:222:49 Unresolved reference 'fillMaxWidth'.
+build	Build Debug APK	2026-02-19T10:33:10.4258733Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:224:37 Unresolved reference 'RoundedCornerShape'.
+build	Build Debug APK	2026-02-19T10:33:10.4271934Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:225:53 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4274811Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:242:21 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4277603Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:246:21 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4280496Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:263:17 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4303496Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:295:29 Unresolved reference 'fillMaxWidth'.
+build	Build Debug APK	2026-02-19T10:33:10.4305910Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:296:17 Unresolved reference 'RoundedCornerShape'.
+build	Build Debug APK	2026-02-19T10:33:10.4308227Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:298:18 Unresolved reference 'BorderStroke'.
+build	Build Debug APK	2026-02-19T10:33:10.4310433Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:300:9 Unresolved reference 'Row'.
+build	Build Debug APK	2026-02-19T10:33:10.4312818Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:301:33 Unresolved reference 'padding'.
+build	Build Debug APK	2026-02-19T10:33:10.4315339Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:305:13 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4317862Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:306:37 Unresolved reference 'size'.
+build	Build Debug APK	2026-02-19T10:33:10.4320092Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:307:25 Unresolved reference 'RoundedCornerShape'.
+build	Build Debug APK	2026-02-19T10:33:10.4322502Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:311:21 Unresolved reference 'Box'.
+build	Build Debug APK	2026-02-19T10:33:10.4325061Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:312:25 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4327535Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:312:97 Unresolved reference 'size'.
+build	Build Debug APK	2026-02-19T10:33:10.4329640Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:316:21 Unresolved reference 'Image'.
+build	Build Debug APK	2026-02-19T10:33:10.4362087Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:319:45 Unresolved reference 'fillMaxSize'.
+build	Build Debug APK	2026-02-19T10:33:10.4364630Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:325:13 Unresolved reference 'Spacer'.
+build	Build Debug APK	2026-02-19T10:33:10.4366811Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:325:29 Unresolved reference 'width'.
+build	Build Debug APK	2026-02-19T10:33:10.4372628Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:328:13 Unresolved reference 'Column'.
+build	Build Debug APK	2026-02-19T10:33:10.4375189Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:329:17 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4377637Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:330:17 Unresolved reference 'Row'.
+build	Build Debug APK	2026-02-19T10:33:10.4380061Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:331:21 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4382744Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:333:25 Unresolved reference 'Spacer'.
+build	Build Debug APK	2026-02-19T10:33:10.4384894Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:333:41 Unresolved reference 'width'.
+build	Build Debug APK	2026-02-19T10:33:10.4387354Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:334:25 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4390057Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:336:37 Unresolved reference 'RoundedCornerShape'.
+build	Build Debug APK	2026-02-19T10:33:10.4422608Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:340:53 Unresolved reference 'padding'.
+build	Build Debug APK	2026-02-19T10:33:10.4424812Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:351:13 Unresolved reference 'Row'.
+build	Build Debug APK	2026-02-19T10:33:10.4427217Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:353:21 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4429652Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:354:99 Unresolved reference 'size'.
+build	Build Debug APK	2026-02-19T10:33:10.4432147Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:358:17 Unresolved reference 'Column'.
+build	Build Debug APK	2026-02-19T10:33:10.4434668Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:359:21 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4437145Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:362:45 Unresolved reference 'size'.
+build	Build Debug APK	2026-02-19T10:33:10.4439632Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:366:21 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4442246Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:369:45 Unresolved reference 'size'.
+build	Build Debug APK	2026-02-19T10:33:10.4445101Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:375:17 @Composable invocations can only happen from the context of a @Composable function
+build	Build Debug APK	2026-02-19T10:33:10.4447549Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MergeView.kt:376:111 Unresolved reference 'size'.
+build	Build Debug APK	2026-02-19T10:33:10.4449774Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MetadataView.kt:175:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.4482648Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MetadataView.kt:176:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.4485002Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MetadataView.kt:176:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.4487217Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MetadataView.kt:177:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.4489479Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MetadataView.kt:200:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.4491937Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MetadataView.kt:201:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.4494255Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/MetadataView.kt:201:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.4496548Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToImageView.kt:158:25 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.4498901Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToImageView.kt:159:25 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.4501125Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToImageView.kt:159:63 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.4503468Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToImageView.kt:160:25 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.4505747Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToImageView.kt:176:25 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.4508011Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToImageView.kt:177:25 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.4510317Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToImageView.kt:177:25 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.4543064Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToTextView.kt:132:25 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.4545597Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToTextView.kt:133:25 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.4547983Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToTextView.kt:133:63 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.4550345Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToTextView.kt:134:25 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.4553392Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToTextView.kt:144:25 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.4555861Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToTextView.kt:145:25 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.4558337Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/PdfToTextView.kt:145:25 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.4561037Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ProtectView.kt:168:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.4563665Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ProtectView.kt:169:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.4566004Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ProtectView.kt:169:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.4568295Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ProtectView.kt:170:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.4570674Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ProtectView.kt:188:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.4603361Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ProtectView.kt:189:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.4605757Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/ProtectView.kt:189:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.4608147Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RearrangeView.kt:171:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.4610568Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RearrangeView.kt:172:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.4613158Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RearrangeView.kt:172:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.4615446Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RearrangeView.kt:173:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.4617842Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RearrangeView.kt:193:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.4620191Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RearrangeView.kt:194:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.4622795Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RearrangeView.kt:194:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.4625201Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RepairView.kt:152:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.4627505Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RepairView.kt:153:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.4629720Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RepairView.kt:153:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.4662530Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RepairView.kt:154:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.4664826Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RepairView.kt:172:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.4667079Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RepairView.kt:173:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.4669634Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RepairView.kt:173:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.4672035Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RotateView.kt:162:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.4674318Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RotateView.kt:163:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.4676529Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RotateView.kt:163:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.4678733Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RotateView.kt:164:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.4681010Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RotateView.kt:184:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.4683503Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RotateView.kt:185:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.4685789Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/RotateView.kt:185:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:10.4688084Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/SplitView.kt:173:29 No parameter with name 'password' found.
+build	Build Debug APK	2026-02-19T10:33:10.4690318Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/SplitView.kt:174:29 No parameter with name 'onPasswordChange' found.
+build	Build Debug APK	2026-02-19T10:33:10.4722859Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/SplitView.kt:174:67 Unresolved reference 'it'.
+build	Build Debug APK	2026-02-19T10:33:10.4725146Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/SplitView.kt:175:29 No parameter with name 'onUnlock' found.
+build	Build Debug APK	2026-02-19T10:33:10.4727454Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/SplitView.kt:195:29 No parameter with name 'onCancel' found.
+build	Build Debug APK	2026-02-19T10:33:10.4729728Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/SplitView.kt:196:29 No value passed for parameter 'onDismiss'.
+build	Build Debug APK	2026-02-19T10:33:10.4732174Z e: file:///home/runner/work/PaperKnifePlus/PaperKnifePlus/app/src/main/java/com/paperknifeplus/app/ui/components/SplitView.kt:196:29 No value passed for parameter 'onUnlocked'.
+build	Build Debug APK	2026-02-19T10:33:21.8785404Z 
+build	Build Debug APK	2026-02-19T10:33:21.8796456Z > Task :app:compileDebugKotlin FAILED
+build	Build Debug APK	2026-02-19T10:34:01.1792302Z 
+build	Build Debug APK	2026-02-19T10:34:01.1794287Z FAILURE: Build failed with an exception.
+build	Build Debug APK	2026-02-19T10:34:01.1794673Z 
+build	Build Debug APK	2026-02-19T10:34:01.1794808Z * What went wrong:
+build	Build Debug APK	2026-02-19T10:34:01.1795217Z Execution failed for task ':app:compileDebugKotlin'.
+build	Build Debug APK	2026-02-19T10:34:01.1797298Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+build	Build Debug APK	2026-02-19T10:34:01.1798536Z    > Compilation error. See log for more details
+build	Build Debug APK	2026-02-19T10:34:01.1798907Z 
+build	Build Debug APK	2026-02-19T10:34:01.1799010Z * Try:
+build	Build Debug APK	2026-02-19T10:34:01.1823544Z > Run with --info or --debug option to get more log output.
+build	Build Debug APK	2026-02-19T10:34:01.1852729Z > Run with --scan to get full insights.
+build	Build Debug APK	2026-02-19T10:34:01.1853280Z > Get more help at https://help.gradle.org.
+build	Build Debug APK	2026-02-19T10:34:01.1853989Z 
+build	Build Debug APK	2026-02-19T10:34:01.1854134Z * Exception is:
+build	Build Debug APK	2026-02-19T10:34:01.1854879Z org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+build	Build Debug APK	2026-02-19T10:34:01.1856538Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+build	Build Debug APK	2026-02-19T10:34:01.1857950Z 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:282)
+build	Build Debug APK	2026-02-19T10:34:01.1859341Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+build	Build Debug APK	2026-02-19T10:34:01.1861133Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+build	Build Debug APK	2026-02-19T10:34:01.1863034Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+build	Build Debug APK	2026-02-19T10:34:01.1891776Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+build	Build Debug APK	2026-02-19T10:34:01.1893672Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+build	Build Debug APK	2026-02-19T10:34:01.1895319Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+build	Build Debug APK	2026-02-19T10:34:01.1896959Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+build	Build Debug APK	2026-02-19T10:34:01.1898617Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+build	Build Debug APK	2026-02-19T10:34:01.1900177Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+build	Build Debug APK	2026-02-19T10:34:01.1902003Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+build	Build Debug APK	2026-02-19T10:34:01.1903778Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:200)
+build	Build Debug APK	2026-02-19T10:34:01.1905787Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:195)
+build	Build Debug APK	2026-02-19T10:34:01.1907562Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+build	Build Debug APK	2026-02-19T10:34:01.1909094Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.1910612Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:157)
+build	Build Debug APK	2026-02-19T10:34:01.1912346Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.1913942Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+build	Build Debug APK	2026-02-19T10:34:01.1915447Z 	at org.gradle.internal.operations.DefaultBuildOperationExecutor.call(DefaultBuildOperationExecutor.java:73)
+build	Build Debug APK	2026-02-19T10:34:01.1916978Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+build	Build Debug APK	2026-02-19T10:34:01.1918342Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+build	Build Debug APK	2026-02-19T10:34:01.1919821Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+build	Build Debug APK	2026-02-19T10:34:01.1951900Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+build	Build Debug APK	2026-02-19T10:34:01.1954411Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+build	Build Debug APK	2026-02-19T10:34:01.1956114Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:80)
+build	Build Debug APK	2026-02-19T10:34:01.1957727Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+build	Build Debug APK	2026-02-19T10:34:01.1959894Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+build	Build Debug APK	2026-02-19T10:34:01.1961689Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:463)
+build	Build Debug APK	2026-02-19T10:34:01.1962961Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:380)
+build	Build Debug APK	2026-02-19T10:34:01.1964271Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+build	Build Debug APK	2026-02-19T10:34:01.1965723Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+build	Build Debug APK	2026-02-19T10:34:01.1967957Z Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+build	Build Debug APK	2026-02-19T10:34:01.1970329Z 	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
+build	Build Debug APK	2026-02-19T10:34:01.1972162Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+build	Build Debug APK	2026-02-19T10:34:01.1973401Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+build	Build Debug APK	2026-02-19T10:34:01.1974439Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:336)
+build	Build Debug APK	2026-02-19T10:34:01.1975863Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:319)
+build	Build Debug APK	2026-02-19T10:34:01.1977265Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:324)
+build	Build Debug APK	2026-02-19T10:34:01.1978755Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+build	Build Debug APK	2026-02-19T10:34:01.1980624Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+build	Build Debug APK	2026-02-19T10:34:01.2032468Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+build	Build Debug APK	2026-02-19T10:34:01.2033844Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+build	Build Debug APK	2026-02-19T10:34:01.2035091Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+build	Build Debug APK	2026-02-19T10:34:01.2036367Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+build	Build Debug APK	2026-02-19T10:34:01.2037864Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+build	Build Debug APK	2026-02-19T10:34:01.2039333Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+build	Build Debug APK	2026-02-19T10:34:01.2040793Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2042504Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:157)
+build	Build Debug APK	2026-02-19T10:34:01.2044046Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2045534Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+build	Build Debug APK	2026-02-19T10:34:01.2046983Z 	at org.gradle.internal.operations.DefaultBuildOperationExecutor.run(DefaultBuildOperationExecutor.java:68)
+build	Build Debug APK	2026-02-19T10:34:01.2048639Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+build	Build Debug APK	2026-02-19T10:34:01.2049901Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+build	Build Debug APK	2026-02-19T10:34:01.2051892Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+build	Build Debug APK	2026-02-19T10:34:01.2053302Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+build	Build Debug APK	2026-02-19T10:34:01.2054635Z 	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+build	Build Debug APK	2026-02-19T10:34:01.2055713Z 	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+build	Build Debug APK	2026-02-19T10:34:01.2056710Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2057653Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+build	Build Debug APK	2026-02-19T10:34:01.2059083Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:200)
+build	Build Debug APK	2026-02-19T10:34:01.2061025Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:195)
+build	Build Debug APK	2026-02-19T10:34:01.2103081Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+build	Build Debug APK	2026-02-19T10:34:01.2104593Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2106084Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:157)
+build	Build Debug APK	2026-02-19T10:34:01.2107591Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2109049Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+build	Build Debug APK	2026-02-19T10:34:01.2110504Z 	at org.gradle.internal.operations.DefaultBuildOperationExecutor.call(DefaultBuildOperationExecutor.java:73)
+build	Build Debug APK	2026-02-19T10:34:01.2112008Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+build	Build Debug APK	2026-02-19T10:34:01.2113023Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+build	Build Debug APK	2026-02-19T10:34:01.2114145Z 	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:41)
+build	Build Debug APK	2026-02-19T10:34:01.2115391Z 	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:74)
+build	Build Debug APK	2026-02-19T10:34:01.2116495Z 	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+build	Build Debug APK	2026-02-19T10:34:01.2117753Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+build	Build Debug APK	2026-02-19T10:34:01.2119258Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+build	Build Debug APK	2026-02-19T10:34:01.2120743Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+build	Build Debug APK	2026-02-19T10:34:01.2122395Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+build	Build Debug APK	2026-02-19T10:34:01.2123915Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+build	Build Debug APK	2026-02-19T10:34:01.2125491Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+build	Build Debug APK	2026-02-19T10:34:01.2127148Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:67)
+build	Build Debug APK	2026-02-19T10:34:01.2128886Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:45)
+build	Build Debug APK	2026-02-19T10:34:01.2130436Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+build	Build Debug APK	2026-02-19T10:34:01.2161732Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+build	Build Debug APK	2026-02-19T10:34:01.2163466Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+build	Build Debug APK	2026-02-19T10:34:01.2164777Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:75)
+build	Build Debug APK	2026-02-19T10:34:01.2165737Z 	at org.gradle.internal.Either$Right.fold(Either.java:175)
+build	Build Debug APK	2026-02-19T10:34:01.2166578Z 	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+build	Build Debug APK	2026-02-19T10:34:01.2167674Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+build	Build Debug APK	2026-02-19T10:34:01.2169099Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+build	Build Debug APK	2026-02-19T10:34:01.2170376Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+build	Build Debug APK	2026-02-19T10:34:01.2172042Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+build	Build Debug APK	2026-02-19T10:34:01.2173449Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:76)
+build	Build Debug APK	2026-02-19T10:34:01.2174794Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:54)
+build	Build Debug APK	2026-02-19T10:34:01.2176087Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:54)
+build	Build Debug APK	2026-02-19T10:34:01.2177286Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:36)
+build	Build Debug APK	2026-02-19T10:34:01.2178883Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+build	Build Debug APK	2026-02-19T10:34:01.2180869Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+build	Build Debug APK	2026-02-19T10:34:01.2221563Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+build	Build Debug APK	2026-02-19T10:34:01.2223527Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+build	Build Debug APK	2026-02-19T10:34:01.2225270Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+build	Build Debug APK	2026-02-19T10:34:01.2226859Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+build	Build Debug APK	2026-02-19T10:34:01.2228235Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+build	Build Debug APK	2026-02-19T10:34:01.2229466Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+build	Build Debug APK	2026-02-19T10:34:01.2230580Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:106)
+build	Build Debug APK	2026-02-19T10:34:01.2231715Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:55)
+build	Build Debug APK	2026-02-19T10:34:01.2233208Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+build	Build Debug APK	2026-02-19T10:34:01.2235206Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+build	Build Debug APK	2026-02-19T10:34:01.2237118Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+build	Build Debug APK	2026-02-19T10:34:01.2238683Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+build	Build Debug APK	2026-02-19T10:34:01.2240058Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+build	Build Debug APK	2026-02-19T10:34:01.2241781Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+build	Build Debug APK	2026-02-19T10:34:01.2243453Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+build	Build Debug APK	2026-02-19T10:34:01.2244995Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+build	Build Debug APK	2026-02-19T10:34:01.2246710Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+build	Build Debug APK	2026-02-19T10:34:01.2248004Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+build	Build Debug APK	2026-02-19T10:34:01.2249397Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+build	Build Debug APK	2026-02-19T10:34:01.2250723Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+build	Build Debug APK	2026-02-19T10:34:01.2282455Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+build	Build Debug APK	2026-02-19T10:34:01.2284012Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+build	Build Debug APK	2026-02-19T10:34:01.2285296Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+build	Build Debug APK	2026-02-19T10:34:01.2286442Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+build	Build Debug APK	2026-02-19T10:34:01.2287946Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+build	Build Debug APK	2026-02-19T10:34:01.2289723Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+build	Build Debug APK	2026-02-19T10:34:01.2291613Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+build	Build Debug APK	2026-02-19T10:34:01.2293058Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+build	Build Debug APK	2026-02-19T10:34:01.2294179Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+build	Build Debug APK	2026-02-19T10:34:01.2295212Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+build	Build Debug APK	2026-02-19T10:34:01.2296167Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+build	Build Debug APK	2026-02-19T10:34:01.2297282Z 	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
+build	Build Debug APK	2026-02-19T10:34:01.2298710Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+build	Build Debug APK	2026-02-19T10:34:01.2300243Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+build	Build Debug APK	2026-02-19T10:34:01.2301927Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+build	Build Debug APK	2026-02-19T10:34:01.2303571Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+build	Build Debug APK	2026-02-19T10:34:01.2305182Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+build	Build Debug APK	2026-02-19T10:34:01.2306628Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+build	Build Debug APK	2026-02-19T10:34:01.2308034Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+build	Build Debug APK	2026-02-19T10:34:01.2309455Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+build	Build Debug APK	2026-02-19T10:34:01.2310832Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+build	Build Debug APK	2026-02-19T10:34:01.2332691Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+build	Build Debug APK	2026-02-19T10:34:01.2334434Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:200)
+build	Build Debug APK	2026-02-19T10:34:01.2336403Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:195)
+build	Build Debug APK	2026-02-19T10:34:01.2338122Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+build	Build Debug APK	2026-02-19T10:34:01.2339928Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2341613Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:157)
+build	Build Debug APK	2026-02-19T10:34:01.2343113Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2344573Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+build	Build Debug APK	2026-02-19T10:34:01.2346299Z 	at org.gradle.internal.operations.DefaultBuildOperationExecutor.call(DefaultBuildOperationExecutor.java:73)
+build	Build Debug APK	2026-02-19T10:34:01.2347810Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+build	Build Debug APK	2026-02-19T10:34:01.2349146Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+build	Build Debug APK	2026-02-19T10:34:01.2350654Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+build	Build Debug APK	2026-02-19T10:34:01.2352668Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+build	Build Debug APK	2026-02-19T10:34:01.2371926Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+build	Build Debug APK	2026-02-19T10:34:01.2373701Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:80)
+build	Build Debug APK	2026-02-19T10:34:01.2375392Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+build	Build Debug APK	2026-02-19T10:34:01.2377445Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+build	Build Debug APK	2026-02-19T10:34:01.2379109Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:463)
+build	Build Debug APK	2026-02-19T10:34:01.2380408Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:380)
+build	Build Debug APK	2026-02-19T10:34:01.2381879Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+build	Build Debug APK	2026-02-19T10:34:01.2383237Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+build	Build Debug APK	2026-02-19T10:34:01.2384631Z Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+build	Build Debug APK	2026-02-19T10:34:01.2386135Z 	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+build	Build Debug APK	2026-02-19T10:34:01.2387522Z 	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:119)
+build	Build Debug APK	2026-02-19T10:34:01.2389315Z 	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
+build	Build Debug APK	2026-02-19T10:34:01.2390981Z 	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+build	Build Debug APK	2026-02-19T10:34:01.2392411Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+build	Build Debug APK	2026-02-19T10:34:01.2393768Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+build	Build Debug APK	2026-02-19T10:34:01.2395146Z 	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+build	Build Debug APK	2026-02-19T10:34:01.2396553Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+build	Build Debug APK	2026-02-19T10:34:01.2397744Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+build	Build Debug APK	2026-02-19T10:34:01.2398673Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+build	Build Debug APK	2026-02-19T10:34:01.2400141Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:200)
+build	Build Debug APK	2026-02-19T10:34:01.2432363Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:195)
+build	Build Debug APK	2026-02-19T10:34:01.2434433Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+build	Build Debug APK	2026-02-19T10:34:01.2435913Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2437435Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:157)
+build	Build Debug APK	2026-02-19T10:34:01.2439127Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2440620Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+build	Build Debug APK	2026-02-19T10:34:01.2442288Z 	at org.gradle.internal.operations.DefaultBuildOperationExecutor.call(DefaultBuildOperationExecutor.java:73)
+build	Build Debug APK	2026-02-19T10:34:01.2443749Z 	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+build	Build Debug APK	2026-02-19T10:34:01.2445128Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+build	Build Debug APK	2026-02-19T10:34:01.2446486Z 	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+build	Build Debug APK	2026-02-19T10:34:01.2448126Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:187)
+build	Build Debug APK	2026-02-19T10:34:01.2449989Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:120)
+build	Build Debug APK	2026-02-19T10:34:01.2452000Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:162)
+build	Build Debug APK	2026-02-19T10:34:01.2453260Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+build	Build Debug APK	2026-02-19T10:34:01.2454273Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:264)
+build	Build Debug APK	2026-02-19T10:34:01.2455700Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:128)
+build	Build Debug APK	2026-02-19T10:34:01.2457195Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:133)
+build	Build Debug APK	2026-02-19T10:34:01.2458812Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:157)
+build	Build Debug APK	2026-02-19T10:34:01.2460515Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:126)
+build	Build Debug APK	2026-02-19T10:34:01.2491790Z 	... 2 more
+build	Build Debug APK	2026-02-19T10:34:01.2491977Z 
+build	Build Debug APK	2026-02-19T10:34:01.2491985Z 
+build	Build Debug APK	2026-02-19T10:34:01.2492106Z BUILD FAILED in 5m 18s
+build	Build Debug APK	2026-02-19T10:34:01.2492504Z 23 actionable tasks: 22 executed, 1 up-to-date
+build	Build Debug APK	2026-02-19T10:34:01.7607318Z ##[error]Process completed with exit code 1.
+build	Post Setup Gradle	﻿2026-02-19T10:34:01.7877051Z Post job cleanup.
+build	Post Setup Gradle	2026-02-19T10:34:02.0955616Z In post-action step
+build	Post Setup Gradle	2026-02-19T10:34:02.0965946Z Cache is disabled: will not save state for later builds.
+build	Post Setup Gradle	2026-02-19T10:34:02.0973416Z Generating Job Summary
+build	Post Setup Gradle	2026-02-19T10:34:02.1001580Z Completed post-action step
+build	Post set up JDK 17	﻿2026-02-19T10:34:02.1149796Z Post job cleanup.
+build	Post Run actions/checkout@v4	﻿2026-02-19T10:34:02.2976233Z Post job cleanup.
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4199475Z [command]/usr/bin/git version
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4243499Z git version 2.52.0
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4294659Z Temporarily overriding HOME='/home/runner/work/_temp/7584c584-da1f-4d9b-a7ac-55d64ec5bffb' before making global git config changes
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4296283Z Adding repository directory to the temporary git global config as a safe directory
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4311664Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/PaperKnifePlus/PaperKnifePlus
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4348811Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4385415Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4655648Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4680539Z http.https://github.com/.extraheader
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4694464Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4729204Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.4987909Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Post Run actions/checkout@v4	2026-02-19T10:34:02.5028059Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	Complete job	﻿2026-02-19T10:34:02.5405547Z Cleaning up orphan processes
+build	Complete job	2026-02-19T10:34:02.5694851Z Terminate orphan process: pid (2551) (java)
