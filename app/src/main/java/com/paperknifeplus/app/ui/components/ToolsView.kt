@@ -40,24 +40,24 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             // EDIT - Rose
             Tool("merge", "Merge", "Combine PDFs", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("split", "Split", "Extract pages", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rotate", "Rotate", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rearrange", "Reorder", "Reorder pages", Icons.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("delete", "Delete", "Remove pages", Icons.Outlined.Delete, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("page-numbers", "Numbers", "Add numbering", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("watermark", "Stamp", "Add overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("rearrange", "Reorder", "Sort pages", Icons.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("rotate", "Rotate", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("bookmarks", "Outlines", "Edit bookmarks", Icons.Outlined.BookmarkBorder, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             
             // OPTIMIZE - Amber
-            Tool("compress", "Compress", "Optimize size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("grayscale", "B&W", "Remove colors", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("compress", "Compress", "Small size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("grayscale", "B&W", "Gray tones", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("repair", "Repair", "Fix corruption", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("compare", "Compare", "Visual diff", Icons.Outlined.Compare, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             
             // SECURE - Indigo
-            Tool("protect", "Lock", "Add password", Icons.Outlined.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-            Tool("unlock", "Unlock", "Remove password", Icons.Outlined.LockOpen, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-            Tool("metadata", "Metadata", "Edit properties", Icons.Outlined.Fingerprint, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+            Tool("protect", "Lock", "Password", Icons.Outlined.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+            Tool("unlock", "Unlock", "Remove pass", Icons.Outlined.LockOpen, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+            Tool("metadata", "Metadata", "Edit props", Icons.Outlined.Fingerprint, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
             
             // CONVERT - Teal
-            Tool("pdf2img", "To Image", "Export as JPG", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("pdf2img", "To Image", "Export JPG", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
             Tool("img2pdf", "To PDF", "Photos to PDF", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
             Tool("extract-images", "Extract", "Save photos", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
             Tool("pdf2text", "To Text", "Plain text", Icons.Outlined.Article, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
@@ -74,114 +74,132 @@ fun ToolsView(onToolClick: (String) -> Unit) {
     val categories = remember { listOf("Edit", "Optimize", "Secure", "Convert") }
 
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(PaperPink.copy(alpha = 0.1f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Outlined.GridView, null, tint = PaperPink, modifier = Modifier.size(18.dp))
-                }
-                Spacer(modifier = Modifier.width(16.dp))
+        // Search Header
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = buildAnnotatedString {
                         append("Engines")
                         withStyle(SpanStyle(color = PaperPink)) { append(".") }
                     },
-                    style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Black,
+                    fontSize = 28.sp,
                     color = MaterialTheme.colorScheme.onBackground,
-                    letterSpacing = (-1.5).sp,
-                    fontSize = 32.sp
+                    letterSpacing = (-1).sp
                 )
+                
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(Icons.Outlined.GridView, null, modifier = Modifier.padding(8.dp).size(20.dp), tint = PaperPink)
+                }
             }
             
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search tools...", fontSize = 14.sp, fontWeight = FontWeight.Medium) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(16.dp),
-                leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray, modifier = Modifier.size(20.dp)) },
-                trailingIcon = { if (searchQuery.isNotEmpty()) IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(18.dp)) } },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = PaperPink,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-                )
-            )
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    Icon(Icons.Default.Search, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Box(Modifier.weight(1f)) {
+                        if (searchQuery.isEmpty()) {
+                            Text("Search 16+ tools...", color = Color.Gray, fontSize = 14.sp)
+                        }
+                        androidx.compose.foundation.text.BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
         }
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             categories.forEach { category ->
                 val categoryTools = filteredTools.filter { it.category == category }
                 if (categoryTools.isNotEmpty()) {
-                    item(key = category, span = { GridItemSpan(3) }) {
+                    item(key = "header_$category", span = { GridItemSpan(3) }) {
                         Text(
-                            text = "${category.uppercase()} ENGINES",
-                            fontSize = 8.sp,
+                            text = category.uppercase(),
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color.Gray,
-                            letterSpacing = 2.sp,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp, start = 4.dp)
+                            color = Color.Gray.copy(alpha = 0.6f),
+                            letterSpacing = 1.5.sp,
+                            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp)
                         )
                     }
                     
                     items(categoryTools, key = { it.id }) { tool ->
-                        GridToolItem(tool = tool, onClick = { onToolClick(tool.id) })
+                        PremiumGridItem(tool = tool, onClick = { onToolClick(tool.id) })
                     }
                 }
-            }
-
-            item(key = "footer_spacer", span = { GridItemSpan(3) }) {
-                Spacer(modifier = Modifier.height(100.dp))
             }
         }
     }
 }
 
 @Composable
-fun GridToolItem(tool: Tool, onClick: () -> Unit) {
+fun PremiumGridItem(tool: Tool, onClick: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
-    val containerColor = remember(isDark) { if (isDark) Color(0xFF0C0C0E) else Color.White }
-    val borderColor = remember(isDark) { if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.04f) }
+    val containerColor = remember(isDark) { if (isDark) Color(0xFF0F0F12) else Color.White }
+    val borderColor = remember(isDark) { if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(0.04f) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .clickable(onClick = onClick),
+    Surface(
+        onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        border = BorderStroke(1.dp, borderColor)
+        color = containerColor,
+        border = BorderStroke(1.dp, borderColor),
+        shadowElevation = 0.dp
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Surface(
-                modifier = Modifier.size(32.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(if (isDark) tool.color.copy(alpha = 0.15f) else tool.bgColor, RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = tool.icon ?: Icons.Default.Build,
                     contentDescription = null,
                     tint = tool.color,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
             
@@ -189,20 +207,20 @@ fun GridToolItem(tool: Tool, onClick: () -> Unit) {
             
             Text(
                 text = tool.name,
-                fontSize = 11.sp,
+                fontSize = 11.5.sp,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onSurface,
                 letterSpacing = (-0.2).sp,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 maxLines = 1
             )
             
             Text(
-                text = tool.category.uppercase(),
-                fontSize = 7.sp,
+                text = tool.description.uppercase(),
+                fontSize = 6.5.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Gray.copy(alpha = 0.6f),
-                letterSpacing = 0.5.sp
+                color = Color.Gray.copy(alpha = 0.5f),
+                letterSpacing = 0.4.sp,
+                maxLines = 1
             )
         }
     }

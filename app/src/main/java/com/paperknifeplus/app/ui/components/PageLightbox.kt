@@ -37,11 +37,6 @@ import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import kotlinx.coroutines.launch
 
-import com.paperknifeplus.app.ui.theme.PaperPink
-import androidx.compose.material.icons.filled.Brightness4
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PageLightbox(
@@ -56,7 +51,6 @@ fun PageLightbox(
     val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
     val scope = rememberCoroutineScope()
-    var isNightMode by remember { mutableStateOf(false) }
     
     // Dedicated High-Res Loader for Lightbox
     val imageLoader = remember {
@@ -70,10 +64,10 @@ fun PageLightbox(
             .build()
     }
 
-    // NITRO: Track zoom per page to intelligently enable/disable pager scroll
+    // NITRO: Track zoom per page
     val zoomLevels = remember { mutableStateMapOf<Int, Float>() }
     val isCurrentPageZoomed by remember {
-        derivedStateOf { (zoomLevels[pagerState.currentPage] ?: 1f) > 1.05f }
+        derivedStateOf { (zoomLevels[pagerState.currentPage] ?: 1f) > 1.01f }
     }
 
     Dialog(
@@ -99,22 +93,13 @@ fun PageLightbox(
                 var scale by remember { mutableFloatStateOf(1f) }
                 var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
                 
-                // Sync local scale with global zoom tracker
                 LaunchedEffect(scale) {
                     zoomLevels[pageIndex] = scale
                 }
 
-                // NITRO: Smooth Animated Zoom
-                val animatedScale by animateFloatAsState(
-                    targetValue = scale,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
-                    label = "scale"
-                )
-                val animatedOffset by animateOffsetAsState(
-                    targetValue = offset,
-                    animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                    label = "offset"
-                )
+                // Smooth Animation
+                val animatedScale by animateFloatAsState(targetValue = scale, label = "scale")
+                val animatedOffset by animateOffsetAsState(targetValue = offset, label = "offset")
 
                 LaunchedEffect(pagerState.currentPage) {
                     if (pagerState.currentPage != pageIndex) {
@@ -129,8 +114,7 @@ fun PageLightbox(
                 ) {
                     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
                         scale = (scale * zoomChange).coerceIn(1f, 4f)
-                        
-                        if (scale > 1.05f) {
+                        if (scale > 1f) {
                             val maxX = (constraints.maxWidth * (scale - 1) / 2)
                             val maxY = (constraints.maxHeight * (scale - 1) / 2)
                             val newOffset = offset + offsetChange
@@ -146,28 +130,22 @@ fun PageLightbox(
                     Box(
                         Modifier
                             .fillMaxSize()
-                            .then(
-                                if (scale > 1.05f) {
-                                    Modifier
-                                        .pointerInput(Unit) {
-                                            detectTapGestures(
-                                                onDoubleTap = { scale = 1f; offset = androidx.compose.ui.geometry.Offset.Zero }
-                                            )
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onDoubleTap = { tapOffset ->
+                                        if (scale > 1.01f) {
+                                            scale = 1f
+                                            offset = androidx.compose.ui.geometry.Offset.Zero
+                                        } else {
+                                            scale = 2.5f
+                                            val x = (size.width / 2 - tapOffset.x) * (2.5f - 1f)
+                                            val y = (size.height / 2 - tapOffset.y) * (2.5f - 1f)
+                                            offset = androidx.compose.ui.geometry.Offset(x, y)
                                         }
-                                        .transformable(state = state)
-                                } else {
-                                    Modifier.pointerInput(Unit) {
-                                        detectTapGestures(
-                                            onDoubleTap = { tapOffset ->
-                                                scale = 2.5f
-                                                val x = (size.width / 2 - tapOffset.x) * (2.5f - 1f)
-                                                val y = (size.height / 2 - tapOffset.y) * (2.5f - 1f)
-                                                offset = androidx.compose.ui.geometry.Offset(x, y)
-                                            }
-                                        )
                                     }
-                                }
-                            ),
+                                )
+                            }
+                            .then(if (scale > 1.01f) Modifier.transformable(state) else Modifier),
                         contentAlignment = Alignment.Center
                     ) {
                         val painter = rememberAsyncImagePainter(request, imageLoader)
@@ -183,13 +161,7 @@ fun PageLightbox(
                                     translationX = animatedOffset.x,
                                     translationY = animatedOffset.y
                                 ),
-                            contentScale = ContentScale.Fit,
-                            colorFilter = if (isNightMode) ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
-                                -1f, 0f, 0f, 0f, 255f,
-                                0f, -1f, 0f, 0f, 255f,
-                                0f, 0f, -1f, 0f, 255f,
-                                0f, 0f, 0f, 1f, 0f
-                            ))) else null
+                            contentScale = ContentScale.Fit
                         )
 
                         if (painter.state is AsyncImagePainter.State.Loading) {
@@ -198,7 +170,6 @@ fun PageLightbox(
                     }
                 }
             }
-
 
             // Top Bar
             Row(
@@ -216,23 +187,14 @@ fun PageLightbox(
                     Icon(Icons.Default.Close, null, tint = Color.White)
                 }
                 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { isNightMode = !isNightMode },
-                        modifier = Modifier.background(if (isNightMode) PaperPink else Color.White.copy(0.1f), CircleShape)
-                    ) {
-                        Icon(Icons.Default.Brightness4, null, tint = Color.White)
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Surface(color = Color.White.copy(0.1f), shape = RoundedCornerShape(12.dp)) {
-                        Text(
-                            "${pagerState.currentPage + 1} / $totalCount",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
+                Surface(color = Color.White.copy(0.1f), shape = RoundedCornerShape(12.dp)) {
+                    Text(
+                        "${pagerState.currentPage + 1} / $totalCount",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
                 }
                 
                 if (onToggleSelection != null && selectedPages != null) {

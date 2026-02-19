@@ -76,15 +76,15 @@ fun HomeView(
 
             item(span = { GridItemSpan(2) }, key = "label") {
                 Row(
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp, start = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "CORE ENGINES",
-                        fontSize = 9.sp,
+                        fontSize = 8.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color.Gray,
-                        letterSpacing = 1.5.sp
+                        color = Color.Gray.copy(alpha = 0.6f),
+                        letterSpacing = 1.2.sp
                     )
                 }
             }
@@ -98,40 +98,39 @@ fun HomeView(
             }
             
             item(span = { GridItemSpan(2) }, key = "footer") {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 // Support PaperKnife+ Card
-                Card(
+                Surface(
+                    onClick = { /* Link to fund */ },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 24.dp)
-                        .clickable { /* Link to fund */ },
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = PaperPink.copy(alpha = 0.08f)),
-                    border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.15f))
+                        .padding(bottom = 20.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = PaperPink.copy(alpha = 0.06f),
+                    border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.1f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(20.dp),
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            modifier = Modifier.size(40.dp),
-                            shape = CircleShape,
-                            color = PaperPink
+                        Box(
+                            modifier = Modifier.size(36.dp).background(PaperPink, CircleShape),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Favorite, null, tint = Color.White, modifier = Modifier.padding(10.dp))
+                            Icon(Icons.Default.Favorite, null, tint = Color.White, modifier = Modifier.size(18.dp))
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
                             Text(
                                 "Fund PaperKnife+",
-                                fontSize = 14.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Black,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Help us get to the Google Play Store!",
-                                fontSize = 10.sp,
+                                "Help us reach the Play Store!",
+                                fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Gray
                             )
@@ -140,8 +139,8 @@ fun HomeView(
                 }
 
                 Text(
-                    text = "PaperKnife+ v1.1.0",
-                    modifier = Modifier.fillMaxWidth().alpha(0.2f),
+                    text = "PaperKnife+ v1.2.0",
+                    modifier = Modifier.fillMaxWidth().alpha(0.15f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Black,
@@ -159,40 +158,39 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .height(64.dp)
-            .padding(bottom = 8.dp),
+            .height(56.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Logo(
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(20.dp),
                 partColor = if (isDarkMode) Color.White else Color(0xFF18181B)
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = buildAnnotatedString {
                     append("PaperKnife")
-                    withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                    withStyle(SpanStyle(color = PaperPink)) { append("+") }
                 },
                 fontWeight = FontWeight.Black,
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 color = MaterialTheme.colorScheme.onBackground,
-                letterSpacing = (-0.8).sp
+                letterSpacing = (-0.5).sp
             )
         }
         
         Surface(
             onClick = onThemeToggle,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(36.dp),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(0.4f)
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
                     contentDescription = "Toggle Theme",
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -210,10 +208,10 @@ fun HeroCard(onSelectPdf: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(190.dp)
-            .shadow(elevation = 16.dp, shape = RoundedCornerShape(32.dp), spotColor = PaperPink.copy(alpha = 0.2f))
+            .height(170.dp)
+            .shadow(elevation = 12.dp, shape = RoundedCornerShape(28.dp), spotColor = PaperPink.copy(alpha = 0.15f))
             .clickable(onClick = onSelectPdf),
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Box(
@@ -222,28 +220,28 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 .background(
                     Brush.linearGradient(
                         colors = if (isDark) {
-                            listOf(Color.White, Color.White, PaperPink.copy(alpha = 0.15f))
+                            listOf(Color.White, Color.White, PaperPink.copy(alpha = 0.1f))
                         } else {
-                            listOf(Color(0xFF121212), Color(0xFF121212), PaperPink.copy(alpha = 0.25f))
+                            listOf(Color(0xFF121212), Color(0xFF121212), PaperPink.copy(alpha = 0.2f))
                         },
                         start = Offset(0f, 1000f),
                         end = Offset(1000f, 0f)
                     )
                 )
-                .padding(24.dp)
+                .padding(20.dp)
         ) {
             Column(modifier = Modifier.align(Alignment.BottomStart)) {
                 Text(
                     text = "Select PDF",
-                    fontSize = 32.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Black,
                     color = textColor,
                     letterSpacing = (-0.5).sp,
-                    lineHeight = 32.sp
+                    lineHeight = 28.sp
                 )
                 Text(
-                    text = "TAP TO LOAD FROM DEVICE STORAGE",
-                    fontSize = 9.sp,
+                    text = "TAP TO LOAD FROM DEVICE",
+                    fontSize = 8.sp,
                     fontWeight = FontWeight.Black,
                     color = subTextColor,
                     letterSpacing = 0.5.sp
@@ -252,9 +250,9 @@ fun HeroCard(onSelectPdf: () -> Unit) {
             
             Surface(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(40.dp)
                     .align(Alignment.TopStart),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.08f),
                 border = BorderStroke(1.dp, if (isDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(0.05f))
             ) {
@@ -262,7 +260,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                     Icons.Outlined.Description,
                     contentDescription = null,
                     tint = if (isDark) Color.Black else Color.White,
-                    modifier = Modifier.padding(12.dp)
+                    modifier = Modifier.padding(10.dp)
                 )
             }
 
@@ -276,11 +274,11 @@ fun HeroCard(onSelectPdf: () -> Unit) {
             ) {
                 Text(
                     text = "START SESSION",
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    fontSize = 8.sp,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    fontSize = 7.5.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.8.sp
                 )
             }
         }
@@ -293,11 +291,11 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(if (isDark) Color(0xFF09090B) else Color.White)
-            .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(24.dp))
+            .border(BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f)), RoundedCornerShape(20.dp))
             .clickable(onClick = onHistoryClick)
-            .padding(16.dp)
+            .padding(14.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -305,35 +303,34 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.History, null, modifier = Modifier.size(12.dp), tint = Color.Gray)
+                Icon(Icons.Default.History, null, modifier = Modifier.size(11.dp), tint = Color.Gray)
                 Spacer(Modifier.width(6.dp))
-                Text("RECENT ACTIVITY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                Text("RECENT ACTIVITY", fontSize = 7.5.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.6f), letterSpacing = 0.8.sp)
             }
             if (history.isNotEmpty()) {
-                Text("VIEW ALL", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                Text("VIEW ALL", fontSize = 7.5.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 0.8.sp)
             }
         }
         
-        Spacer(Modifier.height(12.dp))
-        
         if (history.isEmpty()) {
+            Spacer(Modifier.height(8.dp))
             Text(
-                "NO RECENT SESSIONS (EMPTY)",
-                fontSize = 10.sp,
+                "NO RECENT SESSIONS",
+                fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Gray.copy(alpha = 0.4f),
-                modifier = Modifier.padding(vertical = 4.dp)
+                color = Color.Gray.copy(alpha = 0.3f)
             )
         } else {
-            history.take(3).forEach { entry ->
+            Spacer(Modifier.height(8.dp))
+            history.take(2).forEach { entry ->
                 Row(
-                    modifier = Modifier.padding(vertical = 4.dp),
+                    modifier = Modifier.padding(vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(entry.icon, null, modifier = Modifier.size(14.dp), tint = PaperPink)
+                    Icon(entry.icon, null, modifier = Modifier.size(12.dp), tint = PaperPink.copy(alpha = 0.6f))
                     Spacer(Modifier.width(10.dp))
-                    Text(entry.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f), maxLines = 1)
-                    Text(entry.tool.uppercase(), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink.copy(alpha = 0.7f))
+                    Text(entry.name, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f), maxLines = 1)
+                    Text(entry.tool.uppercase(), fontSize = 7.sp, fontWeight = FontWeight.Black, color = PaperPink.copy(alpha = 0.5f))
                 }
             }
         }
@@ -346,49 +343,49 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
     val containerColor = remember(isDark) { if (isDark) Color(0xFF0A0A0A) else Color.White }
     val borderColor = remember(isDark) { if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f) }
 
-    Card(
+    Surface(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(130.dp)
-            .graphicsLayer { clip = true; shape = RoundedCornerShape(28.dp) }
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
+            .height(115.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = containerColor,
         border = BorderStroke(1.dp, borderColor)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(18.dp),
+                .padding(14.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor, RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = tool.icon ?: Icons.Default.Build,
                     contentDescription = null,
                     tint = tool.color,
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
             
             Column {
                 Text(
                     text = tool.name,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.3).sp,
-                    lineHeight = 16.sp
+                    lineHeight = 14.sp
                 )
                 Text(
-                    text = tool.description,
-                    fontSize = 8.sp,
+                    text = tool.description.uppercase(),
+                    fontSize = 7.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Gray,
+                    color = Color.Gray.copy(alpha = 0.5f),
                     letterSpacing = 0.2.sp
                 )
             }
@@ -398,62 +395,60 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
 
 @Composable
 fun MoreEnginesCard(onClick: () -> Unit) {
-    Card(
+    Surface(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = PaperPink)
+            .height(70.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = PaperPink
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Subtle Tool Background Icon
             Icon(
                 imageVector = Icons.Default.GridView,
                 null,
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(100.dp)
                     .align(Alignment.CenterEnd)
-                    .offset(x = 30.dp, y = 10.dp)
-                    .alpha(0.15f),
+                    .offset(x = 25.dp, y = 10.dp)
+                    .alpha(0.1f),
                 tint = Color.White
             )
 
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        modifier = Modifier.size(40.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color.White.copy(alpha = 0.2f)
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Default.GridView,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.padding(10.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(14.dp))
                     Column {
                         Text(
                             text = "More Engines",
-                            fontSize = 16.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White,
                             letterSpacing = (-0.5).sp
                         )
                         Text(
                             text = "FULL CATALOG",
-                            fontSize = 8.sp,
+                            fontSize = 7.5.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White.copy(alpha = 0.7f),
-                            letterSpacing = 1.sp
+                            letterSpacing = 0.8.sp
                         )
                     }
                 }
@@ -462,7 +457,7 @@ fun MoreEnginesCard(onClick: () -> Unit) {
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

@@ -149,6 +149,8 @@ class MainActivity : ComponentActivity() {
                                         "pdf2img" -> PdfToImageView(onBack = { currentTool = null })
                                         "pdf2text" -> PdfToTextView(onBack = { currentTool = null })
                                         "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
+                                        "bookmarks" -> ComingSoonView("Bookmarks", onBack = { currentTool = null })
+                                        "compare" -> ComingSoonView("Compare PDF", onBack = { currentTool = null })
                                         "page-numbers" -> ComingSoonView("Page Numbers", onBack = { currentTool = null })
                                         "watermark" -> ComingSoonView("Watermark", onBack = { currentTool = null })
                                         "signature" -> ComingSoonView("Signature", onBack = { currentTool = null })
