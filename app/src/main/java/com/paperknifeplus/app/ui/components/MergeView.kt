@@ -28,14 +28,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
+import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.Collections
 
@@ -86,28 +91,30 @@ fun MergeView(onBack: () -> Unit) {
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    val targetDoc = PDDocument()
-                    selectedFiles.forEachIndexed { index, file ->
-                        withContext(Dispatchers.Main) { progressCount = index + 1 }
-                        context.contentResolver.openInputStream(file.uri)?.use { inputStream ->
-                            val sourceDoc = if (file.isUnlocked && file.password != null) {
-                                PDDocument.load(inputStream, file.password)
-                            } else {
-                                PDDocument.load(inputStream)
+                    val merger = PDFMergerUtility()
+                    context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
+                        merger.destinationStream = outputStream
+                        
+                        selectedFiles.forEachIndexed { index, file ->
+                            withContext(Dispatchers.Main) { progressCount = index + 1 }
+                            context.contentResolver.openInputStream(file.uri)?.use { inputStream ->
+                                if (file.isUnlocked && file.password != null) {
+                                    // Decrypt to memory first so merger can read it as a standard PDF
+                                    PDDocument.load(inputStream, file.password).use { sourceDoc ->
+                                        sourceDoc.isAllSecurityToBeRemoved = true
+                                        val baos = ByteArrayOutputStream()
+                                        sourceDoc.save(baos)
+                                        merger.addSource(ByteArrayInputStream(baos.toByteArray()))
+                                    }
+                                } else {
+                                    merger.addSource(inputStream)
+                                }
                             }
-                            
-                            // Import all pages from source to target
-                            for (i in 0 until sourceDoc.numberOfPages) {
-                                targetDoc.addPage(sourceDoc.getPage(i))
-                            }
-                            // Note: We don't close sourceDoc yet if we want to keep the imported pages' resources, 
-                            // but PDFBox clone/import can be tricky.
-                            // Actually, sourceDoc.getPage(i) is part of sourceDoc. 
-                            // To be safe, we should use importPage or just keep source docs open until end.
                         }
+                        
+                        merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly())
+                        outputStream.flush()
                     }
-                    
-                    saveAndFlush(context, targetDoc, saveUri)
                     
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
