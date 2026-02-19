@@ -38,8 +38,13 @@ import com.paperknifeplus.app.data.image.PdfPageRequest
 import kotlinx.coroutines.launch
 
 import android.content.Intent
+import android.widget.Toast
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.text.input.ImeAction
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -186,7 +191,7 @@ fun PageLightbox(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false)) {
                         IconButton(
                             onClick = onDismiss,
                             modifier = Modifier.background(Color.White.copy(0.1f), CircleShape)
@@ -197,7 +202,7 @@ fun PageLightbox(
                         if (isSearching) {
                             Spacer(Modifier.width(8.dp))
                             Surface(
-                                modifier = Modifier.weight(1f).height(40.dp),
+                                modifier = Modifier.height(40.dp).fillMaxWidth(),
                                 color = Color.White.copy(0.15f),
                                 shape = RoundedCornerShape(20.dp)
                             ) {
@@ -208,23 +213,18 @@ fun PageLightbox(
                                         textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp),
                                         singleLine = true,
                                         modifier = Modifier.weight(1f),
-                                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Search),
                                         keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = {
                                             if (searchQuery.isNotEmpty()) {
                                                 isSearchLoading = true
-                                                scope.launch(Dispatchers.IO) {
+                                                scope.launch {
                                                     val foundPage = findTextInPdf(context, uri, password, searchQuery, pagerState.currentPage + 1)
                                                     if (foundPage != -1) {
-                                                        withContext(Dispatchers.Main) { 
-                                                            pagerState.animateScrollToPage(foundPage)
-                                                            isSearchLoading = false
-                                                        }
+                                                        pagerState.animateScrollToPage(foundPage)
                                                     } else {
-                                                        withContext(Dispatchers.Main) {
-                                                            Toast.makeText(context, "No matches found", Toast.LENGTH_SHORT).show()
-                                                            isSearchLoading = false
-                                                        }
+                                                        Toast.makeText(context, "No matches found", Toast.LENGTH_SHORT).show()
                                                     }
+                                                    isSearchLoading = false
                                                 }
                                             }
                                         })
