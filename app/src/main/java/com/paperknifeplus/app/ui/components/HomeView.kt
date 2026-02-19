@@ -310,16 +310,18 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
 @Composable
 fun BentoCard(tool: Tool, onClick: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val containerColor = remember(isDark) { if (isDark) Color(0xFF0A0A0A) else Color.White }
+    val borderColor = remember(isDark) { if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(130.dp)
+            .graphicsLayer { clip = true; shape = RoundedCornerShape(28.dp) }
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color(0xFF0A0A0A) else Color.White
-        ),
-        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Column(
             modifier = Modifier

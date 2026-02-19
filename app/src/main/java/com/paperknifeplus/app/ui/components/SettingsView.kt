@@ -59,15 +59,24 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
             }
         }
         
+        Text(
+            text = "PREFERENCES & STORAGE",
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Black,
+            color = Color.Gray,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier.padding(top = 16.dp, bottom = 12.dp, start = 24.dp)
+        )
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
                 SettingsGroup("USER PROFILE") {
-                    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        Text("DEFAULT AUTHOR", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+                        Text("DEFAULT AUTHOR NAME", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                         Spacer(Modifier.height(8.dp))
                         TextField(
                             value = autoAuthor,
@@ -86,43 +95,39 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
                             singleLine = true,
                             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         )
-                        Text("This name will be added to metadata of all saved PDFs.", fontSize = 9.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                        Text("Automatically applied to saved PDF metadata.", fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
                     }
                 }
             }
 
             item {
-                SettingsGroup("PREFERENCES") {
-                    SettingsItem(Icons.Outlined.Palette, "Dark Mode", "Toggle application theme") {
-                        // This would need a callback to MainActivity to actually toggle
-                        android.widget.Toast.makeText(context, "Use the toggle on Home screen", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                    SettingsItem(Icons.Outlined.Memory, "Nitro Engine", "Hardware-accelerated rendering (ON)", enabled = false)
+                SettingsGroup("APPLICATION") {
+                    SettingsItem(Icons.Outlined.Palette, "Appearance", "Toggle Light/Dark theme (on Home)")
+                    SettingsItem(Icons.Outlined.Memory, "Nitro Engine", "Hardware-accelerated rendering (Active)", enabled = false)
                 }
             }
 
             item {
-                SettingsGroup("STORAGE & PRIVACY") {
+                SettingsGroup("STORAGE") {
                     SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Purge all temporary PDF fragments") {
                         val cacheDir = context.cacheDir.resolve("pdf_previews")
                         val deleted = if (cacheDir.exists()) cacheDir.deleteRecursively() else true
                         val msg = if (deleted) "Cache cleared successfully" else "Cache already empty"
                         android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
                     }
-                    SettingsItem(Icons.Outlined.Shield, "Incognito Mode", "No files ever leave your device")
                 }
             }
 
             item {
-                SettingsGroup("SUPPORT") {
-                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "App version, licenses, and credits", onClick = onNavigateToAbout)
-                    SettingsItem(Icons.Outlined.StarOutline, "Source Code", "View on GitHub (potatameister)")
+                SettingsGroup("ABOUT") {
+                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Credits, License, and Privacy Policy", onClick = onNavigateToAbout)
+                    SettingsItem(Icons.Outlined.Shield, "Privacy Mode", "100% Local processing verified", enabled = false)
                 }
             }
 
             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 100.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 120.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Logo(modifier = Modifier.size(24.dp), partColor = if (isDark) Color.White else Color.Black)
@@ -155,7 +160,7 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
             color = if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF09090B) else Color.White,
             shape = RoundedCornerShape(24.dp),
             tonalElevation = 1.dp,
-            border = BorderStroke(1.dp, if (MaterialTheme.colorScheme.background == Color.Black) Color.White.copy(0.05f) else Color.Black.copy(0.03f))
+            border = BorderStroke(1.dp, if (MaterialTheme.colorScheme.background == Color.Black) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
         ) {
             Column(modifier = Modifier.padding(vertical = 4.dp)) {
                 content()

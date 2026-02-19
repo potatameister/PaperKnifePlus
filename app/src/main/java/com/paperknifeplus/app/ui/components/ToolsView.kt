@@ -148,16 +148,18 @@ fun ToolsView(onToolClick: (String) -> Unit) {
 @Composable
 fun ListToolItem(tool: Tool, onClick: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val containerColor = remember(isDark) { if (isDark) Color(0xFF09090B) else Color.White }
+    val borderColor = remember(isDark) { if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
+            .graphicsLayer { clip = true; shape = RoundedCornerShape(16.dp) }
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color(0xFF09090B) else Color.White
-        ),
-        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier

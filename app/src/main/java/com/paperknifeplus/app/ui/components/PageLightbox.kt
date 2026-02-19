@@ -110,7 +110,7 @@ fun PageLightbox(
 
                 LaunchedEffect(scale) {
                     if (pagerState.currentPage == pageIndex) {
-                        isAnyPageZoomed = scale > 1.1f // Lenient threshold for sliding
+                        isAnyPageZoomed = scale > 1.0f // Strict scale check
                     }
                 }
 
@@ -120,11 +120,11 @@ fun PageLightbox(
                 ) {
                     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
                         scale = (scale * zoomChange).coerceIn(1f, 4f)
-                        val maxX = (constraints.maxWidth * (scale - 1) / 2)
-                        val maxY = (constraints.maxHeight * (scale - 1) / 2)
-                        val newOffset = offset + offsetChange
                         
-                        if (scale > 1.1f) {
+                        if (scale > 1f) {
+                            val maxX = (constraints.maxWidth * (scale - 1) / 2)
+                            val maxY = (constraints.maxHeight * (scale - 1) / 2)
+                            val newOffset = offset + offsetChange
                             offset = androidx.compose.ui.geometry.Offset(
                                 newOffset.x.coerceIn(-maxX, maxX),
                                 newOffset.y.coerceIn(-maxY, maxY)
@@ -140,13 +140,14 @@ fun PageLightbox(
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onDoubleTap = { tapOffset ->
-                                        if (scale > 1.1f) {
+                                        if (scale > 1f) {
                                             scale = 1f
                                             offset = androidx.compose.ui.geometry.Offset.Zero
                                         } else {
                                             scale = 2.5f
-                                            val x = (size.width / 2 - tapOffset.x) * 1.5f
-                                            val y = (size.height / 2 - tapOffset.y) * 1.5f
+                                            // Focal point calculation: distance from center scaled
+                                            val x = (size.width / 2 - tapOffset.x) * (2.5f - 1f)
+                                            val y = (size.height / 2 - tapOffset.y) * (2.5f - 1f)
                                             offset = androidx.compose.ui.geometry.Offset(x, y)
                                         }
                                     }
