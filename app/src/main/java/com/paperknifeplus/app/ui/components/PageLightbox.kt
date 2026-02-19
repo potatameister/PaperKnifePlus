@@ -37,6 +37,10 @@ import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.Brightness4
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PageLightbox(
@@ -51,6 +55,7 @@ fun PageLightbox(
     val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
     val scope = rememberCoroutineScope()
+    var isNightMode by remember { mutableStateOf(false) }
     
     // Dedicated High-Res Loader for Lightbox
     val imageLoader = remember {
@@ -140,23 +145,28 @@ fun PageLightbox(
                     Box(
                         Modifier
                             .fillMaxSize()
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onDoubleTap = { tapOffset ->
-                                        if (scale > 1.05f) {
-                                            scale = 1f
-                                            offset = androidx.compose.ui.geometry.Offset.Zero
-                                        } else {
-                                            scale = 2.5f
-                                            // Focal point calculation: distance from center scaled
-                                            val x = (size.width / 2 - tapOffset.x) * (2.5f - 1f)
-                                            val y = (size.height / 2 - tapOffset.y) * (2.5f - 1f)
-                                            offset = androidx.compose.ui.geometry.Offset(x, y)
+                            .then(
+                                if (scale > 1.05f) {
+                                    Modifier
+                                        .pointerInput(Unit) {
+                                            detectTapGestures(
+                                                onDoubleTap = { scale = 1f; offset = androidx.compose.ui.geometry.Offset.Zero }
+                                            )
                                         }
+                                        .transformable(state = state)
+                                } else {
+                                    Modifier.pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onDoubleTap = { tapOffset ->
+                                                scale = 2.5f
+                                                val x = (size.width / 2 - tapOffset.x) * (2.5f - 1f)
+                                                val y = (size.height / 2 - tapOffset.y) * (2.5f - 1f)
+                                                offset = androidx.compose.ui.geometry.Offset(x, y)
+                                            }
+                                        )
                                     }
-                                )
-                            }
-                            .transformable(state = state),
+                                }
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         val painter = rememberAsyncImagePainter(request, imageLoader)
@@ -172,7 +182,16 @@ fun PageLightbox(
                                     translationX = animatedOffset.x,
                                     translationY = animatedOffset.y
                                 ),
-                            contentScale = ContentScale.Fit
+                            contentScale = ContentScale.Fit,
+                            colorFilter = if (isNightMode) ColorFilter.colorMatrix(ColorMatrix().apply {
+                                // Invert colors but keep luminance similar
+                                set(floatArrayOf(
+                                    -1f, 0f, 0f, 0f, 255f,
+                                    0f, -1f, 0f, 0f, 255f,
+                                    0f, 0f, -1f, 0f, 255f,
+                                    0f, 0f, 0f, 1f, 0f
+                                ))
+                            }) else null
                         )
 
                         if (painter.state is AsyncImagePainter.State.Loading) {
@@ -199,14 +218,23 @@ fun PageLightbox(
                     Icon(Icons.Default.Close, null, tint = Color.White)
                 }
                 
-                Surface(color = Color.White.copy(0.1f), shape = RoundedCornerShape(12.dp)) {
-                    Text(
-                        "${pagerState.currentPage + 1} / $totalCount",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { isNightMode = !isNightMode },
+                        modifier = Modifier.background(if (isNightMode) PaperPink else Color.White.copy(0.1f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Brightness4, null, tint = Color.White)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Surface(color = Color.White.copy(0.1f), shape = RoundedCornerShape(12.dp)) {
+                        Text(
+                            "${pagerState.currentPage + 1} / $totalCount",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
                 }
                 
                 if (onToggleSelection != null && selectedPages != null) {

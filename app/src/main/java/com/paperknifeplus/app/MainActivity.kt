@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
                                         "about" -> AboutView()
                                         "merge" -> MergeView(onBack = { currentTool = null })
                                         "split" -> SplitView(onBack = { currentTool = null })
+                                        "delete" -> DeleteView(onBack = { currentTool = null })
                                         "compress" -> CompressView(onBack = { currentTool = null })
                                         "repair" -> RepairView(onBack = { currentTool = null })
                                         "rotate" -> RotateView(onBack = { currentTool = null })

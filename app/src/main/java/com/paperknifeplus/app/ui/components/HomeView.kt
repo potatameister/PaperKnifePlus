@@ -99,8 +99,48 @@ fun HomeView(
             
             item(span = { GridItemSpan(2) }, key = "footer") {
                 Spacer(modifier = Modifier.height(16.dp))
+                
+                // Support PaperKnife+ Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp)
+                        .clickable { /* Link to fund */ },
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = PaperPink.copy(alpha = 0.08f)),
+                    border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.15f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(40.dp),
+                            shape = CircleShape,
+                            color = PaperPink
+                        ) {
+                            Icon(Icons.Default.Favorite, null, tint = Color.White, modifier = Modifier.padding(10.dp))
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                "Fund PaperKnife+",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Help us get to the Google Play Store!",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+
                 Text(
-                    text = "PaperKnife+ v1.0.0",
+                    text = "PaperKnife+ v1.1.0",
                     modifier = Modifier.fillMaxWidth().alpha(0.2f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     fontSize = 8.sp,
