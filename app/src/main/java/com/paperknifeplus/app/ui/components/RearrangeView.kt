@@ -278,6 +278,7 @@ fun RearrangeView(onBack: () -> Unit) {
                             accentColor = accentColor
                         )
                     }
+                    else -> {}
                 }
             }
 

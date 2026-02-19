@@ -206,6 +206,7 @@ fun ProtectView(onBack: () -> Unit) {
                             accentColor = accentColor
                         )
                     }
+                    else -> {}
                 }
             }
 

@@ -274,7 +274,6 @@ fun SplitView(onBack: () -> Unit) {
             }
         }
     }
-}
 
     if (lightboxPage != null && selectedUri != null) {
         PageLightbox(

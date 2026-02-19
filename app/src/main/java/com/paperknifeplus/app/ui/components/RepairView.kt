@@ -251,4 +251,3 @@ fun RepairView(onBack: () -> Unit) {
         }
     }
 }
-}

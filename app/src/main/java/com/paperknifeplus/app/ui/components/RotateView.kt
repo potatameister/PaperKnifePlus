@@ -259,4 +259,3 @@ fun RotateView(onBack: () -> Unit) {
         }
     }
 }
-}
