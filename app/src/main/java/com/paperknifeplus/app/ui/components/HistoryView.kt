@@ -42,56 +42,76 @@ fun HistoryView() {
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(PaperPink.copy(alpha = 0.1f), CircleShape),
-                    contentAlignment = Alignment.Center
+        // Standardized Header
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = buildAnnotatedString {
+                        append("History")
+                        withStyle(SpanStyle(color = PaperPink)) { append(".") }
+                    },
+                    fontWeight = FontWeight.Black,
+                    fontSize = 28.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = (-1).sp
+                )
+                
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    Icon(Icons.Outlined.History, null, tint = PaperPink, modifier = Modifier.size(20.dp))
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = buildAnnotatedString {
-                            append("History")
-                            withStyle(SpanStyle(color = PaperPink)) { append(".") }
-                        },
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        letterSpacing = (-1.5).sp
-                    )
+                    Icon(Icons.Outlined.History, null, modifier = Modifier.padding(8.dp).size(20.dp), tint = PaperPink)
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search sessions...", fontSize = 14.sp, fontWeight = FontWeight.Medium) },
-                modifier = Modifier.fillMaxWidth(),
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(16.dp),
-                leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) },
-                trailingIcon = { if (searchQuery.isNotEmpty()) IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Close, null, tint = Color.Gray) } },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = PaperPink,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                )
-            )
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    Icon(Icons.Default.Search, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Box(Modifier.weight(1f)) {
+                        if (searchQuery.isEmpty()) {
+                            Text("Search sessions...", color = Color.Gray, fontSize = 14.sp)
+                        }
+                        androidx.compose.foundation.text.BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
         }
         
         Text(
             text = "ALL LOCAL SESSIONS",
-            fontSize = 9.sp,
+            fontSize = 8.sp,
             fontWeight = FontWeight.Black,
-            color = Color.Gray,
+            color = Color.Gray.copy(alpha = 0.6f),
             letterSpacing = 1.5.sp,
             modifier = Modifier.padding(top = 16.dp, bottom = 12.dp, start = 24.dp)
         )

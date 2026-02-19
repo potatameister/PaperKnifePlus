@@ -41,7 +41,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             Tool("merge", "Merge", "Combine PDFs", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("split", "Split", "Extract pages", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("delete", "Delete", "Remove pages", Icons.Outlined.Delete, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rearrange", "Reorder", "Sort pages", Icons.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("rearrange", "Rearrange", "Sort pages", Icons.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("rotate", "Rotate", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("sign", "Sign", "Add signature", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("watermark", "Stamp", "Add overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
@@ -53,7 +53,6 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             Tool("grayscale", "B&W", "Gray tones", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("repair", "Repair", "Fix corruption", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("compare", "Compare", "Visual diff", Icons.Outlined.Compare, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("pdf2zip", "To ZIP", "Archive PDF", Icons.Outlined.FolderZip, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             
             // SECURE - Indigo
             Tool("protect", "Lock", "Password", Icons.Outlined.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
@@ -63,6 +62,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             // CONVERT - Teal
             Tool("pdf2img", "To Image", "Export JPG", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
             Tool("img2pdf", "To PDF", "Photos to PDF", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("pdf2zip", "To ZIP", "Archive PDF", Icons.Outlined.FolderZip, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
             Tool("extract-images", "Extract", "Save photos", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
             Tool("pdf2text", "To Text", "Plain text", Icons.Outlined.Article, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
         )

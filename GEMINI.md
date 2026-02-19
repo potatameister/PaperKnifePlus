@@ -22,7 +22,7 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 
 ### 2. PDF Preview Types
 - **Type A (Grid Preview):** Optimized for selection/reordering.
-    - **Layout:** Standardized 2-column scrollable grid.
+    - **Layout:** Standardized 3-column scrollable grid (Blitz Pro).
     - **Resolution:** 0.4f scale thumbnails (balanced clarity vs. speed).
     - **Visuals:** Circular progress indicators per page; "Locked" placeholders for encrypted files.
 - **Type B (Cover Preview):** Optimized for single-doc processing (Compress, Protect).
@@ -31,8 +31,9 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 
 ### 3. Navigation Architecture
 - **Lazy Pager Navigation:** The main app shell (`Home`, `Tools`, `History`, `Settings`) uses a `HorizontalPager`.
-- **Performance:** Pages are lazy-loaded (beyondBounds = 0), reducing startup overhead and memory pressure.
+- **Performance:** Pages are strictly lazy-loaded (`beyondBoundsPageCount = 0`), eliminating background rendering of inactive tabs.
 - **Tool Overlays:** Specific tools open in an `AnimatedVisibility` overlay to keep the main pager state preserved in the background.
+- **Intelligent BackHandler:** Custom navigation logic prevents accidental app exit; closes tools or navigates back to Home tab first.
 
 ---
 
@@ -46,12 +47,17 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
+- **2026-02-19:** **BLITZ PRO UPDATE**:
+    - Overhauled Tools UI to a polished 3-column "Premium Bento" grid.
+    - Implemented `beyondBoundsPageCount = 0` to achieve stable 60FPS.
+    - Added **Search Text** and **Share PDF** features to the Lightbox.
+    - Introduced **PDF to ZIP**, **Delete Pages**, and **Bookmarks** (Placeholder) tools.
+    - Standardized Header UI across History, Tools, and Settings screens.
 - **2026-02-18:** **NITRO ENGINE 2.0 RELEASE**:
     - Refactored UI to **HorizontalPager** for smooth screen sliding and lazy-loading.
     - Implemented **Parallel Renderer Pool** (4 threads) & **Global Decryption Cache**.
     - Fixed **Zero-White Bug**: Enforced `ARGB_8888` and `RENDER_MODE_FOR_PRINT`.
     - Added **Bound-Aware Zoom**: Intelligent panning logic and pager-lock in Lightbox.
-    - Standardized **Type A/B Previews** across all 12+ tools.
 - **2026-02-17:** Enhanced PDF-to-Text, search headers, and fixed 0-byte file saving.
 - **2026-02-16:** Initial scaffold, PaperKnife branding, and core PDF logic implementation.
 
@@ -61,8 +67,8 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 
 ### Technical Gotchas
 - **"White Pages" Bug:** Native `PdfRenderer` can fail or produce empty white bitmaps if using `RGB_565` on certain devices or if the background isn't explicitly cleared. **Fix:** Always use `ARGB_8888` and `canvas.drawColor(Color.WHITE)` before `page.render`.
-- **Render Modes:** `RENDER_MODE_FOR_DISPLAY` can sometimes skip complex vectors. **Fix:** Use `RENDER_MODE_FOR_PRINT` for higher reliability in thumbnails.
-- **Experimental APIs:** `HorizontalPager` and related layout tools require `@OptIn(ExperimentalFoundationApi::class)`.
+- **Pager Lag:** Pre-loading adjacent pages in a `HorizontalPager` (`beyondBounds`) causes massive CPU spikes if pages are complex. **Fix:** Keep `beyondBoundsPageCount = 0` for "Blitz" speed.
+- **Gesture Collision:** Overlapping zoom (`transformable`) and pager swipe gestures can lock navigation. **Fix:** Conditionally disable zoom modifiers when `scale == 1.0f` to yield control to the Pager.
 - **Concurrency:** `PdfRenderer` is **not thread-safe**. Use `NativeRendererPool` to manage multiple instances securely.
 
 ### Dependency Notes

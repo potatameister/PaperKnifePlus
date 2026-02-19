@@ -80,6 +80,15 @@ class MainActivity : ComponentActivity() {
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
                         val scope = rememberCoroutineScope()
 
+                        // --- INTELLIGENT BACK NAVIGATION ---
+                        androidx.activity.compose.BackHandler(enabled = currentTool != null || pagerState.currentPage != 0) {
+                            if (currentTool != null) {
+                                currentTool = null
+                            } else if (pagerState.currentPage != 0) {
+                                scope.launch { pagerState.animateScrollToPage(0) }
+                            }
+                        }
+
                         Box(modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.background)

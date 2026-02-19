@@ -34,36 +34,39 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
     var autoAuthor by remember { mutableStateOf(PreferencesManager.getDefaultAuthor(context)) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(PaperPink.copy(alpha = 0.1f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Outlined.Settings, null, tint = PaperPink, modifier = Modifier.size(20.dp))
-                }
-                Spacer(modifier = Modifier.width(16.dp))
+        // Standardized Header
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = buildAnnotatedString {
                         append("Settings")
                         withStyle(SpanStyle(color = PaperPink)) { append(".") }
                     },
-                    style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Black,
+                    fontSize = 28.sp,
                     color = MaterialTheme.colorScheme.onBackground,
-                    letterSpacing = (-1.5).sp
+                    letterSpacing = (-1).sp
                 )
+                
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(Icons.Outlined.Settings, null, modifier = Modifier.padding(8.dp).size(20.dp), tint = PaperPink)
+                }
             }
         }
         
         Text(
             text = "PREFERENCES & STORAGE",
-            fontSize = 9.sp,
+            fontSize = 8.sp,
             fontWeight = FontWeight.Black,
-            color = Color.Gray,
+            color = Color.Gray.copy(alpha = 0.6f),
             letterSpacing = 1.5.sp,
             modifier = Modifier.padding(top = 16.dp, bottom = 12.dp, start = 24.dp)
         )
