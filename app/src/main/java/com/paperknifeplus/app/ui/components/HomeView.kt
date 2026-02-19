@@ -80,7 +80,7 @@ fun HomeView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "CORE ENGINES",
+                        text = "CORE TOOLS",
                         fontSize = 8.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.Gray.copy(alpha = 0.6f),
@@ -138,14 +138,6 @@ fun HomeView(
                     }
                 }
 
-                Text(
-                    text = "PaperKnife+ v1.2.0",
-                    modifier = Modifier.fillMaxWidth().alpha(0.15f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
-                )
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }

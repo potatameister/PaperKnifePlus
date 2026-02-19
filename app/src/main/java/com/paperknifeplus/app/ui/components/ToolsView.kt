@@ -43,6 +43,9 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             Tool("delete", "Delete", "Remove pages", Icons.Outlined.Delete, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("rearrange", "Reorder", "Sort pages", Icons.Outlined.List, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("rotate", "Rotate", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("sign", "Sign", "Add signature", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("watermark", "Stamp", "Add overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("page-numbers", "Numbers", "Add pagination", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("bookmarks", "Outlines", "Edit bookmarks", Icons.Outlined.BookmarkBorder, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             
             // OPTIMIZE - Amber
@@ -50,6 +53,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             Tool("grayscale", "B&W", "Gray tones", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("repair", "Repair", "Fix corruption", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("compare", "Compare", "Visual diff", Icons.Outlined.Compare, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("pdf2zip", "To ZIP", "Archive PDF", Icons.Outlined.FolderZip, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             
             // SECURE - Indigo
             Tool("protect", "Lock", "Password", Icons.Outlined.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
@@ -64,10 +68,12 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         )
     }
 
-    val filteredTools = remember(searchQuery, allTools) {
-        allTools.filter { 
-            it.name.contains(searchQuery, ignoreCase = true) || 
-            it.description.contains(searchQuery, ignoreCase = true) 
+    val filteredTools by remember {
+        derivedStateOf {
+            allTools.filter { 
+                it.name.contains(searchQuery, ignoreCase = true) || 
+                it.description.contains(searchQuery, ignoreCase = true) 
+            }
         }
     }
 
@@ -83,7 +89,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             ) {
                 Text(
                     text = buildAnnotatedString {
-                        append("Engines")
+                        append("Tools")
                         withStyle(SpanStyle(color = PaperPink)) { append(".") }
                     },
                     fontWeight = FontWeight.Black,
@@ -116,7 +122,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
                     Spacer(Modifier.width(12.dp))
                     Box(Modifier.weight(1f)) {
                         if (searchQuery.isEmpty()) {
-                            Text("Search 16+ tools...", color = Color.Gray, fontSize = 14.sp)
+                            Text("Search 20+ tools...", color = Color.Gray, fontSize = 14.sp)
                         }
                         androidx.compose.foundation.text.BasicTextField(
                             value = searchQuery,
