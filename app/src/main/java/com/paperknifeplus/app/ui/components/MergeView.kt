@@ -4,7 +4,10 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,6 +64,7 @@ data class MergeFile(
     val pageCount: Int = 0
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MergeView(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -223,6 +227,12 @@ fun MergeView(onBack: () -> Unit) {
                                         modifier = Modifier
                                             .zIndex(if (isDragging) 1f else 0f)
                                             .graphicsLayer { translationY = itemOffset }
+                                            .animateItemPlacement(
+                                                animationSpec = spring(
+                                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                                    stiffness = Spring.StiffnessLow
+                                                )
+                                            )
                                             .shadow(if (isDragging) 8.dp else 0.dp, RoundedCornerShape(20.dp))
                                             .pointerInput(selectedFiles) {
                                                 detectDragGesturesAfterLongPress(
@@ -340,20 +350,21 @@ fun MergeView(onBack: () -> Unit) {
                         }
                     }
                 
-                ToolState.SUCCESS -> {
-                    SuccessView(
-                        message = "Merge Complete",
-                        subMessage = "Successfully joined ${selectedFiles.size} documents",
-                        processingTime = processingTime,
-                        onDone = onBack,
-                        onProcessMore = { 
-                            selectedFiles = emptyList()
-                            currentState = ToolState.SELECTING 
-                        },
-                        accentColor = accentColor
-                    )
+                    ToolState.SUCCESS -> {
+                        SuccessView(
+                            message = "Merge Complete",
+                            subMessage = "Successfully joined ${selectedFiles.size} documents",
+                            processingTime = processingTime,
+                            onDone = onBack,
+                            onProcessMore = { 
+                                selectedFiles = emptyList()
+                                currentState = ToolState.SELECTING 
+                            },
+                            accentColor = accentColor
+                        )
+                    }
+                    else -> {}
                 }
-                else -> {}
             }
             
             // Locked File Prompt
