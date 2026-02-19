@@ -37,6 +37,7 @@ import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import kotlinx.coroutines.launch
 
+import com.paperknifeplus.app.ui.theme.PaperPink
 import androidx.compose.material.icons.filled.Brightness4
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -183,15 +184,12 @@ fun PageLightbox(
                                     translationY = animatedOffset.y
                                 ),
                             contentScale = ContentScale.Fit,
-                            colorFilter = if (isNightMode) ColorFilter.colorMatrix(ColorMatrix().apply {
-                                // Invert colors but keep luminance similar
-                                set(floatArrayOf(
-                                    -1f, 0f, 0f, 0f, 255f,
-                                    0f, -1f, 0f, 0f, 255f,
-                                    0f, 0f, -1f, 0f, 255f,
-                                    0f, 0f, 0f, 1f, 0f
-                                ))
-                            }) else null
+                            colorFilter = if (isNightMode) ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+                                -1f, 0f, 0f, 0f, 255f,
+                                0f, -1f, 0f, 0f, 255f,
+                                0f, 0f, -1f, 0f, 255f,
+                                0f, 0f, 0f, 1f, 0f
+                            ))) else null
                         )
 
                         if (painter.state is AsyncImagePainter.State.Loading) {
