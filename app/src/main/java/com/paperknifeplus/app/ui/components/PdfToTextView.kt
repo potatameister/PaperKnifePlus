@@ -50,6 +50,7 @@ fun PdfToTextView(onBack: () -> Unit) {
     var fileName by remember { mutableStateOf("") }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
+    var fileToUnlock by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {
@@ -68,7 +69,9 @@ fun PdfToTextView(onBack: () -> Unit) {
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
-                    withContext(Dispatchers.Main) { currentState = ToolState.UNLOCKING }
+                    withContext(Dispatchers.Main) { 
+                        fileToUnlock = fileName
+                    }
                 } else {
                     withContext(Dispatchers.Main) { currentState = ToolState.PROCESSING }
                     processText(context, it, null) { text, time ->
@@ -113,7 +116,7 @@ fun PdfToTextView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -123,26 +126,7 @@ fun PdfToTextView(onBack: () -> Unit) {
                         title = "Tap to select PDF",
                         subtitle = "EXTRACT TEXT DATA",
                         accentColor = accentColor,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                ToolState.UNLOCKING -> {
-                    LockedFilePrompt(
-                        fileName = fileName,
-                        password = unlockPassword,
-                        onPasswordChange = { unlockPassword = it },
-                        onUnlock = {
-                            scope.launch(Dispatchers.IO) {
-                                withContext(Dispatchers.Main) { currentState = ToolState.PROCESSING }
-                                processText(context, selectedUri!!, unlockPassword) { text, time ->
-                                    extractedText = text
-                                    processingTime = time
-                                    withContext(Dispatchers.Main) { currentState = ToolState.SUCCESS }
-                                }
-                            }
-                        },
-                        onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
-                        accentColor = accentColor
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
                 ToolState.PROCESSING -> {
@@ -198,6 +182,28 @@ fun PdfToTextView(onBack: () -> Unit) {
                     }
                 }
                 else -> {}
+            }
+
+            if (fileToUnlock != null) {
+                LockedFilePrompt(
+                    fileName = fileToUnlock!!,
+                    onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
+                    onUnlocked = { pass ->
+                        unlockPassword = pass
+                        scope.launch(Dispatchers.IO) {
+                            withContext(Dispatchers.Main) { 
+                                currentState = ToolState.PROCESSING
+                                fileToUnlock = null
+                            }
+                            processText(context, selectedUri!!, pass) { text, time ->
+                                extractedText = text
+                                processingTime = time
+                                withContext(Dispatchers.Main) { currentState = ToolState.SUCCESS }
+                            }
+                        }
+                    },
+                    accentColor = accentColor
+                )
             }
         }
     }

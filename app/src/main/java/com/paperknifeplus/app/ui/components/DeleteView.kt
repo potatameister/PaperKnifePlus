@@ -48,6 +48,7 @@ fun DeleteView(onBack: () -> Unit) {
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
+    var fileToUnlock by remember { mutableStateOf<String?>(null) }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -60,7 +61,7 @@ fun DeleteView(onBack: () -> Unit) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     withContext(Dispatchers.Main) {
-                        currentState = ToolState.UNLOCKING
+                        fileToUnlock = fileName
                         isFileLoading = false
                     }
                 } else {
@@ -120,6 +121,8 @@ fun DeleteView(onBack: () -> Unit) {
         }
     }
 
+    LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
+
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
@@ -139,7 +142,7 @@ fun DeleteView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
                 LoadingStateView(accentColor, showLoadingWarning, "Analyzing file...")
             } else {
@@ -152,36 +155,7 @@ fun DeleteView(onBack: () -> Unit) {
                             title = "Tap to enter file",
                             subtitle = "DELETE PAGES INSTANTLY",
                             accentColor = accentColor,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    ToolState.UNLOCKING -> {
-                        LockedFilePrompt(
-                            fileName = fileName,
-                            password = unlockPassword,
-                            onPasswordChange = { unlockPassword = it },
-                            onUnlock = {
-                                isFileLoading = true
-                                scope.launch(Dispatchers.IO) {
-                                    val decryptedUri = decryptToCache(context, selectedUri!!, unlockPassword)
-                                    if (decryptedUri != null) {
-                                        val count = getPageCount(context, decryptedUri, null)
-                                        withContext(Dispatchers.Main) { 
-                                            selectedUri = decryptedUri
-                                            pageCount = count
-                                            currentState = ToolState.CONFIGURING
-                                            isFileLoading = false 
-                                        }
-                                    } else {
-                                        withContext(Dispatchers.Main) { 
-                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                            isFileLoading = false 
-                                        }
-                                    }
-                                }
-                            },
-                            onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
-                            accentColor = accentColor
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                     ToolState.CONFIGURING -> {
@@ -255,7 +229,38 @@ fun DeleteView(onBack: () -> Unit) {
                             accentColor = accentColor
                         )
                     }
+                    else -> {}
                 }
+            }
+
+            if (fileToUnlock != null) {
+                LockedFilePrompt(
+                    fileName = fileToUnlock!!,
+                    onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
+                    onUnlocked = { pass ->
+                        unlockPassword = pass
+                        isFileLoading = true
+                        scope.launch(Dispatchers.IO) {
+                            val decryptedUri = decryptToCache(context, selectedUri!!, pass)
+                            if (decryptedUri != null) {
+                                val count = getPageCount(context, decryptedUri, null)
+                                withContext(Dispatchers.Main) { 
+                                    selectedUri = decryptedUri
+                                    pageCount = count
+                                    currentState = ToolState.CONFIGURING
+                                    isFileLoading = false 
+                                    fileToUnlock = null
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) { 
+                                    Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    isFileLoading = false 
+                                }
+                            }
+                        }
+                    },
+                    accentColor = accentColor
+                )
             }
         }
     }

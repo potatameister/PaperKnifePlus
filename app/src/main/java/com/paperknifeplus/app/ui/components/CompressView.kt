@@ -24,11 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.ImageLoader
 import coil.compose.LocalImageLoader
 import coil.compose.rememberAsyncImagePainter
-import com.paperknifeplus.app.data.image.PdfPageFetcher
-import com.paperknifeplus.app.data.image.PdfPageRequest
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
@@ -57,9 +54,7 @@ fun CompressView(onBack: () -> Unit) {
     var pageCount by remember { mutableIntStateOf(0) }
     var progressPage by remember { mutableIntStateOf(0) }
     var showLoadingWarning by remember { mutableStateOf(false) }
-
-    // Use Shared Global Loader (MainActivity)
-    val imageLoader = coil.compose.LocalImageLoader.current
+    var fileToUnlock by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
@@ -83,7 +78,7 @@ fun CompressView(onBack: () -> Unit) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     withContext(Dispatchers.Main) {
-                        currentState = ToolState.UNLOCKING
+                        fileToUnlock = fileName
                         isFileLoading = false
                     }
                 } else {
@@ -116,7 +111,7 @@ fun CompressView(onBack: () -> Unit) {
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         spaceSavedText = "REDUCED BY $spaceSaved% (${newDetails.size})"
-                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Outlined.Bolt)
+                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Filled.FlashOn)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -144,13 +139,13 @@ fun CompressView(onBack: () -> Unit) {
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("Compress", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("OPTIMIZE DOCUMENT SIZE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        Text("OPTIMIZE PDF SIZE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
                 LoadingStateView(accentColor, showLoadingWarning, "Analyzing file structure...")
             } else {
@@ -163,48 +158,18 @@ fun CompressView(onBack: () -> Unit) {
                             title = "Tap to enter file",
                             subtitle = "OPTIMIZE ANY PDF DOCUMENT",
                             accentColor = accentColor,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    ToolState.UNLOCKING -> {
-                        LockedFilePrompt(
-                            fileName = fileName,
-                            password = unlockPassword,
-                            onPasswordChange = { unlockPassword = it },
-                            onUnlock = {
-                                isFileLoading = true
-                                scope.launch(Dispatchers.IO) {
-                                    val decryptedUri = decryptToCache(context, selectedUri!!, unlockPassword)
-                                    if (decryptedUri != null) {
-                                        val count = getPageCount(context, decryptedUri, null)
-                                        withContext(Dispatchers.Main) {
-                                            selectedUri = decryptedUri
-                                            pageCount = count
-                                            currentState = ToolState.CONFIGURING
-                                            isFileLoading = false
-                                        }
-                                    } else {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                            isFileLoading = false
-                                        }
-                                    }
-                                }
-                            },
-                            onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
-                            accentColor = accentColor
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                             Spacer(Modifier.height(16.dp))
                             
-                            // UNIFIED PREVIEW: COVER MODE
                             UnifiedPdfPreview(
                                 uri = selectedUri!!,
                                 pageCount = pageCount,
                                 mode = PreviewMode.COVER,
-                                password = null, // Already decrypted
+                                password = null, 
                                 accentColor = accentColor
                             )
                             
@@ -284,7 +249,38 @@ fun CompressView(onBack: () -> Unit) {
                             accentColor = accentColor
                         )
                     }
+                    else -> {}
                 }
+            }
+
+            if (fileToUnlock != null) {
+                LockedFilePrompt(
+                    fileName = fileToUnlock!!,
+                    onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
+                    onUnlocked = { pass ->
+                        unlockPassword = pass
+                        isFileLoading = true
+                        scope.launch(Dispatchers.IO) {
+                            val decryptedUri = decryptToCache(context, selectedUri!!, pass)
+                            if (decryptedUri != null) {
+                                val count = getPageCount(context, decryptedUri, null)
+                                withContext(Dispatchers.Main) { 
+                                    selectedUri = decryptedUri
+                                    pageCount = count
+                                    currentState = ToolState.CONFIGURING
+                                    isFileLoading = false 
+                                    fileToUnlock = null
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) { 
+                                    Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    isFileLoading = false 
+                                }
+                            }
+                        }
+                    },
+                    accentColor = accentColor
+                )
             }
         }
     }

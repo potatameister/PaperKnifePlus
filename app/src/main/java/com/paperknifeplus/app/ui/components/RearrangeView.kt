@@ -59,6 +59,7 @@ fun RearrangeView(onBack: () -> Unit) {
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
+    var fileToUnlock by remember { mutableStateOf<String?>(null) }
 
     // Use Shared Global Loader (MainActivity)
     val imageLoader = coil.compose.LocalImageLoader.current
@@ -83,7 +84,7 @@ fun RearrangeView(onBack: () -> Unit) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     withContext(Dispatchers.Main) {
-                        currentState = ToolState.UNLOCKING
+                        fileToUnlock = fileName
                         isFileLoading = false
                     }
                 } else {
@@ -149,7 +150,7 @@ fun RearrangeView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
                 LoadingStateView(accentColor, showLoadingWarning, "Reading document structure...")
             } else {
@@ -162,36 +163,7 @@ fun RearrangeView(onBack: () -> Unit) {
                             title = "Tap to enter file",
                             subtitle = "REARRANGE ANY PDF DOCUMENT",
                             accentColor = accentColor,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    ToolState.UNLOCKING -> {
-                        LockedFilePrompt(
-                            fileName = fileName,
-                            password = unlockPassword,
-                            onPasswordChange = { unlockPassword = it },
-                            onUnlock = {
-                                isFileLoading = true
-                                scope.launch(Dispatchers.IO) {
-                                    val decryptedUri = decryptToCache(context, selectedUri!!, unlockPassword)
-                                    if (decryptedUri != null) {
-                                        val count = getPageCount(context, decryptedUri, null)
-                                        withContext(Dispatchers.Main) {
-                                            selectedUri = decryptedUri
-                                            pageOrder = (0 until count).toList()
-                                            currentState = ToolState.CONFIGURING
-                                            isFileLoading = false
-                                        }
-                                    } else {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                            isFileLoading = false
-                                        }
-                                    }
-                                }
-                            },
-                            onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
-                            accentColor = accentColor
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                     ToolState.CONFIGURING -> {
@@ -307,6 +279,36 @@ fun RearrangeView(onBack: () -> Unit) {
                         )
                     }
                 }
+            }
+
+            if (fileToUnlock != null) {
+                LockedFilePrompt(
+                    fileName = fileToUnlock!!,
+                    onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
+                    onUnlocked = { pass ->
+                        unlockPassword = pass
+                        isFileLoading = true
+                        scope.launch(Dispatchers.IO) {
+                            val decryptedUri = decryptToCache(context, selectedUri!!, pass)
+                            if (decryptedUri != null) {
+                                val count = getPageCount(context, decryptedUri, null)
+                                withContext(Dispatchers.Main) {
+                                    selectedUri = decryptedUri
+                                    pageOrder = (0 until count).toList()
+                                    currentState = ToolState.CONFIGURING
+                                    isFileLoading = false
+                                    fileToUnlock = null
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    isFileLoading = false
+                                }
+                            }
+                        }
+                    },
+                    accentColor = accentColor
+                )
             }
         }
     }

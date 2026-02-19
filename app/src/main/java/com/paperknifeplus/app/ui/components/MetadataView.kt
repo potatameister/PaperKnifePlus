@@ -56,6 +56,7 @@ fun MetadataView(onBack: () -> Unit) {
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
+    var fileToUnlock by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
@@ -77,7 +78,7 @@ fun MetadataView(onBack: () -> Unit) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
                 if (isEncrypted) {
                     withContext(Dispatchers.Main) {
-                        currentState = ToolState.UNLOCKING
+                        fileToUnlock = fileName
                         isFileLoading = false
                     }
                 } else {
@@ -119,7 +120,7 @@ fun MetadataView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", Icons.Outlined.Fingerprint)
+                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", Icons.Filled.Fingerprint)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -153,7 +154,7 @@ fun MetadataView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
                 LoadingStateView(accentColor, showLoadingWarning, "Reading file properties...")
             } else {
@@ -166,39 +167,7 @@ fun MetadataView(onBack: () -> Unit) {
                             title = "Tap to enter file",
                             subtitle = "EDIT PDF PROPERTIES",
                             accentColor = accentColor,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    ToolState.UNLOCKING -> {
-                        LockedFilePrompt(
-                            fileName = fileName,
-                            password = unlockPassword,
-                            onPasswordChange = { unlockPassword = it },
-                            onUnlock = {
-                                isFileLoading = true
-                                scope.launch(Dispatchers.IO) {
-                                    val decryptedUri = decryptToCache(context, selectedUri!!, unlockPassword)
-                                    if (decryptedUri != null) {
-                                        val count = getPageCount(context, decryptedUri, null)
-                                        loadMetadata(context, decryptedUri, null) { t, a, s, k, c, p ->
-                                            title = t; author = a; subject = s; keywords = k; creator = c; producer = p
-                                            withContext(Dispatchers.Main) {
-                                                selectedUri = decryptedUri
-                                                pageCount = count
-                                                currentState = ToolState.CONFIGURING
-                                                isFileLoading = false
-                                            }
-                                        }
-                                    } else {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                            isFileLoading = false
-                                        }
-                                    }
-                                }
-                            },
-                            onCancel = { selectedUri = null; currentState = ToolState.SELECTING },
-                            accentColor = accentColor
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                     ToolState.CONFIGURING -> {
@@ -209,7 +178,7 @@ fun MetadataView(onBack: () -> Unit) {
                                 uri = selectedUri!!,
                                 pageCount = pageCount,
                                 mode = PreviewMode.COVER,
-                                password = null, // Already decrypted
+                                password = null, 
                                 accentColor = accentColor
                             )
                             
@@ -278,7 +247,41 @@ fun MetadataView(onBack: () -> Unit) {
                             accentColor = accentColor
                         )
                     }
+                    else -> {}
                 }
+            }
+
+            if (fileToUnlock != null) {
+                LockedFilePrompt(
+                    fileName = fileToUnlock!!,
+                    onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
+                    onUnlocked = { pass ->
+                        unlockPassword = pass
+                        isFileLoading = true
+                        scope.launch(Dispatchers.IO) {
+                            val decryptedUri = decryptToCache(context, selectedUri!!, pass)
+                            if (decryptedUri != null) {
+                                val count = getPageCount(context, decryptedUri, null)
+                                loadMetadata(context, decryptedUri, null) { t, a, s, k, c, p ->
+                                    title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                                    withContext(Dispatchers.Main) {
+                                        selectedUri = decryptedUri
+                                        pageCount = count
+                                        currentState = ToolState.CONFIGURING
+                                        isFileLoading = false
+                                        fileToUnlock = null
+                                    }
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) { 
+                                    Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    isFileLoading = false 
+                                }
+                            }
+                        }
+                    },
+                    accentColor = accentColor
+                )
             }
         }
     }
