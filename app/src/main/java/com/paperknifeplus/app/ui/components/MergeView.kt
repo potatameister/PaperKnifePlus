@@ -259,27 +259,28 @@ fun MergeView(
                                             .pointerInput(Unit) {
                                                 detectDragGesturesAfterLongPress(
                                                     onDragStart = { draggedIndex = index },
-                                                    onDrag = { change, dragAmount ->
-                                                        change.consume()
-                                                        dragOffset += dragAmount.y
-                                                        
-                                                        val threshold = 180f // height of card + spacing
-                                                        val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
-                                                        
-                                                        if (dragOffset > threshold && currentIndex < selectedFiles.size - 1) {
-                                                            val newList = selectedFiles.toMutableList()
-                                                            Collections.swap(newList, currentIndex, currentIndex + 1)
-                                                            selectedFiles = newList
-                                                            draggedIndex = currentIndex + 1
-                                                            dragOffset -= threshold
-                                                        } else if (dragOffset < -threshold && currentIndex > 0) {
-                                                            val newList = selectedFiles.toMutableList()
-                                                            Collections.swap(newList, currentIndex, currentIndex - 1)
-                                                            selectedFiles = newList
-                                                            draggedIndex = currentIndex - 1
-                                                            dragOffset += threshold
-                                                        }
-                                                    },
+                                                                                                        onDrag = { change, dragAmount ->
+                                                                                                            change.consume()
+                                                                                                            dragOffset += dragAmount.y
+                                                                                                            
+                                                                                                            val itemHeight = 300f // Height of card + gap
+                                                                                                            val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
+                                                                                                            
+                                                                                                            // Detect slot jump
+                                                                                                            val offsetSlots = (dragOffset / itemHeight).toInt()
+                                                                                                            val targetIndex = (currentIndex + offsetSlots).coerceIn(0, selectedFiles.size - 1)
+                                                                                                            
+                                                                                                            if (targetIndex != currentIndex) {
+                                                                                                                val newList = selectedFiles.toMutableList()
+                                                                                                                val item = newList.removeAt(currentIndex)
+                                                                                                                newList.add(targetIndex, item)
+                                                                                                                selectedFiles = newList
+                                                                                                                draggedIndex = targetIndex
+                                                                                                                // Keep the item under the thumb by adjusting the relative offset
+                                                                                                                dragOffset -= (targetIndex - currentIndex) * itemHeight
+                                                                                                            }
+                                                                                                        },
+                                                    
                                                     onDragEnd = {
                                                         draggedIndex = null
                                                         dragOffset = 0f

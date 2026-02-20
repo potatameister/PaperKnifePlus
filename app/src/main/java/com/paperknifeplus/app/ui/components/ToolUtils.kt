@@ -387,9 +387,11 @@ suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? =
 
 suspend fun findTextInPdf(context: Context, uri: Uri, password: String?, query: String, startFromPage: Int): Int = withContext(Dispatchers.IO) {
     try {
+        com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(context)
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
             val stripper = PDFTextStripper()
+            stripper.sortByPosition = true
             val total = document.numberOfPages
             
             // Search from current page to end

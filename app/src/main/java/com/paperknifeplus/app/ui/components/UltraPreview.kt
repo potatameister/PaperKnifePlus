@@ -66,6 +66,7 @@ fun UltraPreview(
     var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     
     var links by remember { mutableStateOf<List<PdfLink>>(emptyList()) }
+    var pageSizes by remember { mutableStateOf<Map<Int, Pair<Float, Float>>>(emptyMap()) }
 
     val imageLoader = remember {
         ImageLoader.Builder(context)
@@ -80,12 +81,25 @@ fun UltraPreview(
 
     LaunchedEffect(uri) {
         links = getLinksFromPdf(context, uri, password)
+        // NITRO: Fetch actual page dimensions for accurate link mapping
+        withContext(Dispatchers.IO) {
+            try {
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    val document = if (password != null) com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream, password) else com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
+                    val sizes = document.pages.mapIndexed { index, page ->
+                        index to (page.mediaBox.width to page.mediaBox.height)
+                    }.toMap()
+                    withContext(Dispatchers.Main) { pageSizes = sizes }
+                    document.close()
+                }
+            } catch (e: Exception) {}
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(if (MaterialTheme.colorScheme.background == Color.Black) Color.Black else Color(0xFFF4F4F7))
     ) {
         // --- CONTINUOUS VERTICAL READER ---
         Box(
@@ -93,27 +107,28 @@ fun UltraPreview(
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
-                        scale = (scale * zoom).coerceIn(1f, 4f)
-                        if (scale > 1f) {
-                            offset = offset + pan
-                        } else {
-                            offset = androidx.compose.ui.geometry.Offset.Zero
+                        val newScale = (scale * zoom).coerceIn(1f, 5f)
+                        if (newScale != scale || newScale > 1f) {
+                            scale = newScale
+                            offset = if (scale > 1f) offset + pan else androidx.compose.ui.geometry.Offset.Zero
                         }
                     }
-                }
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    translationX = offset.x
-                    translationY = offset.y
                 }
         ) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = 100.dp, bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = offset.x
+                        translationY = offset.y
+                    },
+                contentPadding = PaddingValues(top = 80.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp), // SEAMLESS
+                horizontalAlignment = Alignment.CenterHorizontally,
+                userScrollEnabled = scale == 1f // Lock scroll when zoomed
             ) {
                 items(pageCount) { index ->
                     PdfPageReaderItem(
@@ -121,6 +136,7 @@ fun UltraPreview(
                         index = index,
                         password = password,
                         imageLoader = imageLoader,
+                        pageSize = pageSizes[index],
                         links = links.filter { it.pageIndex == index },
                         onLinkClick = { url ->
                             try {
@@ -135,23 +151,24 @@ fun UltraPreview(
             }
         }
 
-        // --- TOP BAR ---
+        // --- TOP BAR (Integrated) ---
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding(),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-            tonalElevation = 8.dp
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            tonalElevation = 2.dp,
+            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.05f))
         ) {
             Column {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Filled.ArrowBack, "Back")
+                        Icon(Icons.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
                     }
                     
                     if (isSearching) {
@@ -257,20 +274,19 @@ fun PdfPageReaderItem(
     index: Int,
     password: String?,
     imageLoader: ImageLoader,
+    pageSize: Pair<Float, Float>?,
     links: List<PdfLink>,
     onLinkClick: (String) -> Unit
 ) {
     val request = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 1.5f)
+        PdfPageRequest(uri, index, password, 1.5f) // High Res
     }
     
     BoxWithConstraints(
         modifier = Modifier
-            .fillMaxWidth(0.95f)
-            .aspectRatio(0.707f)
-            .clip(RoundedCornerShape(8.dp))
+            .fillMaxWidth()
+            .aspectRatio(pageSize?.let { it.first / it.second } ?: 0.707f)
             .background(Color.White)
-            .shadow(4.dp, RoundedCornerShape(8.dp))
     ) {
         val painter = rememberAsyncImagePainter(request, imageLoader)
         
@@ -287,22 +303,29 @@ fun PdfPageReaderItem(
             }
         }
 
-        links.forEach { link ->
-            val pageWidth = 595f 
-            val pageHeight = 842f
-            val scaleX = maxWidth.value / pageWidth
-            val scaleY = maxHeight.value / pageHeight
-            val left = link.rect.lowerLeftX * scaleX
-            val top = (pageHeight - link.rect.upperRightY) * scaleY
-            val width = (link.rect.upperRightX - link.rect.lowerLeftX) * scaleX
-            val height = (link.rect.upperRightY - link.rect.lowerLeftY) * scaleY
-            
-            Box(
-                modifier = Modifier
-                    .offset(x = left.dp, y = top.dp)
-                    .size(width = width.dp, height = height.dp)
-                    .clickable { onLinkClick(link.url) }
-            )
+        // --- ACCURATE LINK MAPPING ---
+        if (pageSize != null) {
+            links.forEach { link ->
+                val pageWidth = pageSize.first
+                val pageHeight = pageSize.second
+                
+                // Ratio of screen pixels to PDF points
+                val scaleX = maxWidth.value / pageWidth
+                val scaleY = maxHeight.value / pageHeight
+                
+                // PDF: (0,0) bottom-left. Box: (0,0) top-left.
+                val left = link.rect.lowerLeftX * scaleX
+                val top = (pageHeight - link.rect.upperRightY) * scaleY
+                val width = (link.rect.upperRightX - link.rect.lowerLeftX) * scaleX
+                val height = (link.rect.upperRightY - link.rect.lowerLeftY) * scaleY
+                
+                Box(
+                    modifier = Modifier
+                        .offset(x = left.dp, y = top.dp)
+                        .size(width = width.dp, height = height.dp)
+                        .clickable { onLinkClick(link.url) }
+                )
+            }
         }
     }
 }

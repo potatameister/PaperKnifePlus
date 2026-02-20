@@ -33,8 +33,9 @@ import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
 
 enum class PreviewMode {
-    GRID,   // Scrollable grid (Split, Rearrange, etc.)
-    COVER   // Single high-res page (Compress, Protect, etc.)
+    GRID,   // Scrollable grid (Split, etc.)
+    COVER,  // Single high-res page (Compress, Protect, etc.)
+    REORDER // Draggable grid (Rearrange)
 }
 
 @Composable
@@ -45,7 +46,9 @@ fun UnifiedPdfPreview(
     password: String? = null,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     selectedPages: Set<Int>? = null,
-    onToggleSelection: ((Int) -> Unit)? = null
+    onToggleSelection: ((Int) -> Unit)? = null,
+    pageOrder: List<Int>? = null,
+    onOrderChange: ((List<Int>) -> Unit)? = null
 ) {
     val context = LocalContext.current
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
@@ -102,6 +105,90 @@ fun UnifiedPdfPreview(
                             modifier = Modifier.padding(8.dp).size(20.dp)
                         )
                     }
+                }
+            }
+        }
+    } else if (mode == PreviewMode.REORDER && pageOrder != null && onOrderChange != null) {
+        // --- GOLD STANDARD: DRAGGABLE REORDER GRID ---
+        var draggedIndex by remember { mutableStateOf<Int?>(null) }
+        var dragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+        
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+        ) {
+            itemsIndexed(pageOrder, key = { _, pageIdx -> pageIdx }) { index, pageIdx ->
+                val isDragging = draggedIndex == index
+                val scale by animateFloatAsState(if (isDragging) 1.15f else 1f)
+                val zIndex = if (isDragging) 10f else 1f
+                
+                Box(
+                    modifier = Modifier
+                        .zIndex(zIndex)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            if (isDragging) {
+                                translationX = dragOffset.x
+                                translationY = dragOffset.y
+                            }
+                        }
+                        .pointerInput(Unit) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = { draggedIndex = index },
+                                onDragEnd = {
+                                    draggedIndex = null
+                                    dragOffset = androidx.compose.ui.geometry.Offset.Zero
+                                },
+                                onDragCancel = {
+                                    draggedIndex = null
+                                    dragOffset = androidx.compose.ui.geometry.Offset.Zero
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    dragOffset += dragAmount
+                                    
+                                    val cellWidth = 350f // Approx cell width
+                                    val cellHeight = 500f // Approx cell height
+                                    val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
+                                    
+                                    val colOffset = (dragOffset.x / cellWidth).toInt()
+                                    val rowOffset = (dragOffset.y / cellHeight).toInt()
+                                    
+                                    val targetIndex = (currentIndex + colOffset + (rowOffset * 3)).coerceIn(0, pageOrder.size - 1)
+                                    
+                                    if (targetIndex != currentIndex) {
+                                        val newList = pageOrder.toMutableList()
+                                        val item = newList.removeAt(currentIndex)
+                                        newList.add(targetIndex, item)
+                                        onOrderChange(newList)
+                                        
+                                        // Compensate dragOffset to prevent jitter
+                                        val colDiff = (targetIndex % 3) - (currentIndex % 3)
+                                        val rowDiff = (targetIndex / 3) - (currentIndex / 3)
+                                        
+                                        draggedIndex = targetIndex
+                                        dragOffset = androidx.compose.ui.geometry.Offset(
+                                            dragOffset.x - colDiff * cellWidth,
+                                            dragOffset.y - rowDiff * cellHeight
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                ) {
+                    PdfPageItem(
+                        uri = uri,
+                        index = pageIdx,
+                        password = password,
+                        imageLoader = imageLoader,
+                        accentColor = accentColor,
+                        onClick = { lightboxPage = pageIdx },
+                        modifier = if (isDragging) Modifier.shadow(12.dp, RoundedCornerShape(12.dp)) else Modifier
+                    )
                 }
             }
         }

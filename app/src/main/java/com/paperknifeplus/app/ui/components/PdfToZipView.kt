@@ -159,7 +159,14 @@ fun PdfToZipView(onBack: () -> Unit) {
                     }
                 }
                 ToolState.PROCESSING -> {
-                    LoadingStateView(accentColor, false, "Creating archive...")
+                    ProcessingStateView(
+                        accentColor = accentColor,
+                        uri = selectedUri,
+                        text = "Creating archive...",
+                        current = 0,
+                        total = 0,
+                        showWarning = false
+                    )
                 }
                 ToolState.SUCCESS -> {
                     SuccessView(

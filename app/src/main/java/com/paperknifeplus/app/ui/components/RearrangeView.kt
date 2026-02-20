@@ -43,7 +43,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun RearrangeView(onBack: () -> Unit) {
+fun RearrangeView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -51,6 +54,7 @@ fun RearrangeView(onBack: () -> Unit) {
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
@@ -116,7 +120,8 @@ fun RearrangeView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", Icons.Filled.GridView)
+                        outputUri = saveUri
+                        SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", Icons.Filled.GridView, saveUri, pageOrder.size)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -193,9 +198,11 @@ fun RearrangeView(onBack: () -> Unit) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageOrder.size,
-                                    mode = PreviewMode.GRID,
+                                    mode = PreviewMode.REORDER,
                                     password = null, // Already decrypted
-                                    accentColor = accentColor
+                                    accentColor = accentColor,
+                                    pageOrder = pageOrder,
+                                    onOrderChange = { pageOrder = it }
                                 )
                                 
                                 // Overlay instruction for Rearrange
@@ -205,45 +212,12 @@ fun RearrangeView(onBack: () -> Unit) {
                                     shape = RoundedCornerShape(20.dp)
                                 ) {
                                     Text(
-                                        "Long-press to drag (coming soon) • Use buttons to reorder", 
+                                        "Long-press to drag pages", 
                                         color = Color.White, 
                                         fontSize = 8.sp, 
                                         fontWeight = FontWeight.Black,
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                     )
-                                }
-                            }
-
-                            // Horizontal Scroller for Quick Reorder Controls
-                            // Since the user reported lag with the old UI, we move the reorder logic 
-                            // to a separate focused control row to keep the grid pure.
-                            Card(
-                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-                            ) {
-                                Row(
-                                    Modifier.padding(16.dp), 
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column {
-                                        Text("REORDER SELECTED", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor)
-                                        Text("Tap a page in the grid to select it", fontSize = 10.sp, color = Color.Gray)
-                                    }
-                                    
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        FilledIconButton(
-                                            onClick = { /* Selection logic would go here if index was tracked */ },
-                                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = if (isDark) Color(0xFF18181B) else Color(0xFFF4F4F5))
-                                        ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, modifier = Modifier.size(18.dp)) }
-                                        
-                                        FilledIconButton(
-                                            onClick = { /* Selection logic */ },
-                                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = if (isDark) Color(0xFF18181B) else Color(0xFFF4F4F5))
-                                        ) { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(18.dp)) }
-                                    }
                                 }
                             }
 
@@ -274,7 +248,16 @@ fun RearrangeView(onBack: () -> Unit) {
                             subMessage = "Page order updated successfully",
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { selectedUri = null; currentState = ToolState.SELECTING },
+                            onProcessMore = { 
+                                selectedUri = null
+                                outputUri = null
+                                currentState = ToolState.SELECTING 
+                            },
+                            onPreview = {
+                                outputUri?.let { uri ->
+                                    onOpenPreview(uri, fileName, pageOrder.size)
+                                }
+                            },
                             accentColor = accentColor
                         )
                     }

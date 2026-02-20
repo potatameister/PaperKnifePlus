@@ -183,7 +183,13 @@ class MainActivity : ComponentActivity() {
                                         )
                                         "repair" -> RepairView(onBack = { currentTool = null })
                                         "rotate" -> RotateView(onBack = { currentTool = null })
-                                        "rearrange" -> RearrangeView(onBack = { currentTool = null })
+                                        "rearrange" -> RearrangeView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "protect" -> ProtectView(onBack = { currentTool = null })
                                         "unlock" -> UnlockView(onBack = { currentTool = null })
                                         "grayscale" -> GrayscaleView(onBack = { currentTool = null })

@@ -28,6 +28,9 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 - **Type B (Cover Preview):** Optimized for single-doc processing (Compress, Protect).
     - **Layout:** High-res single-page card (1.2f scale).
     - **Deep Zoom:** Connected to a `PageLightbox` with bound-aware panning and pinch-to-zoom.
+- **Type C (Ultra Preview):** Premium reading experience.
+    - **Layout:** High-res vertical scroll (`LazyColumn`) with 1.5f crisp rendering.
+    - **Interactivity:** Clickable URLs (Link Support), text search, and multi-point zoom.
 
 ### 3. Navigation Architecture
 - **Lazy Pager Navigation:** The main app shell (`Home`, `Tools`, `History`, `Settings`) uses a `HorizontalPager`.
@@ -47,6 +50,11 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
+- **2026-02-20:** **ULTRA PREVIEW RELEASE**:
+    - Implemented **Premium Ultra Preview** PDF reader with continuous vertical scrolling.
+    - Added **Interactive Link Support** (clickable URLs) and **Advanced Text Search**.
+    - Integrated **Home & History Entry Points**: Read any PDF directly from Home or revisit results from History.
+    - Added **"OPEN PREVIEW"** call-to-action on tool success pages.
 - **2026-02-19:** **GOLD STANDARD & BLITZ 4.0**:
     - Refactored **Split** and **Delete** tools to "Gold Standard" (Visual Grid Selection + Sync Range Input).
     - Optimized Nitro Engine to **Blitz 0.4f** scale for crash-free high-speed scrolling.
