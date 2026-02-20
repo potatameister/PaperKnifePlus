@@ -422,16 +422,15 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                         val last = textPositions[index + query.length - 1]
                         
                         val page = document.getPage(currentPageNo - 1)
-                        val pageHeight = page.mediaBox.height
                         
                         val x = first.xDirAdj
-                        val y = pageHeight - first.yDirAdj
+                        val y = first.yDirAdj
                         val w = (last.xDirAdj + last.widthDirAdj) - first.xDirAdj
                         val h = first.heightDir
                         
                         matches.add(TextMatch(
                             currentPageNo - 1,
-                            PDRectangle(x, y - h, x + w, y)
+                            PDRectangle(x, y - h, x + w, y) // Y is top of text, Y-H is bottom
                         ))
                         index = text.indexOf(query, index + 1, ignoreCase = true)
                     }

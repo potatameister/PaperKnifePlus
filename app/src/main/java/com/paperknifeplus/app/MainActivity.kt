@@ -206,6 +206,13 @@ class MainActivity : ComponentActivity() {
                                         "pdf2img" -> PdfToImageView(onBack = { currentTool = null })
                                         "pdf2text" -> PdfToTextView(onBack = { currentTool = null })
                                         "pdf2zip" -> PdfToZipView(onBack = { currentTool = null })
+                                        "sign" -> SignView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
                                         "ultra_preview" -> {
                                             previewData?.let { (uri, name, count) ->

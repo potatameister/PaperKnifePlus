@@ -67,7 +67,7 @@ fun HomeView(
             Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("split", "Split", "EXTRACT", Icons.Filled.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("protect", "Protect", "SECURE", Icons.Filled.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF))
+            Tool("sign", "Sign", "SIGNATURE", Icons.Filled.Draw, "Edit", Color(0xFF6366F1), Color(0xFFEEF2FF))
         )
     }
 

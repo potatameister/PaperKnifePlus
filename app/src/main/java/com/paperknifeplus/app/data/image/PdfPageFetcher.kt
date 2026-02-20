@@ -103,7 +103,8 @@ object PdDocumentPool {
 
         return try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val mem = MemoryUsageSetting.setupMainMemoryOnly()
+                // NITRO 5.0: Use temp files for 7.0f resolution to avoid OOM
+                val mem = MemoryUsageSetting.setupTempFileOnly()
                 val doc = if (password != null) PDDocument.load(inputStream, password, mem) else PDDocument.load(inputStream, mem)
                 docPool[uri] = doc
                 lastUsed[uri] = System.currentTimeMillis()

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -79,6 +80,7 @@ fun UltraPreview(
     
     var links by remember { mutableStateOf<List<PdfLink>>(emptyList()) }
     var pageSizes by remember { mutableStateOf<Map<Int, Pair<Float, Float>>>(emptyMap()) }
+    var pageTexts by remember { mutableStateOf<Map<Int, String>>(emptyMap()) }
     var isInitializing by remember { mutableStateOf(true) }
     var activeUri by remember { mutableStateOf(uri) }
     var activePassword by remember { mutableStateOf(password) }
@@ -149,6 +151,14 @@ fun UltraPreview(
                         index to (page.mediaBox.width to page.mediaBox.height)
                     }.toMap()
                     
+                    val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
+                    val texts = mutableMapOf<Int, String>()
+                    for (i in 0 until count) {
+                        stripper.startPage = i + 1
+                        stripper.endPage = i + 1
+                        texts[i] = stripper.getText(document)
+                    }
+
                     val extractedLinks = mutableListOf<PdfLink>()
                     document.pages.forEachIndexed { index, page ->
                         page.annotations.filterIsInstance<com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink>().forEach { link ->
@@ -162,6 +172,7 @@ fun UltraPreview(
                     withContext(Dispatchers.Main) { 
                         activePageCount = count
                         pageSizes = sizes 
+                        pageTexts = texts
                         links = extractedLinks
                         isInitializing = false
                     }
@@ -224,6 +235,7 @@ fun UltraPreview(
                             password = activePassword,
                             imageLoader = imageLoader,
                             pageSize = pageSizes[index],
+                            pageText = pageTexts[index] ?: "",
                             links = links.filter { it.pageIndex == index },
                             matches = searchResults.filter { it.pageIndex == index },
                             onLinkClick = { url ->
@@ -503,6 +515,7 @@ fun PdfPageReaderItem(
     password: String?,
     imageLoader: ImageLoader,
     pageSize: Pair<Float, Float>?,
+    pageText: String,
     links: List<PdfLink>,
     matches: List<TextMatch>,
     onLinkClick: (String) -> Unit
@@ -512,83 +525,93 @@ fun PdfPageReaderItem(
         PdfPageRequest(uri, index, password, 0.7f, priority = 1) 
     }
     val highResRequest = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 5.0f, priority = 0) 
+        PdfPageRequest(uri, index, password, 7.0f, priority = 0) 
     }
     
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(pageSize?.let { it.first / it.second } ?: 0.707f)
-            .background(Color.White)
-    ) {
-        val lowResPainter = rememberAsyncImagePainter(lowResRequest, imageLoader)
-        val highResPainter = rememberAsyncImagePainter(highResRequest, imageLoader)
-        
-        // Layer 1: Ghost/Thumb (Instantly visible from cache)
-        Image(
-            painter = lowResPainter,
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
-        )
-
-        // Layer 2: High-Res (Fades in over ghost)
-        AnimatedVisibility(
-            visible = highResPainter.state is AsyncImagePainter.State.Success,
-            enter = fadeIn(tween(300)),
-            exit = fadeOut()
+    SelectionContainer {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(pageSize?.let { it.first / it.second } ?: 0.707f)
+                .background(Color.White)
         ) {
+            val lowResPainter = rememberAsyncImagePainter(lowResRequest, imageLoader)
+            val highResPainter = rememberAsyncImagePainter(highResRequest, imageLoader)
+            
+            // Layer 1: Ghost/Thumb (Instantly visible from cache)
             Image(
-                painter = highResPainter,
-                contentDescription = "Page ${index + 1}",
+                painter = lowResPainter,
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
             )
-        }
 
-        if (lowResPainter.state is AsyncImagePainter.State.Loading && highResPainter.state is AsyncImagePainter.State.Loading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = PaperPink, modifier = Modifier.size(32.dp))
-            }
-        }
-
-        // --- ACCURATE LINK & MATCH MAPPING (NITRO ENGINE 3.0) ---
-        if (pageSize != null) {
-            val pageWidth = pageSize.first
-            val pageHeight = pageSize.second
-            val scaleX = maxWidth.value / pageWidth
-            val scaleY = maxHeight.value / pageHeight
-
-            // Draw Links (PDF coords are bottom-up)
-            links.forEach { link ->
-                val left = link.rect.lowerLeftX * scaleX
-                val top = (pageHeight - link.rect.upperRightY) * scaleY
-                val width = (link.rect.upperRightX - link.rect.lowerLeftX) * scaleX
-                val height = (link.rect.upperRightY - link.rect.lowerLeftY) * scaleY
-                
-                Box(
-                    modifier = Modifier
-                        .offset(x = left.dp, y = top.dp)
-                        .size(width = width.dp, height = height.dp)
-                        .clickable { onLinkClick(link.url) }
+            // Layer 2: High-Res (Fades in over ghost)
+            AnimatedVisibility(
+                visible = highResPainter.state is AsyncImagePainter.State.Success,
+                enter = fadeIn(tween(300)),
+                exit = fadeOut()
+            ) {
+                Image(
+                    painter = highResPainter,
+                    contentDescription = "Page ${index + 1}",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
                 )
             }
 
-            // Draw Search Highlights
-            matches.forEach { match ->
-                // NITRO 4.0: Precise Point-to-Dp Mapping
-                val left = match.rect.lowerLeftX * scaleX
-                val top = (pageHeight - match.rect.upperRightY) * scaleY
-                val width = match.rect.width * scaleX
-                val height = match.rect.height * scaleY
+            // Invisible Selectable Text Layer
+            androidx.compose.material3.Text(
+                text = pageText,
+                modifier = Modifier.fillMaxSize().alpha(0f), 
+                fontSize = 1.sp, 
+                lineHeight = 1.sp
+            )
 
-                Box(
-                    modifier = Modifier
-                        .offset(x = left.dp, y = top.dp)
-                        .size(width = width.dp, height = height.dp)
-                        .background(Color.Yellow.copy(alpha = 0.3f))
-                        .border(0.5.dp, Color.Yellow.copy(alpha = 0.5f))
-                )
+            if (lowResPainter.state is AsyncImagePainter.State.Loading && highResPainter.state is AsyncImagePainter.State.Loading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PaperPink, modifier = Modifier.size(32.dp))
+                }
+            }
+
+            // --- ACCURATE LINK & MATCH MAPPING (NITRO ENGINE 3.0) ---
+            if (pageSize != null) {
+                val pageWidth = pageSize.first
+                val pageHeight = pageSize.second
+                val scaleX = maxWidth.value / pageWidth
+                val scaleY = maxHeight.value / pageHeight
+
+                // Draw Links (PDF coords are bottom-up)
+                links.forEach { link ->
+                    val left = link.rect.lowerLeftX * scaleX
+                    val top = (pageHeight - link.rect.upperRightY) * scaleY
+                    val width = (link.rect.upperRightX - link.rect.lowerLeftX) * scaleX
+                    val height = (link.rect.upperRightY - link.rect.lowerLeftY) * scaleY
+                    
+                    Box(
+                        modifier = Modifier
+                            .offset(x = left.dp, y = top.dp)
+                            .size(width = width.dp, height = height.dp)
+                            .clickable { onLinkClick(link.url) }
+                    )
+                }
+
+                // Draw Search Highlights
+                matches.forEach { match ->
+                    // NITRO 5.0: Direct Top-Down Mapping using raw PDF points
+                    val left = match.rect.lowerLeftX * scaleX
+                    val top = match.rect.lowerLeftY * scaleY // PDRectangle(x, y-h, x+w, y) -> lowerLeftY is top
+                    val width = match.rect.width * scaleX
+                    val height = match.rect.height * scaleY
+
+                    Box(
+                        modifier = Modifier
+                            .offset(x = left.dp, y = top.dp)
+                            .size(width = width.dp, height = height.dp)
+                            .background(Color.Yellow.copy(alpha = 0.3f))
+                            .border(0.5.dp, Color.Yellow.copy(alpha = 0.5f))
+                    )
+                }
             }
         }
     }

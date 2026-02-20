@@ -118,7 +118,7 @@ fun UnifiedPdfPreview(
             }
         }
     } else if (mode == PreviewMode.REORDER && pageOrder != null && onOrderChange != null) {
-        // --- NITRO REORDER 5.0: FINGER-ACCURATE DRAGGING ---
+        // --- NITRO REORDER 6.0: FINGER-ACCURATE & NICE SWAPS ---
         val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
         var draggedIndex by remember { mutableStateOf<Int?>(null) }
         var dragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
@@ -134,10 +134,10 @@ fun UnifiedPdfPreview(
                     val dragY = dragOffset.y
                     val scrollThreshold = containerHeight * 0.15f
                     
-                    if (dragY < -scrollThreshold) gridState.animateScrollBy(-300f)
-                    else if (dragY > scrollThreshold) gridState.animateScrollBy(300f)
+                    if (dragY < -scrollThreshold) gridState.animateScrollBy(-400f)
+                    else if (dragY > scrollThreshold) gridState.animateScrollBy(400f)
                     else break
-                    kotlinx.coroutines.delay(15)
+                    kotlinx.coroutines.delay(10)
                 }
             }
         }
@@ -152,7 +152,7 @@ fun UnifiedPdfPreview(
         ) {
             itemsIndexed(visualList, key = { _, pageIdx -> pageIdx }) { index, pageIdx ->
                 val isDragging = draggedIndex == index
-                val scale by animateFloatAsState(if (isDragging) 1.2f else 1f, spring(stiffness = Spring.StiffnessLow))
+                val scale by animateFloatAsState(if (isDragging) 1.25f else 1f, spring(stiffness = Spring.StiffnessLow))
                 
                 Box(
                     modifier = Modifier
@@ -188,13 +188,14 @@ fun UnifiedPdfPreview(
                                     val currentDragged = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                     val layoutInfo = gridState.layoutInfo
                                     
-                                    // 1. Find the target item under the finger
-                                    // We use layoutInfo to find which item's bounds contain the current drag position
+                                    // NITRO HIT-TEST: Use absolute coordinates for target detection
                                     val draggedItemInfo = layoutInfo.visibleItemsInfo.find { it.index == currentDragged } ?: return@detectDragGesturesAfterLongPress
                                     
+                                    // Finger center in absolute coordinates
                                     val fingerX = draggedItemInfo.offset.x + initialTouchPoint.x + dragOffset.x
                                     val fingerY = draggedItemInfo.offset.y + initialTouchPoint.y + dragOffset.y
                                     
+                                    // Find target item by checking if finger is within its bounds
                                     val targetItem = layoutInfo.visibleItemsInfo.find { item ->
                                         fingerX.toInt() in item.offset.x..(item.offset.x + item.size.width) &&
                                         fingerY.toInt() in item.offset.y..(item.offset.y + item.size.height)
@@ -203,16 +204,20 @@ fun UnifiedPdfPreview(
                                     if (targetItem != null && targetItem.index != currentDragged) {
                                         val targetIdx = targetItem.index
                                         if (targetIdx < visualList.size) {
+                                            // Perform swap in the visual list
                                             val item = visualList.removeAt(currentDragged)
                                             visualList.add(targetIdx, item)
                                             
-                                            // NITRO COMPENSATION: Recalculate offset to keep item under finger
-                                            val prevOffset = draggedItemInfo.offset
-                                            val newOffset = targetItem.offset
-                                            dragOffset = androidx.compose.ui.geometry.Offset(
-                                                dragOffset.x + (prevOffset.x - newOffset.x),
-                                                dragOffset.y + (prevOffset.y - newOffset.y)
-                                            )
+                                            // Recalculate dragOffset to prevent item jumping
+                                            val newTargetInfo = layoutInfo.visibleItemsInfo.find { it.index == targetIdx }
+                                            if (newTargetInfo != null) {
+                                                val prevOffset = draggedItemInfo.offset
+                                                val newOffset = newTargetInfo.offset
+                                                dragOffset = androidx.compose.ui.geometry.Offset(
+                                                    dragOffset.x + (prevOffset.x - newOffset.x),
+                                                    dragOffset.y + (prevOffset.y - newOffset.y)
+                                                )
+                                            }
                                             draggedIndex = targetIdx
                                         }
                                     }
@@ -228,7 +233,7 @@ fun UnifiedPdfPreview(
                         accentColor = accentColor,
                         onClick = { if (mode != PreviewMode.REORDER) lightboxPage = pageIdx },
                         scale = 0.6f,
-                        modifier = if (isDragging) Modifier.shadow(24.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
+                        modifier = if (isDragging) Modifier.shadow(32.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
                     )
                 }
             }
