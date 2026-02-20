@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,6 +43,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RearrangeView(
     onBack: () -> Unit,
@@ -164,7 +166,7 @@ fun RearrangeView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.GridView,
+                            icon = Icons.Filled.SwapVert, // Updated icon
                             title = "Tap to enter file",
                             subtitle = "REARRANGE ANY PDF DOCUMENT",
                             accentColor = accentColor,
@@ -173,24 +175,19 @@ fun RearrangeView(
                     }
                     ToolState.CONFIGURING -> {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF09090B) else Color.White),
-                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                            // Header Info
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Surface(Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = accentColor.copy(alpha = 0.1f)) {
-                                        Icon(Icons.Filled.Description, null, tint = accentColor, modifier = Modifier.padding(10.dp))
-                                    }
-                                    Spacer(Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                                        Text(text = "${pageOrder.size} Pages", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                                    }
-                                    IconButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) { 
-                                        Icon(imageVector = Icons.Filled.Close, contentDescription = "Close", tint = Color.Gray, modifier = Modifier.size(20.dp)) 
-                                    }
+                                Column {
+                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
+                                    Text("${pageOrder.size} PAGES • DRAG TO SORT", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                }
+                                
+                                IconButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) { 
+                                    Icon(Icons.Filled.Close, "Clear", tint = Color.Gray, modifier = Modifier.size(20.dp)) 
                                 }
                             }
 
@@ -223,7 +220,7 @@ fun RearrangeView(
 
                             Button(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-reordered.pdf") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                                 shape = RoundedCornerShape(20.dp)
                             ) {

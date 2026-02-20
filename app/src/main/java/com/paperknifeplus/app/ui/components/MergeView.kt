@@ -251,11 +251,15 @@ fun MergeView(
                                             .graphicsLayer { translationY = itemOffset }
                                             .animateItemPlacement(
                                                 animationSpec = spring(
-                                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                                    stiffness = Spring.StiffnessMedium
+                                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                                    stiffness = Spring.StiffnessLow
                                                 )
                                             )
-                                            .shadow(if (isDragging) 12.dp else 0.dp, RoundedCornerShape(20.dp))
+                                            .shadow(
+                                                elevation = if (isDragging) 16.dp else 0.dp,
+                                                shape = RoundedCornerShape(20.dp),
+                                                spotColor = accentColor
+                                            )
                                             .pointerInput(Unit) {
                                                 detectDragGesturesAfterLongPress(
                                                     onDragStart = { draggedIndex = index },

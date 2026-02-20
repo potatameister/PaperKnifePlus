@@ -385,38 +385,55 @@ suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? =
     }
 }
 
-suspend fun findTextInPdf(context: Context, uri: Uri, password: String?, query: String, startFromPage: Int): Int = withContext(Dispatchers.IO) {
+import com.tom_roush.pdfbox.text.TextPosition
+
+data class TextMatch(
+    val pageIndex: Int,
+    val rect: PDRectangle
+)
+
+/**
+ * NITRO ENGINE: Advanced Search.
+ * Returns coordinates for all occurrences of a query.
+ */
+suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, query: String): List<TextMatch> = withContext(Dispatchers.IO) {
+    val matches = mutableListOf<TextMatch>()
+    if (query.isBlank()) return@withContext matches
+    
     try {
-        com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(context)
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val stripper = PDFTextStripper()
+            
+            val stripper = object : PDFTextStripper() {
+                override fun writeString(text: String?, textPositions: MutableList<TextPosition>?) {
+                    if (text == null || textPositions == null) return
+                    
+                    var index = text.indexOf(query, 0, ignoreCase = true)
+                    while (index != -1) {
+                        val first = textPositions[index]
+                        val last = textPositions[index + query.length - 1]
+                        
+                        // Capture bounding box
+                        matches.add(TextMatch(
+                            currentPageNo - 1,
+                            PDRectangle(
+                                first.xDirAdj, 
+                                first.yDirAdj - first.heightDir, 
+                                (last.xDirAdj + last.widthDirAdj) - first.xDirAdj, 
+                                first.heightDir * 1.2f // Add slight padding
+                            )
+                        ))
+                        index = text.indexOf(query, index + 1, ignoreCase = true)
+                    }
+                }
+            }
+            
             stripper.sortByPosition = true
-            val total = document.numberOfPages
-            
-            // Search from current page to end
-            for (i in startFromPage..total) {
-                stripper.startPage = i
-                stripper.endPage = i
-                if (stripper.getText(document).contains(query, ignoreCase = true)) {
-                    document.close()
-                    return@withContext i - 1
-                }
-            }
-            
-            // Wrap around search from beginning to current page
-            for (i in 1 until startFromPage) {
-                stripper.startPage = i
-                stripper.endPage = i
-                if (stripper.getText(document).contains(query, ignoreCase = true)) {
-                    document.close()
-                    return@withContext i - 1
-                }
-            }
+            stripper.getText(document) // Triggers writeString calls
             document.close()
         }
-    } catch (e: Exception) { }
-    -1
+    } catch (e: Exception) {}
+    matches
 }
 
 suspend fun getLinksFromPdf(context: Context, uri: Uri, password: String?): List<PdfLink> = withContext(Dispatchers.IO) {
