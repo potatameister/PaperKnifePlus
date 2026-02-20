@@ -388,3 +388,100 @@ fun MergeView(
         )
     }
 }
+
+@Composable
+fun MergeFileItem(
+    file: MergeFile,
+    index: Int,
+    totalCount: Int,
+    isDark: Boolean,
+    accentColor: Color,
+    imageLoader: coil.ImageLoader,
+    onDelete: () -> Unit,
+    onUnlock: () -> Unit,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF0F0F12) else Color.White),
+        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Thumbnail / Icon
+            Surface(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clickable(enabled = !file.isLocked || file.isUnlocked) { onClick() },
+                shape = RoundedCornerShape(12.dp),
+                color = accentColor.copy(alpha = 0.05f)
+            ) {
+                if (file.isLocked && !file.isUnlocked) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Outlined.Lock, null, tint = accentColor, modifier = Modifier.size(24.dp))
+                    }
+                } else {
+                    val request = remember(file.uri, file.decryptedUri, file.password) { 
+                        PdfPageRequest(file.decryptedUri ?: file.uri, 0, if (file.decryptedUri != null) null else file.password, 0.3f) 
+                    }
+                    Image(
+                        painter = rememberAsyncImagePainter(request, imageLoader),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+            
+            Spacer(Modifier.width(16.dp))
+            
+            // Details
+            Column(Modifier.weight(1f)) {
+                Text(file.name, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(file.size, fontSize = 10.sp, color = Color.Gray)
+                    if (file.isLocked) {
+                        Spacer(Modifier.width(8.dp))
+                        Surface(
+                            color = if (file.isUnlocked) Color(0xFF10B981).copy(alpha = 0.1f) else accentColor.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                if (file.isUnlocked) "UNLOCKED" else "LOCKED",
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                fontSize = 7.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (file.isUnlocked) Color(0xFF10B981) else accentColor
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Actions
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (file.isLocked && !file.isUnlocked) {
+                    IconButton(onClick = onUnlock) {
+                        Icon(Icons.Filled.LockOpen, null, tint = accentColor, modifier = Modifier.size(20.dp))
+                    }
+                }
+                
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Filled.Delete, null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                }
+
+                Spacer(Modifier.width(4.dp))
+                
+                Icon(
+                    Icons.Filled.DragHandle, 
+                    null, 
+                    tint = Color.Gray.copy(alpha = 0.3f), 
+                    modifier = Modifier.size(24.dp).padding(4.dp)
+                )
+            }
+        }
+    }
+}
