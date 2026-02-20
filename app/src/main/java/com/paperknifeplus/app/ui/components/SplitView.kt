@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -56,6 +57,7 @@ fun SplitView(
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
+    var progressCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
@@ -148,6 +150,7 @@ fun SplitView(
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
+                    withContext(Dispatchers.Main) { progressCount = 0 }
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                         val newDocument = PDDocument()
@@ -155,6 +158,7 @@ fun SplitView(
                         selectedPages.toList().sorted().forEach { index ->
                             if (index < document.numberOfPages) {
                                 newDocument.addPage(document.getPage(index))
+                                withContext(Dispatchers.Main) { progressCount++ }
                             }
                         }
                         

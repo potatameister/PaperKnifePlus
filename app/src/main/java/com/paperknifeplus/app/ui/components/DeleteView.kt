@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -51,6 +52,7 @@ fun DeleteView(
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
+    var progressCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
@@ -141,21 +143,24 @@ fun DeleteView(
         uri?.let { saveUri ->
             currentState = ToolState.PROCESSING
             val startTime = System.currentTimeMillis()
-            scope.launch(Dispatchers.IO) {
-                try {
-                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                        val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
-                        val newDocument = PDDocument()
-                        
-                        for (i in 0 until document.numberOfPages) {
-                            if (!pagesToDeleteSet.contains(i)) {
-                                newDocument.addPage(document.getPage(i))
-                            }
-                        }
-                        
-                        saveAndFlush(context, newDocument, saveUri)
-                        document.close()
-                    }
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                withContext(Dispatchers.Main) { progressCount = 0 }
+                                context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
+                                    val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
+                                    val newDocument = PDDocument()
+                                    for (i in 0 until document.numberOfPages) {
+                                        if (!pagesToDeleteSet.contains(i)) {
+                                            newDocument.addPage(document.getPage(i))
+                                        }
+                                        if (pagesToDeleteSet.contains(i)) {
+                                            withContext(Dispatchers.Main) { progressCount++ }
+                                        }
+                                    }
+                                    saveAndFlush(context, newDocument, saveUri)
+                                    document.close()
+                                }
+            
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     val finalCount = getPageCount(context, saveUri, null)
