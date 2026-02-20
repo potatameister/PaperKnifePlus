@@ -26,6 +26,7 @@ import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionURI
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.tom_roush.pdfbox.text.TextPosition
+import com.paperknifeplus.app.data.image.PdDocumentPool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -56,8 +57,6 @@ object PreferencesManager {
     }
 }
 
-import com.paperknifeplus.app.data.image.PdDocumentPool
-
 // Advanced Memory Cache and Pool for Bitmaps
 object BitmapCache {
     private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
@@ -83,7 +82,7 @@ object BitmapCache {
 
 // Bitmap Pool: NITRO 4.0 - Size-Aware Pooling
 object BitmapPool {
-    private val pool = mutableMapOf<Pair<Int, Int>, MutableList<Bitmap>>()
+    private val pool = mutableMapOf<Triple<Int, Int, Bitmap.Config>, MutableList<Bitmap>>()
     private val maxPoolCount: Int by lazy {
         // High-end: 24 slots, Low-end: 8 slots
         val memoryClass = (Runtime.getRuntime().maxMemory() / (1024 * 1024)).toInt()
@@ -93,7 +92,7 @@ object BitmapPool {
 
     fun get(width: Int, height: Int, config: Bitmap.Config): Bitmap {
         synchronized(this) {
-            val key = width to height
+            val key = Triple(width, height, config)
             val list = pool[key]
             if (list != null && list.isNotEmpty()) {
                 val bitmap = list.removeAt(list.size - 1)
@@ -113,7 +112,7 @@ object BitmapPool {
                 pool[randomKey]?.removeFirstOrNull()?.recycle()
                 currentCount--
             }
-            val key = bitmap.width to bitmap.height
+            val key = Triple(bitmap.width, bitmap.height, bitmap.config)
             pool.getOrPut(key) { mutableListOf() }.add(bitmap)
             currentCount++
         }

@@ -16,6 +16,7 @@ import coil.request.Options
 import com.paperknifeplus.app.ui.components.BitmapPool
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.rendering.ImageType
+import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -101,7 +102,8 @@ object PdDocumentPool {
 
         return try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val doc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+                val mem = MemoryUsageSetting.setupMainMemoryOnly()
+                val doc = if (password != null) PDDocument.load(inputStream, password, mem) else PDDocument.load(inputStream, mem)
                 docPool[uri] = doc
                 lastUsed[uri] = System.currentTimeMillis()
                 doc
