@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +51,7 @@ fun SignView(
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     val accentColor = Color(0xFF6366F1) // Indigo for Sign
@@ -366,9 +368,9 @@ fun SignaturePadDialog(
                     androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
                         paths.forEach { path ->
                             drawPath(
-                                path = androidx.compose.ui.graphics.asComposePath(path),
+                                path = path.asComposePath(),
                                 color = Color.Black,
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = with(density) { 4.dp.toPx() })
                             )
                         }
                     }
