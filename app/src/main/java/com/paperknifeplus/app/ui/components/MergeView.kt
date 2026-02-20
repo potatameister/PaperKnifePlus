@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -88,25 +89,17 @@ fun MergeView(
 
     val imageLoader = coil.compose.LocalImageLoader.current
 
-    // Launcher for picking multiple files
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         if (uris.isNotEmpty()) {
             isFileLoading = true
             scope.launch {
                 val currentUris = selectedFiles.map { it.uri }
-                val duplicates = uris.filter { it in currentUris }
-                
-                if (duplicates.isNotEmpty()) {
-                    Toast.makeText(context, "Skipped ${duplicates.size} duplicate files", Toast.LENGTH_SHORT).show()
-                }
-
                 val newFiles = uris.filter { it !in currentUris }.map { uri ->
                     val details = getUriDetails(context, uri)
                     val isLocked = checkIsEncryptedLocal(context, uri)
                     val count = if (!isLocked) getPageCount(context, uri, null) else 0
                     MergeFile(uri, details.name, details.size, isLocked, pageCount = count)
                 }
-                
                 if (newFiles.isNotEmpty()) {
                     selectedFiles = selectedFiles + newFiles
                     currentState = ToolState.CONFIGURING
@@ -126,11 +119,9 @@ fun MergeView(
                     val merger = PDFMergerUtility()
                     context.contentResolver.openOutputStream(saveUri)?.use { outputStream ->
                         merger.destinationStream = outputStream
-                        
                         selectedFiles.forEachIndexed { index, file ->
                             withContext(Dispatchers.Main) { progressCount = index + 1 }
                             val uriToLoad = file.decryptedUri ?: file.uri
-                            
                             if (file.password != null && file.decryptedUri == null) {
                                 context.contentResolver.openInputStream(uriToLoad)?.use { pSourceStream ->
                                     PDDocument.load(pSourceStream, file.password).use { doc ->
@@ -149,11 +140,9 @@ fun MergeView(
                                 }
                             }
                         }
-                        
                         merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly())
                         outputStream.flush()
                     }
-                    
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     val finalCount = getPageCount(context, saveUri, null)
@@ -217,9 +206,9 @@ fun MergeView(
                         val listState = rememberLazyListState()
                         var draggedIndex by remember { mutableStateOf<Int?>(null) }
                         var dragOffset by remember { mutableStateOf(0f) }
+                        var itemHeightPx by remember { mutableFloatStateOf(0f) }
 
                         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                            // Unified Hint Text
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
                                 horizontalArrangement = Arrangement.Center,
@@ -247,12 +236,13 @@ fun MergeView(
                                     
                                     Box(
                                         modifier = Modifier
-                                            .zIndex(if (isDragging) 1f else 0f)
+                                            .zIndex(if (isDragging) 10f else 1f)
+                                            .onGloballyPositioned { if (!isDragging && index == 0) itemHeightPx = it.size.height.toFloat() + 10.dp.value }
                                             .graphicsLayer { translationY = itemOffset }
                                             .animateItemPlacement(
                                                 animationSpec = spring(
-                                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                                    stiffness = Spring.StiffnessLow
+                                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                                    stiffness = Spring.StiffnessMedium
                                                 )
                                             )
                                             .shadow(
@@ -263,36 +253,28 @@ fun MergeView(
                                             .pointerInput(Unit) {
                                                 detectDragGesturesAfterLongPress(
                                                     onDragStart = { draggedIndex = index },
-                                                                                                        onDrag = { change, dragAmount ->
-                                                                                                            change.consume()
-                                                                                                            dragOffset += dragAmount.y
-                                                                                                            
-                                                                                                            val itemHeight = 300f // Height of card + gap
-                                                                                                            val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
-                                                                                                            
-                                                                                                            // Detect slot jump
-                                                                                                            val offsetSlots = (dragOffset / itemHeight).toInt()
-                                                                                                            val targetIndex = (currentIndex + offsetSlots).coerceIn(0, selectedFiles.size - 1)
-                                                                                                            
-                                                                                                            if (targetIndex != currentIndex) {
-                                                                                                                val newList = selectedFiles.toMutableList()
-                                                                                                                val item = newList.removeAt(currentIndex)
-                                                                                                                newList.add(targetIndex, item)
-                                                                                                                selectedFiles = newList
-                                                                                                                draggedIndex = targetIndex
-                                                                                                                // Keep the item under the thumb by adjusting the relative offset
-                                                                                                                dragOffset -= (targetIndex - currentIndex) * itemHeight
-                                                                                                            }
-                                                                                                        },
-                                                    
-                                                    onDragEnd = {
-                                                        draggedIndex = null
-                                                        dragOffset = 0f
+                                                    onDrag = { change, dragAmount ->
+                                                        change.consume()
+                                                        dragOffset += dragAmount.y
+                                                        
+                                                        val height = if (itemHeightPx > 0) itemHeightPx else 200f
+                                                        val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
+                                                        val offsetSlots = (dragOffset / height).toInt()
+                                                        val targetIndex = (currentIndex + offsetSlots).coerceIn(0, selectedFiles.size - 1)
+                                                        
+                                                        if (targetIndex != currentIndex) {
+                                                            val newList = selectedFiles.toMutableList()
+                                                            val item = newList.removeAt(currentIndex)
+                                                            newList.add(targetIndex, item)
+                                                            selectedFiles = newList
+                                                            
+                                                            // NITRO COMPENSATION: Adjust dragOffset to maintain thumb position
+                                                            dragOffset -= (targetIndex - currentIndex) * height
+                                                            draggedIndex = targetIndex
+                                                        }
                                                     },
-                                                    onDragCancel = {
-                                                        draggedIndex = null
-                                                        dragOffset = 0f
-                                                    }
+                                                    onDragEnd = { draggedIndex = null; dragOffset = 0f },
+                                                    onDragCancel = { draggedIndex = null; dragOffset = 0f }
                                                 )
                                             }
                                     ) {
@@ -323,29 +305,18 @@ fun MergeView(
                                         Text("ADD MORE FILES", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
                                     }
                                 }
-                                
                                 item { Spacer(Modifier.height(100.dp)) }
                             }
                             
                             val allReady = selectedFiles.size > 1 && selectedFiles.all { !it.isLocked || it.isUnlocked }
-                            
                             Button(
                                 onClick = { saveLauncher.launch("merged_${System.currentTimeMillis() / 1000}.pdf") },
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
                                 enabled = allReady,
                                 shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = accentColor,
-                                    disabledContainerColor = accentColor.copy(alpha = 0.3f)
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, disabledContainerColor = accentColor.copy(alpha = 0.3f))
                             ) {
-                                if (allReady) {
-                                    Text("MERGE ${selectedFiles.size} FILES", fontWeight = FontWeight.Black)
-                                } else if (selectedFiles.size < 2) {
-                                    Text("SELECT AT LEAST 2 FILES", fontWeight = FontWeight.Black)
-                                } else {
-                                    Text("UNLOCK ALL FILES FIRST", fontWeight = FontWeight.Black)
-                                }
+                                Text(if (allReady) "MERGE ${selectedFiles.size} FILES" else if (selectedFiles.size < 2) "SELECT AT LEAST 2 FILES" else "UNLOCK ALL FILES FIRST", fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -361,35 +332,21 @@ fun MergeView(
                             showWarning = false
                         )
                     }
-                
-                                        ToolState.SUCCESS -> {
-                                            SuccessView(
-                                                message = "Merge Complete",
-                                                subMessage = "Successfully joined ${selectedFiles.size} documents",
-                                                processingTime = processingTime,
-                                                onDone = onBack,
-                                                onProcessMore = { 
-                                                    selectedFiles = emptyList()
-                                                    mergedUri = null
-                                                    currentState = ToolState.SELECTING 
-                                                },
-                                                onPreview = {
-                                                    mergedUri?.let { uri ->
-                                                        scope.launch {
-                                                            val count = getPageCount(context, uri, null)
-                                                            onOpenPreview(uri, "Merged PDF", count)
-                                                        }
-                                                    }
-                                                },
-                                                accentColor = accentColor
-                                            )
-                                        }
-                    
+                    ToolState.SUCCESS -> {
+                        SuccessView(
+                            message = "Merge Complete",
+                            subMessage = "Successfully joined ${selectedFiles.size} documents",
+                            processingTime = processingTime,
+                            onDone = onBack,
+                            onProcessMore = { selectedFiles = emptyList(); mergedUri = null; currentState = ToolState.SELECTING },
+                            onPreview = { mergedUri?.let { uri -> scope.launch { onOpenPreview(uri, "Merged PDF", getPageCount(context, uri, null)) } } },
+                            accentColor = accentColor
+                        )
+                    }
                     else -> {}
                 }
             }
             
-            // Locked File Prompt
             if (fileToUnlock != null) {
                 LockedFilePrompt(
                     fileName = fileToUnlock!!.name,
@@ -402,12 +359,7 @@ fun MergeView(
                             if (decryptedUri != null) {
                                 val count = getPageCount(context, decryptedUri, null)
                                 withContext(Dispatchers.Main) {
-                                    val newList = selectedFiles.map { 
-                                        if (it.uri == targetFile.uri) {
-                                            it.copy(isUnlocked = true, password = password, decryptedUri = decryptedUri, pageCount = count)
-                                        } else it
-                                    }
-                                    selectedFiles = newList
+                                    selectedFiles = selectedFiles.map { if (it.uri == targetFile.uri) it.copy(isUnlocked = true, password = password, decryptedUri = decryptedUri, pageCount = count) else it }
                                     fileToUnlock = null
                                     isFileLoading = false
                                 }
@@ -426,7 +378,6 @@ fun MergeView(
         }
     }
 
-    // Lightbox Overlay
     if (lightboxFile != null) {
         PageLightbox(
             uri = lightboxFile!!.decryptedUri ?: lightboxFile!!.uri,
@@ -435,102 +386,5 @@ fun MergeView(
             password = if (lightboxFile!!.decryptedUri != null) null else lightboxFile!!.password,
             onDismiss = { lightboxFile = null }
         )
-    }
-}
-
-@Composable
-fun MergeFileItem(
-    file: MergeFile,
-    index: Int,
-    totalCount: Int,
-    isDark: Boolean,
-    accentColor: Color,
-    imageLoader: coil.ImageLoader,
-    onDelete: () -> Unit,
-    onUnlock: () -> Unit,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF0F0F12) else Color.White),
-        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Thumbnail / Icon
-            Surface(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clickable(enabled = !file.isLocked || file.isUnlocked) { onClick() },
-                shape = RoundedCornerShape(12.dp),
-                color = accentColor.copy(alpha = 0.05f)
-            ) {
-                if (file.isLocked && !file.isUnlocked) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Outlined.Lock, null, tint = accentColor, modifier = Modifier.size(24.dp))
-                    }
-                } else {
-                    val request = remember(file.uri, file.decryptedUri, file.password) { 
-                        PdfPageRequest(file.decryptedUri ?: file.uri, 0, if (file.decryptedUri != null) null else file.password, 0.3f) 
-                    }
-                    Image(
-                        painter = rememberAsyncImagePainter(request, imageLoader),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-            
-            Spacer(Modifier.width(16.dp))
-            
-            // Details
-            Column(Modifier.weight(1f)) {
-                Text(file.name, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(file.size, fontSize = 10.sp, color = Color.Gray)
-                    if (file.isLocked) {
-                        Spacer(Modifier.width(8.dp))
-                        Surface(
-                            color = if (file.isUnlocked) Color(0xFF10B981).copy(alpha = 0.1f) else accentColor.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                if (file.isUnlocked) "UNLOCKED" else "LOCKED",
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                fontSize = 7.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (file.isUnlocked) Color(0xFF10B981) else accentColor
-                            )
-                        }
-                    }
-                }
-            }
-            
-            // Actions
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (file.isLocked && !file.isUnlocked) {
-                    IconButton(onClick = onUnlock) {
-                        Icon(Icons.Filled.LockOpen, null, tint = accentColor, modifier = Modifier.size(20.dp))
-                    }
-                }
-                
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Filled.Delete, null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
-                }
-
-                Spacer(Modifier.width(4.dp))
-                
-                Icon(
-                    Icons.Filled.DragHandle, 
-                    null, 
-                    tint = Color.Gray.copy(alpha = 0.3f), 
-                    modifier = Modifier.size(24.dp).padding(4.dp)
-                )
-            }
-        }
     }
 }

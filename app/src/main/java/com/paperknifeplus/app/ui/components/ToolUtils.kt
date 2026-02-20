@@ -395,13 +395,14 @@ data class TextMatch(
  * NITRO ENGINE: Advanced Search.
  * Returns coordinates for all occurrences of a query.
  */
-suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, query: String): List<TextMatch> = withContext(Dispatchers.IO) {
+suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, query: String, onProgress: ((Int, Int) -> Unit)? = null): List<TextMatch> = withContext(Dispatchers.IO) {
     val matches = mutableListOf<TextMatch>()
     if (query.isBlank()) return@withContext matches
     
     try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val totalPages = document.numberOfPages
             
             val stripper = object : PDFTextStripper() {
                 override fun writeString(text: String?, textPositions: MutableList<TextPosition>?) {
@@ -412,23 +413,32 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                         val first = textPositions[index]
                         val last = textPositions[index + query.length - 1]
                         
-                        // Capture bounding box
+                        // NITRO: PDFBox yDirAdj is top-down. 
+                        // Convert to PDF coordinates (bottom-up) for Unified Preview mapping.
+                        val page = document.getPage(currentPageNo - 1)
+                        val pageHeight = page.mediaBox.height
+                        
+                        val x = first.xDirAdj
+                        val y = pageHeight - first.yDirAdj // Flip to bottom-up
+                        val w = (last.xDirAdj + last.widthDirAdj) - first.xDirAdj
+                        val h = first.heightDir
+                        
                         matches.add(TextMatch(
                             currentPageNo - 1,
-                            PDRectangle(
-                                first.xDirAdj, 
-                                first.yDirAdj - first.heightDir, 
-                                (last.xDirAdj + last.widthDirAdj) - first.xDirAdj, 
-                                first.heightDir * 1.2f // Add slight padding
-                            )
+                            PDRectangle(x, y - h, x + w, y + (h * 0.2f)) // Corrected Bounding Box
                         ))
                         index = text.indexOf(query, index + 1, ignoreCase = true)
                     }
                 }
+                
+                override fun processPage(page: PDPage?) {
+                    super.processPage(page)
+                    onProgress?.invoke(currentPageNo, totalPages)
+                }
             }
             
             stripper.sortByPosition = true
-            stripper.getText(document) // Triggers writeString calls
+            stripper.getText(document)
             document.close()
         }
     } catch (e: Exception) {}

@@ -1,7 +1,7 @@
 package com.paperknifeplus.app.ui.components
 
 import android.net.Uri
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -75,7 +75,6 @@ fun UnifiedPdfPreview(
                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
                 colors = CardDefaults.cardColors(containerColor = if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF5F5F5))
             ) {
-                // INCREASE SCALE for cover mode to ensure images are crisp
                 val request = remember(uri, password) { PdfPageRequest(uri, 0, password, 1.2f) }
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     val painter = rememberAsyncImagePainter(request, imageLoader)
@@ -91,7 +90,6 @@ fun UnifiedPdfPreview(
                     if (painterState is AsyncImagePainter.State.Loading) {
                         CircularProgressIndicator(color = accentColor, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
                     } else if (painterState is AsyncImagePainter.State.Error && password != null) {
-                        // Locked Placeholder
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Filled.Lock, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
                             Spacer(Modifier.height(12.dp))
@@ -99,7 +97,6 @@ fun UnifiedPdfPreview(
                         }
                     }
                     
-                    // Zoom Hint
                     Surface(
                         modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                         color = Color.Black.copy(0.3f),
@@ -116,20 +113,23 @@ fun UnifiedPdfPreview(
             }
         }
     } else if (mode == PreviewMode.REORDER && pageOrder != null && onOrderChange != null) {
-        // --- GOLD STANDARD: DRAGGABLE REORDER GRID ---
+        // --- NITRO REORDER 3.0: STABLE DRAGGING ---
         var draggedIndex by remember { mutableStateOf<Int?>(null) }
         var dragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
         
+        // Use a local copy for visual stability during drag
+        val visualList = remember(pageOrder) { pageOrder.toMutableStateList() }
+        
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2), // 2 columns for better clarity
+            columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
         ) {
-            itemsIndexed(pageOrder, key = { _, pageIdx -> pageIdx }) { index, pageIdx ->
+            itemsIndexed(visualList, key = { _, pageIdx -> pageIdx }) { index, pageIdx ->
                 val isDragging = draggedIndex == index
-                val scale by animateFloatAsState(if (isDragging) 1.15f else 1f)
+                val scale by animateFloatAsState(if (isDragging) 1.1f else 1f, spring(stiffness = Spring.StiffnessLow))
                 val zIndex = if (isDragging) 10f else 1f
                 
                 Box(
@@ -147,6 +147,7 @@ fun UnifiedPdfPreview(
                             detectDragGesturesAfterLongPress(
                                 onDragStart = { draggedIndex = index },
                                 onDragEnd = {
+                                    onOrderChange(visualList.toList())
                                     draggedIndex = null
                                     dragOffset = androidx.compose.ui.geometry.Offset.Zero
                                 },
@@ -158,7 +159,6 @@ fun UnifiedPdfPreview(
                                     change.consume()
                                     dragOffset += dragAmount
                                     
-                                    // REORDER LOGIC: 2-column layout
                                     val cellWidth = size.width / 2f
                                     val cellHeight = cellWidth / 0.707f
                                     val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
@@ -166,15 +166,13 @@ fun UnifiedPdfPreview(
                                     val colOffset = (dragOffset.x / cellWidth).toInt()
                                     val rowOffset = (dragOffset.y / cellHeight).toInt()
                                     
-                                    val targetIndex = (currentIndex + colOffset + (rowOffset * 2)).coerceIn(0, pageOrder.size - 1)
+                                    val targetIndex = (currentIndex + colOffset + (rowOffset * 2)).coerceIn(0, visualList.size - 1)
                                     
                                     if (targetIndex != currentIndex) {
-                                        val newList = pageOrder.toMutableList()
-                                        val item = newList.removeAt(currentIndex)
-                                        newList.add(targetIndex, item)
-                                        onOrderChange(newList)
+                                        val item = visualList.removeAt(currentIndex)
+                                        visualList.add(targetIndex, item)
                                         
-                                        // Compensate dragOffset to prevent jitter
+                                        // Compensate dragOffset to keep thumb under finger
                                         val colDiff = (targetIndex % 2) - (currentIndex % 2)
                                         val rowDiff = (targetIndex / 2) - (currentIndex / 2)
                                         
@@ -195,13 +193,15 @@ fun UnifiedPdfPreview(
                         imageLoader = imageLoader,
                         accentColor = accentColor,
                         onClick = { lightboxPage = pageIdx },
+                        // BLITZ REORDER: Lower resolution for drag performance
+                        scale = 0.5f,
                         modifier = if (isDragging) Modifier.shadow(16.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
                     )
                 }
             }
         }
     } else {
-        // --- TYPE A: MINI PREVIEW GRID (Blitz Mode - Fixed 2-Column) ---
+        // --- TYPE A: MINI PREVIEW GRID (Blitz Mode) ---
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
@@ -225,14 +225,12 @@ fun UnifiedPdfPreview(
                     modifier = if (isSelected) Modifier.border(BorderStroke(3.dp, accentColor), RoundedCornerShape(12.dp)) else Modifier
                 ) {
                     if (onToggleSelection != null) {
-                        // Selection UI Overlays
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(if (isSelected) accentColor.copy(alpha = 0.15f) else Color.Transparent)
                         )
                         
-                        // Checkmark
                         Surface(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
@@ -249,7 +247,6 @@ fun UnifiedPdfPreview(
                             )
                         }
 
-                        // Maximize Button (Top Left)
                         Surface(
                             onClick = { lightboxPage = index },
                             modifier = Modifier
@@ -272,7 +269,6 @@ fun UnifiedPdfPreview(
         }
     }
 
-    // --- SHARED LIGHTBOX ---
     if (lightboxPage != null) {
         PageLightbox(
             uri = uri,
@@ -295,10 +291,10 @@ fun PdfPageItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     accentColor: Color = MaterialTheme.colorScheme.primary,
+    scale: Float = 0.7f,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
-    // BLITZ PRO: Increased scale (0.7f) for better clarity while maintaining scroll speed
-    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.7f) }
+    val request = remember(uri, index, password, scale) { PdfPageRequest(uri, index, password, scale) }
     
     Box(
         modifier = modifier
@@ -327,7 +323,6 @@ fun PdfPageItem(
              Icon(Icons.Filled.Lock, null, tint = Color.Gray.copy(0.3f), modifier = Modifier.size(32.dp))
         }
         
-        // Page Number Overlay (Centralized)
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)

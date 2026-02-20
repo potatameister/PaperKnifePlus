@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -46,6 +47,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.Image
+import java.io.File
 import kotlin.math.roundToInt
 
 @Composable
@@ -63,6 +65,7 @@ fun UltraPreview(
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchLoading by remember { mutableStateOf(false) }
+    var searchProgress by remember { mutableStateOf(0f) }
     var searchResults by remember { mutableStateOf<List<TextMatch>>(emptyList()) }
     var currentMatchIndex by remember { mutableIntStateOf(0) }
 
@@ -75,6 +78,8 @@ fun UltraPreview(
     var links by remember { mutableStateOf<List<PdfLink>>(emptyList()) }
     var pageSizes by remember { mutableStateOf<Map<Int, Pair<Float, Float>>>(emptyMap()) }
     var isInitializing by remember { mutableStateOf(true) }
+    var activeUri by remember { mutableStateOf(uri) }
+    var activePassword by remember { mutableStateOf(password) }
 
     val imageLoader = remember {
         ImageLoader.Builder(context)
@@ -87,24 +92,59 @@ fun UltraPreview(
             .build()
     }
 
+    DisposableEffect(uri) {
+        onDispose {
+            // Cleanup decrypted cache if it exists
+            if (activeUri != uri) {
+                try {
+                    activeUri.path?.let { File(it).delete() }
+                } catch (e: Exception) {}
+            }
+        }
+    }
+
     LaunchedEffect(uri) {
-        links = getLinksFromPdf(context, uri, password)
-        // NITRO: Fetch page dimensions & init status
+        isInitializing = true
         withContext(Dispatchers.IO) {
             try {
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val document = if (password != null) com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream, password) else com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
+                // 1. Decrypt to cache if password exists for "Nitro" speed rendering
+                if (password != null) {
+                    val cachedUri = decryptToCache(context, uri, password)
+                    if (cachedUri != null) {
+                        activeUri = cachedUri
+                        activePassword = null // Cached file is now unencrypted
+                    }
+                }
+
+                // 2. Fetch page dimensions & links using active (potentially cached) URI
+                context.contentResolver.openInputStream(activeUri)?.use { inputStream ->
+                    val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
                     val sizes = document.pages.mapIndexed { index, page ->
                         index to (page.mediaBox.width to page.mediaBox.height)
                     }.toMap()
+                    
+                    val extractedLinks = mutableListOf<PdfLink>()
+                    document.pages.forEachIndexed { index, page ->
+                        page.annotations.filterIsInstance<com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink>().forEach { link ->
+                            val action = link.action
+                            if (action is com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionURI) {
+                                extractedLinks.add(PdfLink(index, link.rectangle, action.uri))
+                            }
+                        }
+                    }
+
                     withContext(Dispatchers.Main) { 
                         pageSizes = sizes 
+                        links = extractedLinks
                         isInitializing = false
                     }
                     document.close()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { isInitializing = false }
+                withContext(Dispatchers.Main) { 
+                    isInitializing = false 
+                    Toast.makeText(context, "Failed to load document", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -115,7 +155,7 @@ fun UltraPreview(
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color.Black else Color(0xFFF4F4F7))
     ) {
         if (isInitializing) {
-            LoadingStateView(PaperPink, false, "Optimizing Reader...")
+            LoadingStateView(PaperPink, false, "Decryption & Nitro Optimization...")
         } else {
             // --- CONTINUOUS VERTICAL READER ---
             Box(
@@ -148,9 +188,9 @@ fun UltraPreview(
                 ) {
                     items(pageCount) { index ->
                         PdfPageReaderItem(
-                            uri = uri,
+                            uri = activeUri,
                             index = index,
-                            password = password,
+                            password = activePassword,
                             imageLoader = imageLoader,
                             pageSize = pageSizes[index],
                             links = links.filter { it.pageIndex == index },
@@ -199,18 +239,21 @@ fun UltraPreview(
                             placeholder = { Text("Search text...") },
                             trailingIcon = {
                                 if (isSearchLoading) {
-                                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(end = 8.dp)) {
+                                        CircularProgressIndicator(progress = { searchProgress }, modifier = Modifier.size(24.dp), strokeWidth = 3.dp, color = PaperPink)
+                                        Text("${(searchProgress * 100).toInt()}%", fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 } else {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         if (searchResults.isNotEmpty()) {
                                             Text("${currentMatchIndex + 1}/${searchResults.size}", fontSize = 10.sp, color = Color.Gray)
                                             IconButton(onClick = {
                                                 currentMatchIndex = if (currentMatchIndex > 0) currentMatchIndex - 1 else searchResults.size - 1
-                                                scope.launch { listState.animateScrollToItem(searchResults[currentMatchIndex].pageIndex) }
+                                                scope.launch { listState.scrollToItem(searchResults[currentMatchIndex].pageIndex) }
                                             }) { Icon(Icons.Filled.KeyboardArrowUp, null) }
                                             IconButton(onClick = {
                                                 currentMatchIndex = (currentMatchIndex + 1) % searchResults.size
-                                                scope.launch { listState.animateScrollToItem(searchResults[currentMatchIndex].pageIndex) }
+                                                scope.launch { listState.scrollToItem(searchResults[currentMatchIndex].pageIndex) }
                                             }) { Icon(Icons.Filled.KeyboardArrowDown, null) }
                                         }
                                         IconButton(onClick = { isSearching = false; searchQuery = ""; searchResults = emptyList() }) {
@@ -225,12 +268,15 @@ fun UltraPreview(
                             keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = {
                                 if (searchQuery.isNotBlank()) {
                                     isSearchLoading = true
+                                    searchProgress = 0f
                                     scope.launch {
-                                        val matches = findAllTextMatches(context, uri, password, searchQuery)
+                                        val matches = findAllTextMatches(context, activeUri, activePassword, searchQuery) { current, total ->
+                                            searchProgress = current.toFloat() / total
+                                        }
                                         searchResults = matches
                                         currentMatchIndex = 0
                                         if (matches.isNotEmpty()) {
-                                            listState.animateScrollToItem(matches[0].pageIndex)
+                                            listState.scrollToItem(matches[0].pageIndex)
                                         } else {
                                             Toast.makeText(context, "No matches found", Toast.LENGTH_SHORT).show()
                                         }
@@ -314,14 +360,16 @@ fun UltraPreview(
 
         // --- BOTTOM INDICATOR & NITRO FAST SCROLL BAR ---
         val currentPage by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
-        
-        // Custom Scrollbar with Draggable Thumb
+        var trackHeight by remember { mutableFloatStateOf(0f) }
+
+        // Custom Scrollbar with Robust Draggable Thumb
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 8.dp)
                 .fillMaxHeight(0.6f)
                 .width(40.dp)
+                .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
         ) {
             val scrollPercentage = if (pageCount > 1) listState.firstVisibleItemIndex.toFloat() / (pageCount - 1) else 0f
             
@@ -338,19 +386,20 @@ fun UltraPreview(
             Box(
                 modifier = Modifier
                     .fillMaxHeight(1f / pageCount.coerceAtLeast(5))
-                    .width(8.dp)
+                    .width(10.dp)
                     .graphicsLayer {
-                        translationY = (scrollPercentage * (size.height - size.height / pageCount.coerceAtLeast(5)))
+                        translationY = scrollPercentage * (trackHeight - (trackHeight / pageCount.coerceAtLeast(5)))
                     }
                     .background(PaperPink, CircleShape)
                     .align(Alignment.TopCenter)
                     .draggable(
                         orientation = Orientation.Vertical,
                         state = rememberDraggableState { delta ->
-                            val height = 600f // Approximation for container height
-                            val newPercent = (scrollPercentage + delta / height).coerceIn(0f, 1f)
-                            val targetPage = (newPercent * (pageCount - 1)).roundToInt()
-                            scope.launch { listState.scrollToItem(targetPage) }
+                            if (trackHeight > 0) {
+                                val newPercent = (scrollPercentage + delta / trackHeight).coerceIn(0f, 1f)
+                                val targetPage = (newPercent * (pageCount - 1)).roundToInt()
+                                scope.launch { listState.scrollToItem(targetPage) }
+                            }
                         }
                     )
             )
@@ -424,14 +473,14 @@ fun PdfPageReaderItem(
             }
         }
 
-        // --- ACCURATE LINK & MATCH MAPPING ---
+        // --- ACCURATE LINK & MATCH MAPPING (NITRO ENGINE 3.0) ---
         if (pageSize != null) {
             val pageWidth = pageSize.first
             val pageHeight = pageSize.second
             val scaleX = maxWidth.value / pageWidth
             val scaleY = maxHeight.value / pageHeight
 
-            // Draw Links
+            // Draw Links (PDF coords are bottom-up)
             links.forEach { link ->
                 val left = link.rect.lowerLeftX * scaleX
                 val top = (pageHeight - link.rect.upperRightY) * scaleY
@@ -449,6 +498,7 @@ fun PdfPageReaderItem(
             // Draw Search Highlights
             matches.forEach { match ->
                 val left = match.rect.lowerLeftX * scaleX
+                // NITRO: Match rect from ToolUtils is already bottom-up PDF coords
                 val top = (pageHeight - match.rect.upperRightY) * scaleY
                 val width = match.rect.width * scaleX
                 val height = match.rect.height * scaleY
