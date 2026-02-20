@@ -84,6 +84,7 @@ fun UltraPreview(
     var activePassword by remember { mutableStateOf(password) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     var isDecrypting by remember { mutableStateOf(false) }
+    var activePageCount by remember { mutableIntStateOf(pageCount) }
 
     val imageLoader = remember {
         ImageLoader.Builder(context)
@@ -128,19 +129,22 @@ fun UltraPreview(
 
                 // 2. Decrypt to cache if password exists
                 if (workingPass != null) {
+                    isDecrypting = true
                     val cachedUri = decryptToCache(context, workingUri, workingPass)
                     if (cachedUri != null) {
                         workingUri = cachedUri
                         workingPass = null
                     }
+                    isDecrypting = false
                 }
 
                 activeUri = workingUri
                 activePassword = workingPass
 
-                // 3. Fetch page dimensions & links
+                // 3. Fetch page dimensions & links & ACTUAL page count
                 context.contentResolver.openInputStream(activeUri)?.use { inputStream ->
                     val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
+                    val count = document.numberOfPages
                     val sizes = document.pages.mapIndexed { index, page ->
                         index to (page.mediaBox.width to page.mediaBox.height)
                     }.toMap()
@@ -156,6 +160,7 @@ fun UltraPreview(
                     }
 
                     withContext(Dispatchers.Main) { 
+                        activePageCount = count
                         pageSizes = sizes 
                         links = extractedLinks
                         isInitializing = false
@@ -181,7 +186,7 @@ fun UltraPreview(
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color.Black else Color(0xFFF4F4F7))
     ) {
         if (isInitializing) {
-            LoadingStateView(PaperPink, false, "Optimizing Nitro Pipeline...")
+            LoadingStateView(PaperPink, false, "Processing...")
         } else if (fileToUnlock == null) {
             // --- CONTINUOUS VERTICAL READER ---
             Box(
@@ -212,7 +217,7 @@ fun UltraPreview(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     userScrollEnabled = scale == 1f // Lock scroll when zoomed
                 ) {
-                    items(pageCount) { index ->
+                    items(activePageCount) { index ->
                         PdfPageReaderItem(
                             uri = activeUri,
                             index = index,
@@ -364,7 +369,7 @@ fun UltraPreview(
                     OutlinedTextField(
                         value = jumpPageInput,
                         onValueChange = { if (it.all { char -> char.isDigit() }) jumpPageInput = it },
-                        label = { Text("Page Number (1-$pageCount)") },
+                        label = { Text("Page Number (1-$activePageCount)") },
                         singleLine = true,
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
@@ -372,7 +377,7 @@ fun UltraPreview(
                         ),
                         keyboardActions = androidx.compose.foundation.text.KeyboardActions(onGo = {
                             val pageNum = jumpPageInput.toIntOrNull()
-                            if (pageNum != null && pageNum in 1..pageCount) {
+                            if (pageNum != null && pageNum in 1..activePageCount) {
                                 scope.launch { listState.scrollToItem(pageNum - 1) }
                                 showJumpDialog = false
                             }
@@ -382,7 +387,7 @@ fun UltraPreview(
                 confirmButton = {
                     TextButton(onClick = {
                         val pageNum = jumpPageInput.toIntOrNull()
-                        if (pageNum != null && pageNum in 1..pageCount) {
+                        if (pageNum != null && pageNum in 1..activePageCount) {
                             scope.launch { listState.scrollToItem(pageNum - 1) }
                             showJumpDialog = false
                         }
@@ -405,35 +410,41 @@ fun UltraPreview(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 8.dp)
-                .fillMaxHeight(0.7f)
-                .width(40.dp)
+                .padding(end = 4.dp)
+                .fillMaxHeight(0.75f)
+                .width(48.dp) // Wider touch target
                 .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
+                .pointerInput(activePageCount, trackHeight) {
+                    detectTapGestures { offset ->
+                        val newPercent = (offset.y / trackHeight).coerceIn(0f, 1f)
+                        val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
+                        scope.launch { listState.scrollToItem(targetPage) }
+                    }
+                }
         ) {
-            val scrollPercentage = if (pageCount > 1) listState.firstVisibleItemIndex.toFloat() / (pageCount - 1) else 0f
+            val scrollPercentage = if (activePageCount > 1) listState.firstVisibleItemIndex.toFloat() / (activePageCount - 1) else 0f
             
             // Track
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(4.dp)
+                    .width(6.dp)
                     .align(Alignment.Center)
-                    .background(Color.Gray.copy(alpha = 0.1f), CircleShape)
+                    .background(Color.Gray.copy(alpha = 0.15f), CircleShape)
             )
             
-            // Thumb - NITRO 4.0: Minimum size (40.dp) for high page counts
-            val minThumbHeight = 40.dp
-            val thumbHeightFactor = 1f / pageCount.coerceAtLeast(1)
+            // Thumb - NITRO 4.0: Minimum size (48.dp) for high page counts
+            val minThumbHeight = 48.dp
+            val thumbHeightFactor = 1f / activePageCount.coerceAtLeast(1)
             
             Box(
                 modifier = Modifier
                     .heightIn(min = minThumbHeight)
-                    .fillMaxHeight(thumbHeightFactor.coerceIn(0.05f, 0.2f))
-                    .width(10.dp)
+                    .fillMaxHeight(thumbHeightFactor.coerceIn(0.08f, 0.25f))
+                    .width(12.dp)
                     .graphicsLayer {
-                        // Calculate thumb height in Px for accurate movement
                         val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
-                        val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.05f, 0.2f)).coerceAtLeast(minThumbHeightPx)
+                        val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeightPx)
                         translationY = scrollPercentage * (trackHeight - thumbHeightPx)
                     }
                     .background(PaperPink, CircleShape)
@@ -443,9 +454,9 @@ fun UltraPreview(
                         state = rememberDraggableState { delta ->
                             if (trackHeight > 0) {
                                 val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
-                                val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.05f, 0.2f)).coerceAtLeast(minThumbHeightPx)
+                                val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeightPx)
                                 val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
-                                val targetPage = (newPercent * (pageCount - 1)).roundToInt()
+                                val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
                                 scope.launch { listState.scrollToItem(targetPage) }
                             }
                         }
@@ -474,7 +485,7 @@ fun UltraPreview(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("$currentPage", fontWeight = FontWeight.Black, fontSize = 14.sp, color = PaperPink)
-                    Text(" / $pageCount PAGES", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                    Text(" / $activePageCount PAGES", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
                     Spacer(Modifier.width(16.dp))
                     Box(Modifier.height(16.dp).width(1.dp).background(Color.Gray.copy(alpha = 0.2f)))
                     Spacer(Modifier.width(16.dp))
@@ -501,7 +512,7 @@ fun PdfPageReaderItem(
         PdfPageRequest(uri, index, password, 0.7f, priority = 1) 
     }
     val highResRequest = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 4.0f, priority = 0) 
+        PdfPageRequest(uri, index, password, 5.0f, priority = 0) 
     }
     
     BoxWithConstraints(
@@ -565,8 +576,8 @@ fun PdfPageReaderItem(
 
             // Draw Search Highlights
             matches.forEach { match ->
+                // NITRO 4.0: Precise Point-to-Dp Mapping
                 val left = match.rect.lowerLeftX * scaleX
-                // NITRO: Match rect from ToolUtils is already bottom-up PDF coords
                 val top = (pageHeight - match.rect.upperRightY) * scaleY
                 val width = match.rect.width * scaleX
                 val height = match.rect.height * scaleY
@@ -575,8 +586,8 @@ fun PdfPageReaderItem(
                     modifier = Modifier
                         .offset(x = left.dp, y = top.dp)
                         .size(width = width.dp, height = height.dp)
-                        .background(Color.Yellow.copy(alpha = 0.25f))
-                        .border(0.5.dp, Color.Yellow.copy(alpha = 0.4f))
+                        .background(Color.Yellow.copy(alpha = 0.3f))
+                        .border(0.5.dp, Color.Yellow.copy(alpha = 0.5f))
                 )
             }
         }
