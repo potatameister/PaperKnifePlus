@@ -22,6 +22,9 @@ import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.rendering.PDFRenderer
 import com.tom_roush.pdfbox.rendering.ImageType
+import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionURI
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -33,6 +36,12 @@ data class UriDetails(
     val name: String,
     val size: String,
     val sizeBytes: Long = 0
+)
+
+data class PdfLink(
+    val pageIndex: Int,
+    val rect: PDRectangle,
+    val url: String
 )
 
 object PreferencesManager {
@@ -352,16 +361,6 @@ suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password:
         saveAndFlush(context, document, outputUri)
     }
 }
-
-import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionURI
-import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink
-import com.tom_roush.pdfbox.text.PDFTextStripper
-
-data class PdfLink(
-    val pageIndex: Int,
-    val rect: PDRectangle,
-    val url: String
-)
 
 /**
  * NITRO ENGINE: Decrypt to Cache.

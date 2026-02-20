@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -42,7 +44,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
+import androidx.compose.foundation.Image
 
 @Composable
 fun UltraPreview(
@@ -59,14 +61,11 @@ fun UltraPreview(
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchLoading by remember { mutableStateOf(false) }
-    var searchResults by remember { mutableStateOf<List<Int>>(emptyList()) }
-    var currentSearchResultIndex by remember { mutableIntStateOf(0) }
 
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     
     var links by remember { mutableStateOf<List<PdfLink>>(emptyList()) }
-    var isLinksLoading by remember { mutableStateOf(true) }
 
     val imageLoader = remember {
         ImageLoader.Builder(context)
@@ -81,7 +80,6 @@ fun UltraPreview(
 
     LaunchedEffect(uri) {
         links = getLinksFromPdf(context, uri, password)
-        isLinksLoading = false
     }
 
     Box(
@@ -137,7 +135,7 @@ fun UltraPreview(
             }
         }
 
-        // --- TOP BAR (Polished & Blurred look) ---
+        // --- TOP BAR ---
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -222,7 +220,7 @@ fun UltraPreview(
             }
         }
 
-        // --- BOTTOM FLOATING INDICATOR ---
+        // --- BOTTOM INDICATOR ---
         val currentPage by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
         
         Box(
@@ -241,31 +239,12 @@ fun UltraPreview(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "$currentPage",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 14.sp,
-                        color = PaperPink
-                    )
-                    Text(
-                        " / $pageCount PAGES",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                    
+                    Text("$currentPage", fontWeight = FontWeight.Black, fontSize = 14.sp, color = PaperPink)
+                    Text(" / $pageCount PAGES", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
                     Spacer(Modifier.width(16.dp))
-                    
-                    VerticalDivider(Modifier.height(16.dp).width(1.dp), color = Color.Gray.copy(alpha = 0.2f))
-                    
+                    Box(Modifier.height(16.dp).width(1.dp).background(Color.Gray.copy(alpha = 0.2f)))
                     Spacer(Modifier.width(16.dp))
-                    
-                    Icon(
-                        Icons.Filled.UnfoldMore,
-                        null,
-                        modifier = Modifier.size(16.dp).alpha(0.5f)
-                    )
+                    Icon(Icons.Filled.UnfoldMore, null, modifier = Modifier.size(16.dp).alpha(0.5f))
                 }
             }
         }
@@ -282,7 +261,7 @@ fun PdfPageReaderItem(
     onLinkClick: (String) -> Unit
 ) {
     val request = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 1.5f) // High resolution for reading
+        PdfPageRequest(uri, index, password, 1.5f)
     }
     
     BoxWithConstraints(
@@ -294,8 +273,7 @@ fun PdfPageReaderItem(
             .shadow(4.dp, RoundedCornerShape(8.dp))
     ) {
         val painter = rememberAsyncImagePainter(request, imageLoader)
-        val painterState = painter.state
-
+        
         Image(
             painter = painter,
             contentDescription = "Page ${index + 1}",
@@ -303,25 +281,17 @@ fun PdfPageReaderItem(
             contentScale = ContentScale.Fit
         )
 
-        if (painterState is AsyncImagePainter.State.Loading) {
+        if (painter.state is AsyncImagePainter.State.Loading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PaperPink, modifier = Modifier.size(32.dp))
             }
         }
 
-        // Link Overlays
         links.forEach { link ->
-            // PDF coordinates to View coordinates conversion
-            // PDF: (0,0) is bottom-left. Box: (0,0) is top-left.
-            // PDRectangle: lowerLeftX, lowerLeftY, upperRightX, upperRightY
-            
-            // Assume the page is rendered to fit width
-            val pageWidth = 595f // Standard A4 points, need real values for better accuracy
+            val pageWidth = 595f 
             val pageHeight = 842f
-            
             val scaleX = maxWidth.value / pageWidth
             val scaleY = maxHeight.value / pageHeight
-            
             val left = link.rect.lowerLeftX * scaleX
             val top = (pageHeight - link.rect.upperRightY) * scaleY
             val width = (link.rect.upperRightX - link.rect.lowerLeftX) * scaleX
@@ -329,16 +299,10 @@ fun PdfPageReaderItem(
             
             Box(
                 modifier = Modifier
-                    .offset(x = left.dp, top = top.dp)
+                    .offset(x = left.dp, y = top.dp)
                     .size(width = width.dp, height = height.dp)
-                    .background(Color.Blue.copy(alpha = 0.1f))
                     .clickable { onLinkClick(link.url) }
             )
         }
     }
-}
-
-@Composable
-fun VerticalDivider(modifier: Modifier, color: Color) {
-    Box(modifier.background(color))
 }

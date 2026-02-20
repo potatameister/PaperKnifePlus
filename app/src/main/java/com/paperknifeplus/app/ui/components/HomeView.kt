@@ -1,5 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
+import android.net.Uri
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +38,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeView(
@@ -87,7 +90,7 @@ fun HomeView(
             }
 
             item(span = { GridItemSpan(2) }, key = "history") {
-                MiniHistoryBar(history, onHistoryClick = { onToolClick("history") })
+                MiniHistoryBar(history, onHistoryClick = { onToolClick("history") }, onOpenPreview = onOpenPreview)
             }
 
             item(span = { GridItemSpan(2) }, key = "label") {
@@ -294,7 +297,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
 }
 
 @Composable
-fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
+fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onOpenPreview: (Uri, String, Int) -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     Column(
         modifier = Modifier
@@ -332,7 +335,11 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             history.take(2).forEach { entry ->
                 Row(
-                    modifier = Modifier.padding(vertical = 3.dp),
+                    modifier = Modifier
+                        .padding(vertical = 3.dp)
+                        .clickable(enabled = entry.uri != null) { 
+                            entry.uri?.let { onOpenPreview(it, entry.name, entry.pageCount) }
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(entry.icon, null, modifier = Modifier.size(12.dp), tint = PaperPink.copy(alpha = 0.6f))

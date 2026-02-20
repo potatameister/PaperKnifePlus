@@ -1,5 +1,6 @@
 package com.paperknifeplus.app
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -315,6 +316,7 @@ fun FixedTitanBottomBar(
 
 @Composable
 fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+    @Suppress("DEPRECATION")
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
