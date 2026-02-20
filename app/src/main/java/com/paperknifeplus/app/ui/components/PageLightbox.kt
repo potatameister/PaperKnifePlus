@@ -97,7 +97,7 @@ fun PageLightbox(
                 userScrollEnabled = !isCurrentPageZoomed
             ) { pageIndex ->
                 val request = remember(uri, pageIndex, password) { 
-                    PdfPageRequest(uri, pageIndex, password, 2.0f, prefetch = false) 
+                    PdfPageRequest(uri, pageIndex, password, 2.0f, priority = 1) 
                 }
                 
                 var scale by remember { mutableFloatStateOf(1f) }

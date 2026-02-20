@@ -128,7 +128,7 @@ class PdfPageFetcher(
 ) : Fetcher {
 
     override suspend fun fetch(): FetchResult? = withContext(if (data.priority > 0) highPriorityDispatcher else lowPriorityDispatcher) {
-        runCatching {
+        try {
             // 1. Try Native Renderer (Turbo Path)
             if (data.password == null) {
                 val renderer = NativeRendererPool.acquire(context, data.uri)
@@ -180,7 +180,10 @@ class PdfPageFetcher(
                     )
                 }
             }
-        }.getOrNull()
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+        }
+        null
     }
 
     class Factory(private val context: Context) : Fetcher.Factory<PdfPageRequest> {
