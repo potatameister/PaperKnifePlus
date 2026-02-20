@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -38,6 +39,7 @@ import coil.compose.LocalImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
+import kotlinx.coroutines.delay
 
 enum class PreviewMode {
     GRID,   // Scrollable grid (Split, etc.)
