@@ -25,6 +25,7 @@ import com.tom_roush.pdfbox.rendering.ImageType
 import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionURI
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink
 import com.tom_roush.pdfbox.text.PDFTextStripper
+import com.tom_roush.pdfbox.text.TextPosition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -384,8 +385,6 @@ suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? =
         null
     }
 }
-
-import com.tom_roush.pdfbox.text.TextPosition
 
 data class TextMatch(
     val pageIndex: Int,

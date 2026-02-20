@@ -144,8 +144,7 @@ fun UltraPreview(
                     contentPadding = PaddingValues(top = 80.dp, bottom = 100.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp), // SEAMLESS
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    userScrollEnabled = scale == 1f, // Lock scroll when zoomed
-                    beyondBoundsPageCount = 0 // PERFORMANCE: Only current view
+                    userScrollEnabled = scale == 1f // Lock scroll when zoomed
                 ) {
                     items(pageCount) { index ->
                         PdfPageReaderItem(
@@ -187,7 +186,7 @@ fun UltraPreview(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        Icon(Icons.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurface)
                     }
                     
                     if (isSearching) {
@@ -313,10 +312,10 @@ fun UltraPreview(
             )
         }
 
-        // --- BOTTOM INDICATOR & FAST SCROLL BAR ---
+        // --- BOTTOM INDICATOR & NITRO FAST SCROLL BAR ---
         val currentPage by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
         
-        // Draggable Scrollbar Thumb
+        // Custom Scrollbar with Draggable Thumb
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -345,6 +344,15 @@ fun UltraPreview(
                     }
                     .background(PaperPink, CircleShape)
                     .align(Alignment.TopCenter)
+                    .draggable(
+                        orientation = Orientation.Vertical,
+                        state = rememberDraggableState { delta ->
+                            val height = 600f // Approximation for container height
+                            val newPercent = (scrollPercentage + delta / height).coerceIn(0f, 1f)
+                            val targetPage = (newPercent * (pageCount - 1)).roundToInt()
+                            scope.launch { listState.scrollToItem(targetPage) }
+                        }
+                    )
             )
         }
 

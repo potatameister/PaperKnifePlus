@@ -121,7 +121,7 @@ fun UnifiedPdfPreview(
         var dragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
         
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Fixed(2), // 2 columns for better clarity
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -158,14 +158,15 @@ fun UnifiedPdfPreview(
                                     change.consume()
                                     dragOffset += dragAmount
                                     
-                                    val cellWidth = 350f // Approx cell width
-                                    val cellHeight = 500f // Approx cell height
+                                    // REORDER LOGIC: 2-column layout
+                                    val cellWidth = size.width / 2f
+                                    val cellHeight = cellWidth / 0.707f
                                     val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                     
                                     val colOffset = (dragOffset.x / cellWidth).toInt()
                                     val rowOffset = (dragOffset.y / cellHeight).toInt()
                                     
-                                    val targetIndex = (currentIndex + colOffset + (rowOffset * 3)).coerceIn(0, pageOrder.size - 1)
+                                    val targetIndex = (currentIndex + colOffset + (rowOffset * 2)).coerceIn(0, pageOrder.size - 1)
                                     
                                     if (targetIndex != currentIndex) {
                                         val newList = pageOrder.toMutableList()
@@ -174,8 +175,8 @@ fun UnifiedPdfPreview(
                                         onOrderChange(newList)
                                         
                                         // Compensate dragOffset to prevent jitter
-                                        val colDiff = (targetIndex % 3) - (currentIndex % 3)
-                                        val rowDiff = (targetIndex / 3) - (currentIndex / 3)
+                                        val colDiff = (targetIndex % 2) - (currentIndex % 2)
+                                        val rowDiff = (targetIndex / 2) - (currentIndex / 2)
                                         
                                         draggedIndex = targetIndex
                                         dragOffset = androidx.compose.ui.geometry.Offset(
@@ -194,7 +195,7 @@ fun UnifiedPdfPreview(
                         imageLoader = imageLoader,
                         accentColor = accentColor,
                         onClick = { lightboxPage = pageIdx },
-                        modifier = if (isDragging) Modifier.shadow(12.dp, RoundedCornerShape(12.dp)) else Modifier
+                        modifier = if (isDragging) Modifier.shadow(16.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
                     )
                 }
             }
