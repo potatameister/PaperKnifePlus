@@ -177,9 +177,31 @@ fun RotateView(onBack: () -> Unit) {
                                 TextButton(onClick = { 
                                     pageRotations = pageRotations.mapValues { (it.value + 90) % 360 }
                                 }) {
-                                    Icon(Icons.Filled.Rotate90DegreesCcw, null, modifier = Modifier.size(16.dp), tint = accentColor)
+                                    Icon(Icons.Filled.RotateRight, null, modifier = Modifier.size(16.dp), tint = accentColor)
                                     Spacer(Modifier.width(8.dp))
                                     Text("ROTATE ALL 90°", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
+                                }
+                            }
+
+                            // NITRO 4.0: Standardized Info Row
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                color = accentColor.copy(alpha = 0.05f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(Icons.Filled.Info, null, tint = accentColor, modifier = Modifier.size(14.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "Tap page to rotate • Long-press to inspect",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor
+                                    )
                                 }
                             }
 
@@ -196,20 +218,6 @@ fun RotateView(onBack: () -> Unit) {
                                         pageRotations = pageRotations + (index to (current + 90) % 360)
                                     }
                                 )
-                                
-                                Surface(
-                                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
-                                    color = Color.Black.copy(0.4f),
-                                    shape = RoundedCornerShape(20.dp)
-                                ) {
-                                    Text(
-                                        "Tap page to rotate • Long-press to inspect", 
-                                        color = Color.White, 
-                                        fontSize = 8.sp, 
-                                        fontWeight = FontWeight.Black,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
-                                }
                             }
 
                             Button(
@@ -246,7 +254,9 @@ fun RotateView(onBack: () -> Unit) {
                                 currentState = ToolState.SELECTING 
                             },
                             onPreview = {
-                                // Add preview logic if needed
+                                scope.launch {
+                                    onOpenPreview(selectedUri!!, fileName, pageCount)
+                                }
                             },
                             accentColor = accentColor
                         )

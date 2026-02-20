@@ -80,6 +80,8 @@ fun UltraPreview(
     var isInitializing by remember { mutableStateOf(true) }
     var activeUri by remember { mutableStateOf(uri) }
     var activePassword by remember { mutableStateOf(password) }
+    var fileToUnlock by remember { mutableStateOf<String?>(null) }
+    var isDecrypting by remember { mutableStateOf(false) }
 
     val imageLoader = remember {
         ImageLoader.Builder(context)
@@ -103,20 +105,38 @@ fun UltraPreview(
         }
     }
 
-    LaunchedEffect(uri) {
-        isInitializing = true
-        withContext(Dispatchers.IO) {
+    fun initializeReader(targetUri: Uri, targetPass: String?) {
+        scope.launch(Dispatchers.IO) {
+            isInitializing = true
             try {
-                // 1. Decrypt to cache if password exists for "Nitro" speed rendering
-                if (password != null) {
-                    val cachedUri = decryptToCache(context, uri, password)
-                    if (cachedUri != null) {
-                        activeUri = cachedUri
-                        activePassword = null // Cached file is now unencrypted
+                var workingUri = targetUri
+                var workingPass = targetPass
+
+                // 1. Check if actually encrypted but no password provided
+                if (workingPass == null) {
+                    val isEncrypted = checkIsEncryptedLocal(context, workingUri)
+                    if (isEncrypted) {
+                        withContext(Dispatchers.Main) {
+                            fileToUnlock = fileName
+                            isInitializing = false
+                        }
+                        return@launch
                     }
                 }
 
-                // 2. Fetch page dimensions & links using active (potentially cached) URI
+                // 2. Decrypt to cache if password exists
+                if (workingPass != null) {
+                    val cachedUri = decryptToCache(context, workingUri, workingPass)
+                    if (cachedUri != null) {
+                        workingUri = cachedUri
+                        workingPass = null
+                    }
+                }
+
+                activeUri = workingUri
+                activePassword = workingPass
+
+                // 3. Fetch page dimensions & links
                 context.contentResolver.openInputStream(activeUri)?.use { inputStream ->
                     val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
                     val sizes = document.pages.mapIndexed { index, page ->
@@ -149,14 +169,18 @@ fun UltraPreview(
         }
     }
 
+    LaunchedEffect(uri) {
+        initializeReader(uri, password)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color.Black else Color(0xFFF4F4F7))
     ) {
         if (isInitializing) {
-            LoadingStateView(PaperPink, false, "Decryption & Nitro Optimization...")
-        } else {
+            LoadingStateView(PaperPink, false, "Optimizing Nitro Pipeline...")
+        } else if (fileToUnlock == null) {
             // --- CONTINUOUS VERTICAL READER ---
             Box(
                 modifier = Modifier
@@ -181,7 +205,7 @@ fun UltraPreview(
                             translationX = offset.x
                             translationY = offset.y
                         },
-                    contentPadding = PaddingValues(top = 80.dp, bottom = 100.dp),
+                    contentPadding = PaddingValues(top = 100.dp, bottom = 120.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp), // SEAMLESS
                     horizontalAlignment = Alignment.CenterHorizontally,
                     userScrollEnabled = scale == 1f // Lock scroll when zoomed
@@ -209,16 +233,14 @@ fun UltraPreview(
             }
         }
 
-        // --- TOP BAR (Integrated) ---
+        // --- TOP BAR (Integrated Edge-to-Edge) ---
         Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding(),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-            tonalElevation = 2.dp,
-            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.05f))
+                .fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+            tonalElevation = 4.dp
         ) {
-            Column {
+            Column(modifier = Modifier.statusBarsPadding()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -316,6 +338,21 @@ fun UltraPreview(
             }
         }
 
+        if (fileToUnlock != null) {
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(top = 100.dp)) {
+                LockedFilePrompt(
+                    fileName = fileToUnlock!!,
+                    onDismiss = onDismiss,
+                    onUnlocked = { pass ->
+                        fileToUnlock = null
+                        initializeReader(uri, pass)
+                    },
+                    accentColor = PaperPink,
+                    isLoading = isDecrypting
+                )
+            }
+        }
+
         // --- JUMP TO PAGE DIALOG ---
         if (showJumpDialog) {
             AlertDialog(
@@ -367,7 +404,7 @@ fun UltraPreview(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 8.dp)
-                .fillMaxHeight(0.6f)
+                .fillMaxHeight(0.7f)
                 .width(40.dp)
                 .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
         ) {
@@ -382,13 +419,19 @@ fun UltraPreview(
                     .background(Color.Gray.copy(alpha = 0.1f), CircleShape)
             )
             
-            // Thumb
+            // Thumb - NITRO 4.0: Minimum size (40.dp) for high page counts
+            val minThumbHeight = 40.dp
+            val thumbHeightFactor = 1f / pageCount.coerceAtLeast(1)
+            
             Box(
                 modifier = Modifier
-                    .fillMaxHeight(1f / pageCount.coerceAtLeast(5))
+                    .heightIn(min = minThumbHeight)
+                    .fillMaxHeight(thumbHeightFactor.coerceIn(0.05f, 0.2f))
                     .width(10.dp)
                     .graphicsLayer {
-                        translationY = scrollPercentage * (trackHeight - (trackHeight / pageCount.coerceAtLeast(5)))
+                        // Calculate thumb height in Px for accurate movement
+                        val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.05f, 0.2f)).coerceAtLeast(minThumbHeight.toPx())
+                        translationY = scrollPercentage * (trackHeight - thumbHeightPx)
                     }
                     .background(PaperPink, CircleShape)
                     .align(Alignment.TopCenter)
@@ -396,7 +439,8 @@ fun UltraPreview(
                         orientation = Orientation.Vertical,
                         state = rememberDraggableState { delta ->
                             if (trackHeight > 0) {
-                                val newPercent = (scrollPercentage + delta / trackHeight).coerceIn(0f, 1f)
+                                val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.05f, 0.2f)).coerceAtLeast(minThumbHeight.toPx())
+                                val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
                                 val targetPage = (newPercent * (pageCount - 1)).roundToInt()
                                 scope.launch { listState.scrollToItem(targetPage) }
                             }
@@ -453,7 +497,7 @@ fun PdfPageReaderItem(
         PdfPageRequest(uri, index, password, 0.7f, priority = 1) 
     }
     val highResRequest = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 2.5f, priority = 0) 
+        PdfPageRequest(uri, index, password, 4.0f, priority = 0) 
     }
     
     BoxWithConstraints(
@@ -525,10 +569,10 @@ fun PdfPageReaderItem(
 
                 Box(
                     modifier = Modifier
-                        .offset(x = (left - 1).dp, y = top.dp)
-                        .size(width = (width + 2).dp, height = height.dp)
-                        .background(Color.Yellow.copy(alpha = 0.35f))
-                        .border(0.5.dp, Color.Yellow.copy(alpha = 0.5f))
+                        .offset(x = left.dp, y = top.dp)
+                        .size(width = width.dp, height = height.dp)
+                        .background(Color.Yellow.copy(alpha = 0.25f))
+                        .border(0.5.dp, Color.Yellow.copy(alpha = 0.4f))
                 )
             }
         }

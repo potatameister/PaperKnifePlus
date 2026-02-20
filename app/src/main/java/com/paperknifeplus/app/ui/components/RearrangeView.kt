@@ -191,6 +191,28 @@ fun RearrangeView(
                                 }
                             }
 
+                            // NITRO 4.0: Standardized Info Row
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                color = accentColor.copy(alpha = 0.05f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(Icons.Filled.Info, null, tint = accentColor, modifier = Modifier.size(14.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "Long-press to drag and reorder pages",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor
+                                    )
+                                }
+                            }
+
                             Box(modifier = Modifier.weight(1f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
@@ -201,21 +223,6 @@ fun RearrangeView(
                                     pageOrder = pageOrder,
                                     onOrderChange = { pageOrder = it }
                                 )
-                                
-                                // Overlay instruction for Rearrange
-                                Surface(
-                                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
-                                    color = Color.Black.copy(0.4f),
-                                    shape = RoundedCornerShape(20.dp)
-                                ) {
-                                    Text(
-                                        "Long-press to drag pages", 
-                                        color = Color.White, 
-                                        fontSize = 8.sp, 
-                                        fontWeight = FontWeight.Black,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
-                                }
                             }
 
                             Button(
@@ -293,15 +300,5 @@ fun RearrangeView(
                 )
             }
         }
-    }
-
-    if (lightboxPage != null && selectedUri != null) {
-        PageLightbox(
-            uri = selectedUri!!,
-            initialPage = lightboxPage!!,
-            totalCount = pageOrder.size,
-            password = unlockPassword.ifEmpty { null },
-            onDismiss = { lightboxPage = null }
-        )
     }
 }
