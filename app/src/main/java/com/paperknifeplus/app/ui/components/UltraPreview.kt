@@ -31,6 +31,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.IntOffset
@@ -59,6 +60,7 @@ fun UltraPreview(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     
@@ -430,7 +432,8 @@ fun UltraPreview(
                     .width(10.dp)
                     .graphicsLayer {
                         // Calculate thumb height in Px for accurate movement
-                        val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.05f, 0.2f)).coerceAtLeast(minThumbHeight.toPx())
+                        val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
+                        val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.05f, 0.2f)).coerceAtLeast(minThumbHeightPx)
                         translationY = scrollPercentage * (trackHeight - thumbHeightPx)
                     }
                     .background(PaperPink, CircleShape)
@@ -439,7 +442,8 @@ fun UltraPreview(
                         orientation = Orientation.Vertical,
                         state = rememberDraggableState { delta ->
                             if (trackHeight > 0) {
-                                val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.05f, 0.2f)).coerceAtLeast(minThumbHeight.toPx())
+                                val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
+                                val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.05f, 0.2f)).coerceAtLeast(minThumbHeightPx)
                                 val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
                                 val targetPage = (newPercent * (pageCount - 1)).roundToInt()
                                 scope.launch { listState.scrollToItem(targetPage) }
