@@ -431,7 +431,7 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                         
                         matches.add(TextMatch(
                             currentPageNo - 1,
-                            PDRectangle(x, y - h, x + w, y + (h * 0.2f))
+                            PDRectangle(x, y - h, x + w, y)
                         ))
                         index = text.indexOf(query, index + 1, ignoreCase = true)
                     }

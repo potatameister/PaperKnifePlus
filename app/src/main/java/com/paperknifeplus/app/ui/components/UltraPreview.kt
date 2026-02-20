@@ -450,10 +450,10 @@ fun PdfPageReaderItem(
 ) {
     // NITRO 4.0: Two-Stage Progressive Loading
     val lowResRequest = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 0.5f, priority = 1) 
+        PdfPageRequest(uri, index, password, 0.7f, priority = 1) 
     }
     val highResRequest = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 1.5f, priority = 0) 
+        PdfPageRequest(uri, index, password, 2.5f, priority = 0) 
     }
     
     BoxWithConstraints(
@@ -525,8 +525,8 @@ fun PdfPageReaderItem(
 
                 Box(
                     modifier = Modifier
-                        .offset(x = left.dp, y = top.dp)
-                        .size(width = width.dp, height = height.dp)
+                        .offset(x = (left - 1).dp, y = top.dp)
+                        .size(width = (width + 2).dp, height = height.dp)
                         .background(Color.Yellow.copy(alpha = 0.35f))
                         .border(0.5.dp, Color.Yellow.copy(alpha = 0.5f))
                 )

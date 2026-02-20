@@ -42,7 +42,8 @@ import com.paperknifeplus.app.data.image.PdfPageRequest
 enum class PreviewMode {
     GRID,   // Scrollable grid (Split, etc.)
     COVER,  // Single high-res page (Compress, Protect, etc.)
-    REORDER // Draggable grid (Rearrange)
+    REORDER, // Draggable grid (Rearrange)
+    ROTATE  // Tap to rotate (Rotate)
 }
 
 @Composable
@@ -55,7 +56,9 @@ fun UnifiedPdfPreview(
     selectedPages: Set<Int>? = null,
     onToggleSelection: ((Int) -> Unit)? = null,
     pageOrder: List<Int>? = null,
-    onOrderChange: ((List<Int>) -> Unit)? = null
+    onOrderChange: ((List<Int>) -> Unit)? = null,
+    pageRotations: Map<Int, Int>? = null,
+    onRotatePage: ((Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
@@ -113,14 +116,41 @@ fun UnifiedPdfPreview(
             }
         }
     } else if (mode == PreviewMode.REORDER && pageOrder != null && onOrderChange != null) {
-        // --- NITRO REORDER 3.0: STABLE DRAGGING ---
+        // --- NITRO REORDER 4.0: STABLE DRAGGING & AUTO-SCROLL ---
+        val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
         var draggedIndex by remember { mutableStateOf<Int?>(null) }
         var dragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+        val scope = rememberCoroutineScope()
         
         // Use a local copy for visual stability during drag
         val visualList = remember(pageOrder) { pageOrder.toMutableStateList() }
+
+        // AUTO-SCROLL LOGIC
+        LaunchedEffect(draggedIndex, dragOffset) {
+            if (draggedIndex != null) {
+                while (true) {
+                    val layoutInfo = gridState.layoutInfo
+                    val containerHeight = layoutInfo.viewportSize.height
+                    
+                    // Estimate drag position relative to viewport
+                    // This is a simplification; we check the drag offset vs screen boundaries
+                    val dragY = dragOffset.y 
+                    val scrollThreshold = containerHeight * 0.15f
+                    
+                    if (dragY < -scrollThreshold) {
+                        gridState.animateScrollBy(-200f)
+                    } else if (dragY > scrollThreshold) {
+                        gridState.animateScrollBy(200f)
+                    } else {
+                        break
+                    }
+                    kotlinx.coroutines.delay(10)
+                }
+            }
+        }
         
         LazyVerticalGrid(
+            state = gridState,
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -129,7 +159,7 @@ fun UnifiedPdfPreview(
         ) {
             itemsIndexed(visualList, key = { _, pageIdx -> pageIdx }) { index, pageIdx ->
                 val isDragging = draggedIndex == index
-                val scale by animateFloatAsState(if (isDragging) 1.1f else 1f, spring(stiffness = Spring.StiffnessLow))
+                val scale by animateFloatAsState(if (isDragging) 1.15f else 1f, spring(stiffness = Spring.StiffnessLow))
                 val zIndex = if (isDragging) 10f else 1f
                 
                 Box(
@@ -163,9 +193,9 @@ fun UnifiedPdfPreview(
                                     val cellHeight = cellWidth / 0.707f
                                     val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                     
-                                    // NITRO HYSTERESIS: Require 80% movement to trigger swap
-                                    val swapThresholdY = cellHeight * 0.8f
-                                    val swapThresholdX = cellWidth * 0.8f
+                                    // NITRO HYSTERESIS: Require 90% movement to trigger swap (Extra stability)
+                                    val swapThresholdY = cellHeight * 0.9f
+                                    val swapThresholdX = cellWidth * 0.9f
                                     
                                     val colOffset = if (Math.abs(dragOffset.x) > swapThresholdX) (dragOffset.x / cellWidth).toInt() else 0
                                     val rowOffset = if (Math.abs(dragOffset.y) > swapThresholdY) (dragOffset.y / cellHeight).toInt() else 0
@@ -197,15 +227,15 @@ fun UnifiedPdfPreview(
                         imageLoader = imageLoader,
                         accentColor = accentColor,
                         onClick = { lightboxPage = pageIdx },
-                        // NITRO BLITZ: Ultra-low resolution for jitter-free drag
-                        scale = 0.4f,
+                        // NITRO BLITZ: Balanced resolution for smooth drag
+                        scale = 0.6f,
                         modifier = if (isDragging) Modifier.shadow(16.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
                     )
                 }
             }
         }
     } else {
-        // --- TYPE A: MINI PREVIEW GRID (Blitz Mode) ---
+        // --- TYPE A: MINI PREVIEW GRID (Blitz Mode / Selection / Rotate) ---
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
@@ -215,6 +245,7 @@ fun UnifiedPdfPreview(
         ) {
             items(pageCount, key = { it }) { index ->
                 val isSelected = selectedPages?.contains(index) == true
+                val rotation = pageRotations?.get(index) ?: 0
                 
                 PdfPageItem(
                     uri = uri,
@@ -222,13 +253,32 @@ fun UnifiedPdfPreview(
                     password = password,
                     imageLoader = imageLoader,
                     accentColor = accentColor,
+                    rotation = rotation,
                     onClick = { 
-                        if (onToggleSelection != null) onToggleSelection(index)
+                        if (mode == PreviewMode.ROTATE && onRotatePage != null) onRotatePage(index)
+                        else if (onToggleSelection != null) onToggleSelection(index)
                         else lightboxPage = index 
                     },
+                    scale = 0.6f,
                     modifier = if (isSelected) Modifier.border(BorderStroke(3.dp, accentColor), RoundedCornerShape(12.dp)) else Modifier
                 ) {
-                    if (onToggleSelection != null) {
+                    if (mode == PreviewMode.ROTATE) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(28.dp),
+                            color = Color.Black.copy(0.4f),
+                            shape = CircleShape
+                        ) {
+                            Icon(
+                                Icons.Filled.RotateRight, 
+                                null, 
+                                tint = Color.White, 
+                                modifier = Modifier.padding(6.dp)
+                            )
+                        }
+                    } else if (onToggleSelection != null) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -295,14 +345,15 @@ fun PdfPageItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     accentColor: Color = MaterialTheme.colorScheme.primary,
-    scale: Float = 0.7f,
+    scale: Float = 0.6f,
+    rotation: Int = 0,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
-    val request = remember(uri, index, password, scale) { PdfPageRequest(uri, index, password, scale) }
+    val request = remember(uri, index, password, scale, rotation) { PdfPageRequest(uri, index, password, scale, rotation) }
     
     Box(
         modifier = modifier
-            .aspectRatio(0.707f)
+            .aspectRatio(if (rotation % 180 != 0) 1.414f else 0.707f)
             .clip(RoundedCornerShape(12.dp))
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF4F4F5))
             .clickable { onClick() },
@@ -317,8 +368,9 @@ fun PdfPageItem(
         Image(
             painter = painter,
             contentDescription = "Page ${index + 1}",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+            modifier = Modifier
+                .fillMaxSize(),
+            contentScale = ContentScale.Fit
         )
 
         if (painterState is AsyncImagePainter.State.Loading) {
@@ -330,7 +382,8 @@ fun PdfPageItem(
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp),
+                .padding(bottom = 8.dp)
+                .graphicsLayer { rotationZ = 0f }, // Don't rotate page number
             color = Color.Black.copy(0.6f),
             shape = RoundedCornerShape(8.dp)
         ) {

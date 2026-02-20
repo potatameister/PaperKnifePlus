@@ -30,6 +30,7 @@ data class PdfPageRequest(
     val pageIndex: Int,
     val password: String? = null,
     val scale: Float = 1.0f,
+    val rotation: Int = 0,
     val priority: Int = 0 // 0: Prefetch, 1: High (Current View)
 )
 
@@ -127,6 +128,31 @@ class PdfPageFetcher(
     private val data: PdfPageRequest
 ) : Fetcher {
 
+    private fun applyRotation(source: Bitmap, rotation: Int): Bitmap {
+        if (rotation % 360 == 0) return source
+        
+        val matrix = android.graphics.Matrix()
+        matrix.postRotate(rotation.toFloat())
+        
+        val newWidth = if (rotation % 180 != 0) source.height else source.width
+        val newHeight = if (rotation % 180 != 0) source.width else source.height
+        
+        val rotated = BitmapPool.get(newWidth, newHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(rotated)
+        
+        // Center rotation logic
+        val cx = source.width / 2f
+        val cy = source.height / 2f
+        
+        // Move to origin, rotate, move to new center
+        matrix.preTranslate(-cx, -cy)
+        matrix.postTranslate(newWidth / 2f, newHeight / 2f)
+        
+        canvas.drawBitmap(source, matrix, null)
+        BitmapPool.put(source) // Recycle source
+        return rotated
+    }
+
     override suspend fun fetch(): FetchResult? = withContext(if (data.priority > 0) highPriorityDispatcher else lowPriorityDispatcher) {
         try {
             // 1. Try Native Renderer (Turbo Path)
@@ -148,8 +174,10 @@ class PdfPageFetcher(
                                     
                                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
                                     
+                                    val finalBitmap = if (data.rotation != 0) applyRotation(bitmap, data.rotation) else bitmap
+                                    
                                     return@withContext DrawableResult(
-                                        drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
+                                        drawable = android.graphics.drawable.BitmapDrawable(context.resources, finalBitmap),
                                         isSampled = data.scale < 1.0f,
                                         dataSource = DataSource.MEMORY
                                     )
@@ -173,8 +201,10 @@ class PdfPageFetcher(
                     val renderer = com.tom_roush.pdfbox.rendering.PDFRenderer(document)
                     val bitmap = renderer.renderImage(data.pageIndex, data.scale, ImageType.RGB)
                     
+                    val finalBitmap = if (data.rotation != 0) applyRotation(bitmap, data.rotation) else bitmap
+                    
                     return@withContext DrawableResult(
-                        drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap),
+                        drawable = android.graphics.drawable.BitmapDrawable(context.resources, finalBitmap),
                         isSampled = data.scale < 1.0f,
                         dataSource = DataSource.MEMORY
                     )
