@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
                     Box(Modifier.fillMaxSize()) {
                         var currentTool by remember { mutableStateOf<String?>(null) }
+                        var previewData by remember { mutableStateOf<Triple<Uri, String, Int>?>(null) }
                         
                         val mainScreens = listOf("home", "tools", "history", "settings")
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
@@ -106,10 +107,17 @@ class MainActivity : ComponentActivity() {
                                         "home" -> HomeView(
                                             isDarkMode = isDarkMode,
                                             onThemeToggle = { isDarkMode = !isDarkMode },
-                                            onToolClick = { currentTool = it }
+                                            onToolClick = { currentTool = it },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
                                         )
                                         "tools" -> ToolsView(onToolClick = { currentTool = it })
-                                        "history" -> HistoryView()
+                                        "history" -> HistoryView(onItemClick = { uri, name, count ->
+                                            previewData = Triple(uri, name, count)
+                                            currentTool = "ultra_preview"
+                                        })
                                         "settings" -> SettingsView(onNavigateToAbout = { currentTool = "about" })
                                     }
                                 }
@@ -144,10 +152,34 @@ class MainActivity : ComponentActivity() {
                                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                                     when (currentTool) {
                                         "about" -> AboutView()
-                                        "merge" -> MergeView(onBack = { currentTool = null })
-                                        "split" -> SplitView(onBack = { currentTool = null })
-                                        "delete" -> DeleteView(onBack = { currentTool = null })
-                                        "compress" -> CompressView(onBack = { currentTool = null })
+                                        "merge" -> MergeView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "split" -> SplitView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "delete" -> DeleteView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "compress" -> CompressView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "repair" -> RepairView(onBack = { currentTool = null })
                                         "rotate" -> RotateView(onBack = { currentTool = null })
                                         "rearrange" -> RearrangeView(onBack = { currentTool = null })
@@ -160,6 +192,16 @@ class MainActivity : ComponentActivity() {
                                         "pdf2text" -> PdfToTextView(onBack = { currentTool = null })
                                         "pdf2zip" -> PdfToZipView(onBack = { currentTool = null })
                                         "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
+                                        "ultra_preview" -> {
+                                            previewData?.let { (uri, name, count) ->
+                                                UltraPreview(
+                                                    uri = uri,
+                                                    fileName = name,
+                                                    pageCount = count,
+                                                    onDismiss = { currentTool = null }
+                                                )
+                                            }
+                                        }
                                         "bookmarks" -> ComingSoonView("Bookmarks", onBack = { currentTool = null })
                                         "compare" -> ComingSoonView("Compare PDF", onBack = { currentTool = null })
                                         "sign" -> ComingSoonView("Sign PDF", onBack = { currentTool = null })

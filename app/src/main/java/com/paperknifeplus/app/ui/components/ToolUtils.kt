@@ -353,6 +353,16 @@ suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password:
     }
 }
 
+import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionURI
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink
+import com.tom_roush.pdfbox.text.PDFTextStripper
+
+data class PdfLink(
+    val pageIndex: Int,
+    val rect: PDRectangle,
+    val url: String
+)
+
 /**
  * NITRO ENGINE: Decrypt to Cache.
  * Fixes "Missing Images" and "Lag" in protected PDFs by decrypting the whole file ONCE 
@@ -374,4 +384,55 @@ suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? =
     } catch (e: Exception) {
         null
     }
+}
+
+suspend fun findTextInPdf(context: Context, uri: Uri, password: String?, query: String, startFromPage: Int): Int = withContext(Dispatchers.IO) {
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            val stripper = PDFTextStripper()
+            val total = document.numberOfPages
+            
+            // Search from current page to end
+            for (i in startFromPage..total) {
+                stripper.startPage = i
+                stripper.endPage = i
+                if (stripper.getText(document).contains(query, ignoreCase = true)) {
+                    document.close()
+                    return@withContext i - 1
+                }
+            }
+            
+            // Wrap around search from beginning to current page
+            for (i in 1 until startFromPage) {
+                stripper.startPage = i
+                stripper.endPage = i
+                if (stripper.getText(document).contains(query, ignoreCase = true)) {
+                    document.close()
+                    return@withContext i - 1
+                }
+            }
+            document.close()
+        }
+    } catch (e: Exception) { }
+    -1
+}
+
+suspend fun getLinksFromPdf(context: Context, uri: Uri, password: String?): List<PdfLink> = withContext(Dispatchers.IO) {
+    val links = mutableListOf<PdfLink>()
+    try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+            document.pages.forEachIndexed { index, page ->
+                page.annotations.filterIsInstance<PDAnnotationLink>().forEach { link ->
+                    val action = link.action
+                    if (action is PDActionURI) {
+                        links.add(PdfLink(index, link.rectangle, action.uri))
+                    }
+                }
+            }
+            document.close()
+        }
+    } catch (e: Exception) { }
+    links
 }

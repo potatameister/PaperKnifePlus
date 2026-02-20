@@ -37,7 +37,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun SplitView(onBack: () -> Unit) {
+fun SplitView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -45,6 +48,7 @@ fun SplitView(onBack: () -> Unit) {
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var rangeText by remember { mutableStateOf("") }
     var selectedPages by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -159,9 +163,11 @@ fun SplitView(onBack: () -> Unit) {
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    val finalCount = getPageCount(context, saveUri, null)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Split", "${selectedPages.size} pages extracted", Icons.Filled.ContentCut)
+                        outputUri = saveUri
+                        SessionManager.addEntry(fileName, "Split", "${selectedPages.size} pages extracted", Icons.Filled.ContentCut, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -329,7 +335,20 @@ fun SplitView(onBack: () -> Unit) {
                             subMessage = "Selected pages saved successfully",
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { selectedUri = null; unlockPassword = ""; currentState = ToolState.SELECTING },
+                            onProcessMore = { 
+                                selectedUri = null
+                                outputUri = null
+                                unlockPassword = ""
+                                currentState = ToolState.SELECTING 
+                            },
+                            onPreview = {
+                                outputUri?.let { uri ->
+                                    scope.launch {
+                                        val count = getPageCount(context, uri, null)
+                                        onOpenPreview(uri, fileName, count)
+                                    }
+                                }
+                            },
                             accentColor = accentColor
                         )
                     }

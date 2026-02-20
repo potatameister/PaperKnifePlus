@@ -24,8 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 
+import android.net.Uri
+
 @Composable
-fun HistoryView() {
+fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
     
     val historyItems = SessionManager.history
@@ -136,7 +138,9 @@ fun HistoryView() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(filteredItems, key = { it.id }) { item ->
-                    HistoryItem(item)
+                    HistoryItem(item, onClick = {
+                        item.uri?.let { uri -> onItemClick(uri, item.name, item.pageCount) }
+                    })
                 }
                 item(key = "footer_spacer") { Spacer(modifier = Modifier.height(100.dp)) }
             }
@@ -145,12 +149,13 @@ fun HistoryView() {
 }
 
 @Composable
-fun HistoryItem(entry: ActivityEntry) {
+fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp),
+            .height(72.dp)
+            .clickable(enabled = entry.uri != null) { onClick() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) Color(0xFF09090B) else Color.White

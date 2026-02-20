@@ -41,8 +41,24 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 fun HomeView(
     isDarkMode: Boolean,
     onThemeToggle: () -> Unit,
-    onToolClick: (String) -> Unit
+    onToolClick: (String) -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
+    val pickLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            val details = getUriDetails(context, it)
+            scope.launch {
+                val count = getPageCount(context, it, null)
+                onOpenPreview(it, details.name, count)
+            }
+        }
+    }
+
     val coreEngines = remember {
         listOf(
             Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
@@ -67,7 +83,7 @@ fun HomeView(
             }
 
             item(span = { GridItemSpan(2) }, key = "hero") {
-                HeroCard(onSelectPdf = { onToolClick("tools") })
+                HeroCard(onSelectPdf = { pickLauncher.launch("application/pdf") })
             }
 
             item(span = { GridItemSpan(2) }, key = "history") {

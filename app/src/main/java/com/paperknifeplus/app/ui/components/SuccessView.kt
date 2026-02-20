@@ -24,6 +24,7 @@ fun SuccessView(
     processingTime: String = "", 
     onDone: () -> Unit, 
     onProcessMore: () -> Unit,
+    onPreview: (() -> Unit)? = null,
     accentColor: Color = PaperPink
 ) {
     Column(
@@ -84,14 +85,24 @@ fun SuccessView(
             }
 
             OutlinedButton(
-                onClick = { /* Future functionality */ },
+                onClick = { onPreview?.invoke() },
+                enabled = onPreview != null,
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 shape = RoundedCornerShape(20.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(0.2f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (onPreview != null) accentColor.copy(alpha = 0.3f) else Color.Gray.copy(0.2f))
             ) {
-                Icon(Icons.Filled.Visibility, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+                Icon(
+                    Icons.Filled.Visibility, 
+                    null, 
+                    modifier = Modifier.size(18.dp), 
+                    tint = if (onPreview != null) accentColor else Color.Gray
+                )
                 Spacer(Modifier.width(12.dp))
-                Text("PREVIEW (COMING SOON)", fontWeight = FontWeight.Bold, color = Color.Gray)
+                Text(
+                    if (onPreview != null) "OPEN PREVIEW" else "PREVIEW (UNAVAILABLE)", 
+                    fontWeight = FontWeight.Bold, 
+                    color = if (onPreview != null) accentColor else Color.Gray
+                )
             }
             
             TextButton(

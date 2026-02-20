@@ -322,38 +322,6 @@ fun PageLightbox(
                 }
             }
         }
-    }
-}
-
-private suspend fun findTextInPdf(context: android.content.Context, uri: Uri, password: String?, query: String, startFromPage: Int): Int = withContext(Dispatchers.IO) {
-    try {
-        com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(context)
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val stripper = PDFTextStripper()
-            val total = document.numberOfPages
-            
-            // Search from current page to end
-            for (i in startFromPage..total) {
-                stripper.startPage = i
-                stripper.endPage = i
-                if (stripper.getText(document).contains(query, ignoreCase = true)) {
-                    document.close()
-                    return@withContext i - 1
-                }
-            }
-            
-            // Wrap around search from beginning to current page
-            for (i in 1 until startFromPage) {
-                stripper.startPage = i
-                stripper.endPage = i
-                if (stripper.getText(document).contains(query, ignoreCase = true)) {
-                    document.close()
-                    return@withContext i - 1
-                }
-            }
-            document.close()
         }
-    } catch (e: Exception) { }
-    -1
-}
+    }
+    

@@ -1,5 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
+import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -8,7 +9,9 @@ data class ActivityEntry(
     val name: String,
     val tool: String,
     val size: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val uri: Uri? = null,
+    val pageCount: Int = 0
 )
 
 data class Tool(
@@ -24,13 +27,15 @@ data class Tool(
 object SessionManager {
     val history = mutableStateListOf<ActivityEntry>()
     
-    fun addEntry(name: String, tool: String, size: String, icon: ImageVector) {
+    fun addEntry(name: String, tool: String, size: String, icon: ImageVector, uri: Uri? = null, pageCount: Int = 0) {
         history.add(0, ActivityEntry(
             id = System.currentTimeMillis().toString(),
             name = name,
             tool = tool,
             size = size,
-            icon = icon
+            icon = icon,
+            uri = uri,
+            pageCount = pageCount
         ))
     }
 }

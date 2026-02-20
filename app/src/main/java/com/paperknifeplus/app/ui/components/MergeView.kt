@@ -66,7 +66,10 @@ data class MergeFile(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MergeView(onBack: () -> Unit) {
+fun MergeView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -77,6 +80,7 @@ fun MergeView(onBack: () -> Unit) {
     var processingTime by remember { mutableStateOf("") }
     var progressCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
+    var mergedUri by remember { mutableStateOf<Uri?>(null) }
     
     // UI State
     var fileToUnlock by remember { mutableStateOf<MergeFile?>(null) }
@@ -152,9 +156,11 @@ fun MergeView(onBack: () -> Unit) {
                     
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
+                    val finalCount = getPageCount(context, saveUri, null)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers)
+                        mergedUri = saveUri
+                        SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -351,19 +357,29 @@ fun MergeView(onBack: () -> Unit) {
                         )
                     }
                 
-                    ToolState.SUCCESS -> {
-                        SuccessView(
-                            message = "Merge Complete",
-                            subMessage = "Successfully joined ${selectedFiles.size} documents",
-                            processingTime = processingTime,
-                            onDone = onBack,
-                            onProcessMore = { 
-                                selectedFiles = emptyList()
-                                currentState = ToolState.SELECTING 
-                            },
-                            accentColor = accentColor
-                        )
-                    }
+                                        ToolState.SUCCESS -> {
+                                            SuccessView(
+                                                message = "Merge Complete",
+                                                subMessage = "Successfully joined ${selectedFiles.size} documents",
+                                                processingTime = processingTime,
+                                                onDone = onBack,
+                                                onProcessMore = { 
+                                                    selectedFiles = emptyList()
+                                                    mergedUri = null
+                                                    currentState = ToolState.SELECTING 
+                                                },
+                                                onPreview = {
+                                                    mergedUri?.let { uri ->
+                                                        scope.launch {
+                                                            val count = getPageCount(context, uri, null)
+                                                            onOpenPreview(uri, "Merged PDF", count)
+                                                        }
+                                                    }
+                                                },
+                                                accentColor = accentColor
+                                            )
+                                        }
+                    
                     else -> {}
                 }
             }

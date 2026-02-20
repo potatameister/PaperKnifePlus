@@ -34,7 +34,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun CompressView(onBack: () -> Unit) {
+fun CompressView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -42,6 +45,7 @@ fun CompressView(onBack: () -> Unit) {
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
@@ -107,11 +111,13 @@ fun CompressView(onBack: () -> Unit) {
                     
                     val newDetails = getUriDetails(context, saveUri)
                     val spaceSaved = if (fileSizeOld > 0) ((fileSizeOld - newDetails.sizeBytes).toFloat() / fileSizeOld * 100).toInt().coerceAtLeast(0) else 0
+                    val finalCount = getPageCount(context, saveUri, null)
                     
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
+                        outputUri = saveUri
                         spaceSavedText = "REDUCED BY $spaceSaved% (${newDetails.size})"
-                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Filled.FlashOn)
+                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Filled.FlashOn, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -245,7 +251,20 @@ fun CompressView(onBack: () -> Unit) {
                             subMessage = spaceSavedText,
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { selectedUri = null; unlockPassword = ""; currentState = ToolState.SELECTING },
+                            onProcessMore = { 
+                                selectedUri = null
+                                outputUri = null
+                                unlockPassword = ""
+                                currentState = ToolState.SELECTING 
+                            },
+                            onPreview = {
+                                outputUri?.let { uri ->
+                                    scope.launch {
+                                        val count = getPageCount(context, uri, null)
+                                        onOpenPreview(uri, fileName, count)
+                                    }
+                                }
+                            },
                             accentColor = accentColor
                         )
                     }
