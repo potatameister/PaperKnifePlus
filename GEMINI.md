@@ -50,11 +50,11 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
-- **2026-02-20:** **ULTRA PREVIEW RELEASE**:
-    - Implemented **Premium Ultra Preview** PDF reader with continuous vertical scrolling.
-    - Added **Interactive Link Support** (clickable URLs) and **Advanced Text Search**.
-    - Integrated **Home & History Entry Points**: Read any PDF directly from Home or revisit results from History.
-    - Added **"OPEN PREVIEW"** call-to-action on tool success pages.
+- **2026-02-20:** **NITRO ENGINE 3.0 & GOLD STANDARD UI**:
+    - **Ultra Preview Polish:** Implemented seamless vertical scrolling (no page gaps), accurate link mapping, and a high-performance "Find in Page" search with visual highlighting and navigation controls. Added a custom draggable scrollbar for rapid navigation.
+    - **Gold Standard Rearrange:** Upgraded Rearrange tool to a 2-column grid for larger thumbnails and implemented predictive slot-swap logic for jitter-free reordering.
+    - **Universal Previews:** Enforced centered, high-res processing previews across all tools (Compress, Protect, etc.) using `ProcessingStateView`.
+    - **Performance:** Optimized `LazyColumn` in Ultra Preview with `beyondBoundsPageCount = 0` to prevent memory spikes during fast scrolling.
 - **2026-02-19:** **GOLD STANDARD & BLITZ 4.0**:
     - Refactored **Split** and **Delete** tools to "Gold Standard" (Visual Grid Selection + Sync Range Input).
     - Optimized Nitro Engine to **Blitz 0.4f** scale for crash-free high-speed scrolling.
