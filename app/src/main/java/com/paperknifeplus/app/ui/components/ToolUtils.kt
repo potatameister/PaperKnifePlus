@@ -56,16 +56,18 @@ object PreferencesManager {
     }
 }
 
+import com.paperknifeplus.app.data.image.PdDocumentPool
+
 // Advanced Memory Cache and Pool for Bitmaps
 object BitmapCache {
     private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
-    private val cacheSize = maxMemory / 6 
+    private val cacheSize = maxMemory / 5 // INCREASED: Use 20% of RAM for ultra-fast reader
     private val memoryCache = object : LruCache<String, Bitmap>(cacheSize) {
         override fun sizeOf(key: String, bitmap: Bitmap): Int {
             return bitmap.byteCount / 1024
         }
         override fun entryRemoved(evicted: Boolean, key: String, oldValue: Bitmap, newValue: Bitmap?) {
-            // Add to pool for reuse instead of letting it GC
+            // NITRO: Always recycle bitmaps back to pool to minimize GC
             if (oldValue.isMutable) BitmapPool.put(oldValue)
         }
     }
@@ -79,20 +81,24 @@ object BitmapCache {
     fun clear() = synchronized(this) { memoryCache.evictAll() }
 }
 
-// Bitmap Pool to reuse memory and eliminate scrolling lag (like Glide/Picasso)
+// Bitmap Pool: NITRO 4.0 - Size-Aware Pooling
 object BitmapPool {
-    private val pool = mutableListOf<Bitmap>()
-    private const val MAX_POOL_SIZE = 12
+    private val pool = mutableMapOf<Pair<Int, Int>, MutableList<Bitmap>>()
+    private val maxPoolCount: Int by lazy {
+        // High-end: 24 slots, Low-end: 8 slots
+        val memoryClass = (Runtime.getRuntime().maxMemory() / (1024 * 1024)).toInt()
+        if (memoryClass > 512) 24 else 8
+    }
+    private var currentCount = 0
 
     fun get(width: Int, height: Int, config: Bitmap.Config): Bitmap {
-        synchronized(pool) {
-            val iterator = pool.iterator()
-            while (iterator.hasNext()) {
-                val bitmap = iterator.next()
-                if (bitmap.width == width && bitmap.height == height && bitmap.config == config) {
-                    iterator.remove()
-                    return bitmap
-                }
+        synchronized(this) {
+            val key = width to height
+            val list = pool[key]
+            if (list != null && list.isNotEmpty()) {
+                val bitmap = list.removeAt(list.size - 1)
+                currentCount--
+                return bitmap
             }
         }
         return Bitmap.createBitmap(width, height, config)
@@ -100,8 +106,16 @@ object BitmapPool {
 
     fun put(bitmap: Bitmap) {
         if (!bitmap.isMutable) return
-        synchronized(pool) {
-            if (pool.size < MAX_POOL_SIZE) pool.add(bitmap)
+        synchronized(this) {
+            if (currentCount >= maxPoolCount) {
+                // Remove oldest/any if full
+                val randomKey = pool.keys.firstOrNull() ?: return
+                pool[randomKey]?.removeFirstOrNull()?.recycle()
+                currentCount--
+            }
+            val key = bitmap.width to bitmap.height
+            pool.getOrPut(key) { mutableListOf() }.add(bitmap)
+            currentCount++
         }
     }
 }
@@ -168,12 +182,8 @@ suspend fun loadPreview(context: Context, uri: Uri, password: String?): Bitmap? 
 
 suspend fun getPageCount(context: Context, uri: Uri, password: String?): Int = withContext(Dispatchers.IO) {
     try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-            val count = document.numberOfPages
-            document.close()
-            count
-        } ?: 0
+        val document = PdDocumentPool.acquire(context, uri, password)
+        document?.numberOfPages ?: 0
     } catch (e: Exception) { 0 }
 }
 
@@ -202,13 +212,12 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
         } catch (e: Exception) { }
     }
 
-    // Fallback to PDFBox
+    // Fallback to PDFBox (Using PdDocumentPool for Nitro 4.0 speed)
     try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        val document = PdDocumentPool.acquire(context, uri, password)
+        if (document != null) {
             val renderer = PDFRenderer(document)
             val bitmap = renderer.renderImage(pageIndex, scale, ImageType.RGB)
-            document.close()
             BitmapCache.putBitmap(key, bitmap)
             return@withContext bitmap
         }
@@ -400,8 +409,8 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
     if (query.isBlank()) return@withContext matches
     
     try {
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        val document = PdDocumentPool.acquire(context, uri, password)
+        if (document != null) {
             val totalPages = document.numberOfPages
             
             val stripper = object : PDFTextStripper() {
@@ -413,19 +422,17 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                         val first = textPositions[index]
                         val last = textPositions[index + query.length - 1]
                         
-                        // NITRO: PDFBox yDirAdj is top-down. 
-                        // Convert to PDF coordinates (bottom-up) for Unified Preview mapping.
                         val page = document.getPage(currentPageNo - 1)
                         val pageHeight = page.mediaBox.height
                         
                         val x = first.xDirAdj
-                        val y = pageHeight - first.yDirAdj // Flip to bottom-up
+                        val y = pageHeight - first.yDirAdj
                         val w = (last.xDirAdj + last.widthDirAdj) - first.xDirAdj
                         val h = first.heightDir
                         
                         matches.add(TextMatch(
                             currentPageNo - 1,
-                            PDRectangle(x, y - h, x + w, y + (h * 0.2f)) // Corrected Bounding Box
+                            PDRectangle(x, y - h, x + w, y + (h * 0.2f))
                         ))
                         index = text.indexOf(query, index + 1, ignoreCase = true)
                     }
@@ -439,7 +446,7 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
             
             stripper.sortByPosition = true
             stripper.getText(document)
-            document.close()
+            // NITRO: Don't close document here as it belongs to the pool
         }
     } catch (e: Exception) {}
     matches

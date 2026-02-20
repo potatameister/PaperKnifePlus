@@ -448,8 +448,12 @@ fun PdfPageReaderItem(
     matches: List<TextMatch>,
     onLinkClick: (String) -> Unit
 ) {
-    val request = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 1.5f) // High Res
+    // NITRO 4.0: Two-Stage Progressive Loading
+    val lowResRequest = remember(uri, index, password) { 
+        PdfPageRequest(uri, index, password, 0.5f, priority = 1) 
+    }
+    val highResRequest = remember(uri, index, password) { 
+        PdfPageRequest(uri, index, password, 1.5f, priority = 0) 
     }
     
     BoxWithConstraints(
@@ -458,16 +462,32 @@ fun PdfPageReaderItem(
             .aspectRatio(pageSize?.let { it.first / it.second } ?: 0.707f)
             .background(Color.White)
     ) {
-        val painter = rememberAsyncImagePainter(request, imageLoader)
+        val lowResPainter = rememberAsyncImagePainter(lowResRequest, imageLoader)
+        val highResPainter = rememberAsyncImagePainter(highResRequest, imageLoader)
         
+        // Layer 1: Ghost/Thumb (Instantly visible from cache)
         Image(
-            painter = painter,
-            contentDescription = "Page ${index + 1}",
+            painter = lowResPainter,
+            contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit
         )
 
-        if (painter.state is AsyncImagePainter.State.Loading) {
+        // Layer 2: High-Res (Fades in over ghost)
+        AnimatedVisibility(
+            visible = highResPainter.state is AsyncImagePainter.State.Success,
+            enter = fadeIn(tween(300)),
+            exit = fadeOut()
+        ) {
+            Image(
+                painter = highResPainter,
+                contentDescription = "Page ${index + 1}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        if (lowResPainter.state is AsyncImagePainter.State.Loading && highResPainter.state is AsyncImagePainter.State.Loading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PaperPink, modifier = Modifier.size(32.dp))
             }

@@ -259,7 +259,10 @@ fun MergeView(
                                                         
                                                         val height = if (itemHeightPx > 0) itemHeightPx else 200f
                                                         val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
-                                                        val offsetSlots = (dragOffset / height).toInt()
+                                                        
+                                                        // NITRO HYSTERESIS: Require 80% movement to trigger swap
+                                                        val swapThreshold = height * 0.8f
+                                                        val offsetSlots = if (Math.abs(dragOffset) > swapThreshold) (dragOffset / height).toInt() else 0
                                                         val targetIndex = (currentIndex + offsetSlots).coerceIn(0, selectedFiles.size - 1)
                                                         
                                                         if (targetIndex != currentIndex) {
@@ -268,7 +271,7 @@ fun MergeView(
                                                             newList.add(targetIndex, item)
                                                             selectedFiles = newList
                                                             
-                                                            // NITRO COMPENSATION: Adjust dragOffset to maintain thumb position
+                                                            // NITRO COMPENSATION: Maintains "Fixed Center" thumb feel
                                                             dragOffset -= (targetIndex - currentIndex) * height
                                                             draggedIndex = targetIndex
                                                         }

@@ -163,8 +163,12 @@ fun UnifiedPdfPreview(
                                     val cellHeight = cellWidth / 0.707f
                                     val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                     
-                                    val colOffset = (dragOffset.x / cellWidth).toInt()
-                                    val rowOffset = (dragOffset.y / cellHeight).toInt()
+                                    // NITRO HYSTERESIS: Require 80% movement to trigger swap
+                                    val swapThresholdY = cellHeight * 0.8f
+                                    val swapThresholdX = cellWidth * 0.8f
+                                    
+                                    val colOffset = if (Math.abs(dragOffset.x) > swapThresholdX) (dragOffset.x / cellWidth).toInt() else 0
+                                    val rowOffset = if (Math.abs(dragOffset.y) > swapThresholdY) (dragOffset.y / cellHeight).toInt() else 0
                                     
                                     val targetIndex = (currentIndex + colOffset + (rowOffset * 2)).coerceIn(0, visualList.size - 1)
                                     
@@ -172,7 +176,7 @@ fun UnifiedPdfPreview(
                                         val item = visualList.removeAt(currentIndex)
                                         visualList.add(targetIndex, item)
                                         
-                                        // Compensate dragOffset to keep thumb under finger
+                                        // NITRO COMPENSATION: Maintains "Fixed Center" thumb feel
                                         val colDiff = (targetIndex % 2) - (currentIndex % 2)
                                         val rowDiff = (targetIndex / 2) - (currentIndex / 2)
                                         
@@ -193,8 +197,8 @@ fun UnifiedPdfPreview(
                         imageLoader = imageLoader,
                         accentColor = accentColor,
                         onClick = { lightboxPage = pageIdx },
-                        // BLITZ REORDER: Lower resolution for drag performance
-                        scale = 0.5f,
+                        // NITRO BLITZ: Ultra-low resolution for jitter-free drag
+                        scale = 0.4f,
                         modifier = if (isDragging) Modifier.shadow(16.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
                     )
                 }
