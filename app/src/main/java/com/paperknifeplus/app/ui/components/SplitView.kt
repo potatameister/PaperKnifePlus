@@ -231,6 +231,38 @@ fun SplitView(onBack: () -> Unit) {
                                 }
                             }
 
+                            // Batch Selection Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = { 
+                                        val all = (0 until pageCount).toSet()
+                                        selectedPages = all
+                                        rangeText = generateRangeString(all)
+                                    },
+                                    modifier = Modifier.weight(1f).height(36.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor.copy(alpha = 0.1f), contentColor = accentColor),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text("SELECT ALL", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                }
+                                Button(
+                                    onClick = { 
+                                        selectedPages = emptySet()
+                                        rangeText = ""
+                                    },
+                                    modifier = Modifier.weight(1f).height(36.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.1f), contentColor = Color.Gray),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text("CLEAR ALL", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                }
+                            }
+
                             if (showRangeInput) {
                                 Surface(
                                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),

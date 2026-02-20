@@ -71,23 +71,28 @@ fun ProcessingStateView(
     val imageLoader = coil.compose.LocalImageLoader.current
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally, 
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(32.dp).fillMaxHeight()
+        ) {
             Card(
-                modifier = Modifier.size(180.dp, 240.dp),
-                shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                modifier = Modifier.size(160.dp, 226.dp), // A4 Aspect Ratio
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Box(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     if (uri != null) {
-                        val request = remember(uri, password) { PdfPageRequest(uri, 0, password, 0.6f) }
+                        val request = remember(uri, password) { PdfPageRequest(uri, 0, password, 0.8f) }
                         Image(
                             painter = rememberAsyncImagePainter(request, imageLoader),
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Fit
                         )
                     } else if (preview != null) {
-                        Image(bitmap = preview.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        Image(bitmap = preview.asImageBitmap(), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
                     } else {
                         Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.1f)), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = accentColor, modifier = Modifier.size(32.dp))
@@ -96,8 +101,8 @@ fun ProcessingStateView(
                 }
             }
             
-            Spacer(Modifier.height(32.dp))
-            CircularProgressIndicator(color = accentColor)
+            Spacer(Modifier.height(48.dp))
+            CircularProgressIndicator(color = accentColor, modifier = Modifier.size(40.dp), strokeWidth = 4.dp)
             Spacer(Modifier.height(24.dp))
             
             Text(text, fontSize = 16.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)

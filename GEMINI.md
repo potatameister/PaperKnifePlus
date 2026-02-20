@@ -47,12 +47,13 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
-- **2026-02-19:** **BLITZ PRO UPDATE**:
-    - Overhauled Tools UI to a polished 3-column "Premium Bento" grid.
-    - Implemented `beyondBoundsPageCount = 0` to achieve stable 60FPS.
-    - Added **Search Text** and **Share PDF** features to the Lightbox.
-    - Introduced **PDF to ZIP**, **Delete Pages**, and **Bookmarks** (Placeholder) tools.
-    - Standardized Header UI across History, Tools, and Settings screens.
+- **2026-02-19:** **GOLD STANDARD & BLITZ 4.0**:
+    - Refactored **Split** and **Delete** tools to "Gold Standard" (Visual Grid Selection + Sync Range Input).
+    - Optimized Nitro Engine to **Blitz 0.4f** scale for crash-free high-speed scrolling.
+    - Standardized **LockedFilePrompt** with non-blocking loading states and tool-aware accent colors.
+    - Implemented **Smooth Multi-Slot Drag-and-Drop** for Merge tool with spring physics.
+    - Centered Processing UI with uncropped A4-accurate previews and informative status text.
+    - Added **Jump to Page** feature to Lightbox and fixed sharing stability.
 - **2026-02-18:** **NITRO ENGINE 2.0 RELEASE**:
     - Refactored UI to **HorizontalPager** for smooth screen sliding and lazy-loading.
     - Implemented **Parallel Renderer Pool** (4 threads) & **Global Decryption Cache**.
@@ -67,6 +68,7 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 
 ### Technical Gotchas
 - **Troubleshooting:** ALWAYS check the build log errors (e.g., GitHub Actions logs or local `./gradlew` output) first when troubleshooting failures.
+- **Merge Streams:** Always load source documents into a collection and close them in a `finally` block *after* `mergeDocuments` completes to prevent `Stream Closed` or `IOException`.
 - **"White Pages" Bug:** Native `PdfRenderer` can fail or produce empty white bitmaps if using `RGB_565` on certain devices or if the background isn't explicitly cleared. **Fix:** Always use `ARGB_8888` and `canvas.drawColor(Color.WHITE)` before `page.render`.
 - **Pager Lag:** Pre-loading adjacent pages in a `HorizontalPager` (`beyondBounds`) causes massive CPU spikes if pages are complex. **Fix:** Keep `beyondBoundsPageCount = 0` for "Blitz" speed.
 - **Gesture Collision:** Overlapping zoom (`transformable`) and pager swipe gestures can lock navigation. **Fix:** Conditionally disable zoom modifiers when `scale == 1.0f` to yield control to the Pager.

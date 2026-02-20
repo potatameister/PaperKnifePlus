@@ -202,8 +202,8 @@ fun PdfPageItem(
     accentColor: Color = MaterialTheme.colorScheme.primary,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
-    // BLITZ OPTIMIZATION: Reduced scale (0.4f) for high-speed scrolling stability
-    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.4f) }
+    // BLITZ PRO: Increased scale (0.7f) for better clarity while maintaining scroll speed
+    val request = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.7f) }
     
     Box(
         modifier = modifier

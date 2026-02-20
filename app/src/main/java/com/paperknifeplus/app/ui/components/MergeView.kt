@@ -340,30 +340,15 @@ fun MergeView(onBack: () -> Unit) {
                     }
                     
                     ToolState.PROCESSING -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                if (selectedFiles.isNotEmpty()) {
-                                    val firstFile = selectedFiles.first()
-                                    Card(
-                                        modifier = Modifier.size(160.dp, 226.dp), // A4 aspect ratio
-                                        shape = RoundedCornerShape(16.dp),
-                                        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
-                                    ) {
-                                        val request = remember(firstFile.uri, firstFile.decryptedUri) { 
-                                            PdfPageRequest(firstFile.decryptedUri ?: firstFile.uri, 0, if (firstFile.decryptedUri != null) null else firstFile.password, 0.8f) 
-                                        }
-                                        Image(
-                                            painter = rememberAsyncImagePainter(request, imageLoader),
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    }
-                                    Spacer(Modifier.height(32.dp))
-                                }
-                                LoadingStateView(accentColor, false, "Merging ${selectedFiles.size} documents...")
-                            }
-                        }
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            uri = selectedFiles.firstOrNull()?.decryptedUri ?: selectedFiles.firstOrNull()?.uri,
+                            password = if (selectedFiles.firstOrNull()?.decryptedUri != null) null else selectedFiles.firstOrNull()?.password,
+                            text = "Merging ${selectedFiles.size} documents...",
+                            current = progressCount,
+                            total = selectedFiles.size,
+                            showWarning = false
+                        )
                     }
                 
                     ToolState.SUCCESS -> {
