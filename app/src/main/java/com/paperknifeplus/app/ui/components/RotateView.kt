@@ -37,7 +37,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun RotateView(onBack: () -> Unit) {
+fun RotateView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -45,6 +48,7 @@ fun RotateView(onBack: () -> Unit) {
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var pageRotations by remember { mutableStateOf<Map<Int, Int>>(emptyMap()) }
     var fileName by remember { mutableStateOf("") }
@@ -111,6 +115,7 @@ fun RotateView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
+                        outputUri = saveUri
                         SessionManager.addEntry(fileName, "Rotate", "Fixed orientation", Icons.Filled.RotateRight, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
@@ -249,13 +254,16 @@ fun RotateView(onBack: () -> Unit) {
                             onDone = onBack,
                             onProcessMore = { 
                                 selectedUri = null
+                                outputUri = null
                                 unlockPassword = ""
                                 pageRotations = emptyMap()
                                 currentState = ToolState.SELECTING 
                             },
                             onPreview = {
-                                scope.launch {
-                                    onOpenPreview(selectedUri!!, fileName, pageCount)
+                                outputUri?.let { uri ->
+                                    scope.launch {
+                                        onOpenPreview(uri, fileName, pageCount)
+                                    }
                                 }
                             },
                             accentColor = accentColor

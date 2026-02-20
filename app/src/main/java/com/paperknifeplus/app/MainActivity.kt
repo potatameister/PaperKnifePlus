@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
@@ -182,7 +184,13 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                         "repair" -> RepairView(onBack = { currentTool = null })
-                                        "rotate" -> RotateView(onBack = { currentTool = null })
+                                        "rotate" -> RotateView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "rearrange" -> RearrangeView(
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->
