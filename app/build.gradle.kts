@@ -26,6 +26,11 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            
+            // Aggressive optimization
+            ndk {
+                debugSymbolLevel = "none"
+            }
         }
         debug {
             isMinifyEnabled = false
@@ -38,6 +43,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/*.kotlin_module"
+            excludes += "/*.txt"
+            excludes += "/com/tom_roush/pdfbox/resources/version.properties"
+            excludes += "/*.properties"
+            excludes += "/META-INF/*.version"
+            excludes += "/META-INF/proguard/*"
+            excludes += "/com/google/android/material/**"
         }
     }
     compileOptions {
