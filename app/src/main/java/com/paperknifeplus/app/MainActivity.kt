@@ -177,7 +177,7 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                                     when (currentTool) {
-                                        "about" -> AboutView()
+                                        "about" -> AboutView(onBack = { currentTool = null })
                                         "merge" -> MergeView(
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->

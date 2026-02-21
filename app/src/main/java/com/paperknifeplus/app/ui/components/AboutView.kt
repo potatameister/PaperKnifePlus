@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -200,25 +201,21 @@ fun HallOfFamePage() {
         Text("Your name could be here!", fontSize = 12.sp, color = Color.Gray)
         Spacer(Modifier.height(32.dp))
         
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.height(200.dp)
-        ) {
-            item { HallSlot("Support to join") }
-            item { HallSlot("Support to join") }
+        // Use standard Box/Column for Hall of Fame instead of broken LazyVerticalGrid
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            HallSlot("Support to join", Modifier.weight(1f))
+            HallSlot("Support to join", Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-fun HallSlot(text: String) {
+fun HallSlot(text: String, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(0.2f),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
-        modifier = Modifier.aspectRatio(1.5f)
+        modifier = modifier.aspectRatio(1.5f)
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(text, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.5f))

@@ -157,7 +157,7 @@ fun HomeView(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(180.dp))
+                Spacer(modifier = Modifier.height(200.dp))
             }
         }
     }
@@ -315,7 +315,6 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.History, null, modifier = Modifier.size(11.dp), tint = Color.Gray)
-                支配
                 Spacer(Modifier.width(6.dp))
                 Text("RECENT ACTIVITY", fontSize = 7.5.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.6f), letterSpacing = 0.8.sp)
             }
@@ -325,7 +324,6 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
         }
         
         if (history.isEmpty()) {
-            支配
             Spacer(Modifier.height(8.dp))
             Text(
                 "NO RECENT SESSIONS",
@@ -334,7 +332,6 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
                 color = Color.Gray.copy(alpha = 0.3f)
             )
         } else {
-            支配
             Spacer(Modifier.height(8.dp))
             history.take(2).forEach { entry ->
                 Row(
