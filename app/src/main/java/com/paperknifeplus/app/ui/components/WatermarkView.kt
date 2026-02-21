@@ -66,7 +66,6 @@ fun WatermarkView(
     var showWatermarkOptions by remember { mutableStateOf(false) }
     var showTextInput by remember { mutableStateOf(false) }
     var selectedPages by remember { mutableStateOf<Set<Int>>(emptySet()) }
-    var wmColor by remember { mutableStateOf(Color.Black) }
 
     var wmOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var wmScale by remember { mutableFloatStateOf(1f) }
@@ -202,7 +201,6 @@ fun WatermarkView(
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("${selectedPages.size} / $pageCount PAGES SELECTED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
-                                // NITRO CUSTOM TOGGLE
                                 Surface(
                                     onClick = { showPreview = !showPreview },
                                     color = if (showPreview) accentColor.copy(0.15f) else Color.Gray.copy(0.1f),
@@ -210,19 +208,9 @@ fun WatermarkView(
                                     border = BorderStroke(1.dp, if (showPreview) accentColor.copy(0.3f) else Color.Transparent)
                                 ) {
                                     Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            if (showPreview) Icons.Filled.Preview else Icons.Filled.VisibilityOff, 
-                                            null, 
-                                            tint = if (showPreview) accentColor else Color.Gray, 
-                                            modifier = Modifier.size(14.dp)
-                                        )
+                                        Icon(if (showPreview) Icons.Filled.Preview else Icons.Filled.VisibilityOff, null, tint = if (showPreview) accentColor else Color.Gray, modifier = Modifier.size(14.dp))
                                         Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            if (showPreview) "PREVIEW" else "ORIGINAL", 
-                                            fontSize = 9.sp, 
-                                            fontWeight = FontWeight.Black,
-                                            color = if (showPreview) accentColor else Color.Gray
-                                        )
+                                        Text(if (showPreview) "PREVIEW" else "ORIGINAL", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showPreview) accentColor else Color.Gray)
                                     }
                                 }
                             }
@@ -252,48 +240,10 @@ fun WatermarkView(
                                             }
                                         }
                                     }
-                                    )
-                                }
-                                
-                                private fun createTextBitmap(text: String, color: Color): Bitmap {
-                                    val bitmap = Bitmap.createBitmap(1000, 400, Bitmap.Config.ARGB_8888)
-                                    val canvas = Canvas(bitmap)
-                                    val paint = Paint().apply {
-                                        this.color = color.toArgb()
-                                        alpha = 140
-                                        textSize = 120f
-                                        isAntiAlias = true
-                                        textAlign = Paint.Align.CENTER
-                                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                                    }
-                                    canvas.drawText(text, 500f, 220f, paint)
-                                    return bitmap
-                                }
-                                
-                                fun Color.toArgb(): Int {
-                                    return (this.alpha * 255.0f + 0.5f).toInt() shl 24 or
-                                           ((this.red * 255.0f + 0.5f).toInt() shl 16) or
-                                           ((this.green * 255.0f + 0.5f).toInt() shl 8) or
-                                           (this.blue * 255.0f + 0.5f).toInt()
-                                }
-                                
-                                @Composable
-                                fun SignOptionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
-                                    Surface(
-                                        onClick = onClick,
-                                        modifier = modifier.height(100.dp),
-                                        shape = RoundedCornerShape(20.dp),
-                                        color = color.copy(alpha = 0.05f),
-                                        border = BorderStroke(1.dp, color.copy(alpha = 0.1f))
-                                    ) {
-                                        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
-                                            Spacer(Modifier.height(8.dp))
-                                            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = color)
-                                        }
-                                    }
-                                }
-                                                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                )
+                            }
+                            
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Button(
                                     onClick = { showWatermarkOptions = true },
                                     modifier = Modifier.weight(1f).height(60.dp),
@@ -426,4 +376,19 @@ fun WatermarkView(
             }
         )
     }
+}
+
+fun createTextBitmap(text: String, color: Color): Bitmap {
+    val bitmap = Bitmap.createBitmap(1000, 400, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val paint = Paint().apply {
+        this.color = color.toArgb()
+        alpha = 140
+        textSize = 120f
+        isAntiAlias = true
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    canvas.drawText(text, 500f, 220f, paint)
+    return bitmap
 }
