@@ -213,6 +213,13 @@ class MainActivity : ComponentActivity() {
                                                 currentTool = "ultra_preview"
                                             }
                                         )
+                                        "watermark" -> WatermarkView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
                                         "ultra_preview" -> {
                                             previewData?.let { (uri, name, count) ->

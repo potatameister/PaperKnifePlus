@@ -52,6 +52,11 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
+- **2026-02-21:** **ULTRA PREVIEW 10.0f & SELECTABLE TEXT**:
+    - **Resolution 10.0f**: Pushed the reader to 10.0f scale for absolute clarity.
+    - **Selectable Text**: Refined the invisible text layer and coordinate mapping for reliable text copying.
+    - **Signature Suite 2.0**: Added visual placement mode with move, resize (pinch), and rotate support.
+    - **Nitro Reorder 7.0**: Implemented absolute hit-testing using `layoutInfo` for perfect drag accuracy.
 - **2026-02-20 (Late):** **NITRO ENGINE 5.0 & SIGNATURE SUITE**:
     - **Ultra Preview 7.0f**: Boosted reader resolution to 7.0f for ultimate clarity.
     - **Selectable Text**: Implemented `SelectionContainer` with an invisible text layer, allowing direct text copying from the reader.

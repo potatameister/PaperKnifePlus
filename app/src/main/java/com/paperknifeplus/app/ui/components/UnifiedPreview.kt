@@ -118,12 +118,13 @@ fun UnifiedPdfPreview(
             }
         }
     } else if (mode == PreviewMode.REORDER && pageOrder != null && onOrderChange != null) {
-        // --- NITRO REORDER 6.0: FINGER-ACCURATE & NICE SWAPS ---
+        // --- NITRO REORDER 8.0: SMOOTH OVERHAUL (iLovePDF Style) ---
         val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
         var draggedIndex by remember { mutableStateOf<Int?>(null) }
         var dragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-        var initialTouchPoint by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-        val scope = rememberCoroutineScope()
+        
+        // Tracking touch point precisely
+        var initialTouchPosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
         
         val visualList = remember(pageOrder) { pageOrder.toMutableStateList() }
 
@@ -134,8 +135,8 @@ fun UnifiedPdfPreview(
                     val dragY = dragOffset.y
                     val scrollThreshold = containerHeight * 0.15f
                     
-                    if (dragY < -scrollThreshold) gridState.animateScrollBy(-400f)
-                    else if (dragY > scrollThreshold) gridState.animateScrollBy(400f)
+                    if (dragY < -scrollThreshold) gridState.animateScrollBy(-500f)
+                    else if (dragY > scrollThreshold) gridState.animateScrollBy(500f)
                     else break
                     kotlinx.coroutines.delay(10)
                 }
@@ -157,6 +158,7 @@ fun UnifiedPdfPreview(
                 Box(
                     modifier = Modifier
                         .zIndex(if (isDragging) 100f else 1f)
+                        .animateItemPlacement(spring(stiffness = Spring.StiffnessMediumLow))
                         .graphicsLayer {
                             scaleX = scale
                             scaleY = scale
@@ -165,22 +167,16 @@ fun UnifiedPdfPreview(
                                 translationY = dragOffset.y
                             }
                         }
-                        .pointerInput(Unit) {
+                        .pointerInput(visualList.size) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = { offset ->
-                                    // NITRO 7.0: Dynamic index detection based on absolute touch point
                                     val layoutInfo = gridState.layoutInfo
-                                    val absoluteX = layoutInfo.visibleItemsInfo.find { it.index == index }?.offset?.x?.plus(offset.x) ?: 0f
-                                    val absoluteY = layoutInfo.visibleItemsInfo.find { it.index == index }?.offset?.y?.plus(offset.y) ?: 0f
-                                    
-                                    val touchedItem = layoutInfo.visibleItemsInfo.find { item ->
-                                        absoluteX.toInt() in item.offset.x..(item.offset.x + item.size.width) &&
-                                        absoluteY.toInt() in item.offset.y..(item.offset.y + item.size.height)
+                                    val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
+                                    if (itemInfo != null) {
+                                        draggedIndex = index
+                                        initialTouchPosition = offset
+                                        dragOffset = androidx.compose.ui.geometry.Offset.Zero
                                     }
-                                    
-                                    draggedIndex = touchedItem?.index ?: index
-                                    initialTouchPoint = offset
-                                    dragOffset = androidx.compose.ui.geometry.Offset.Zero
                                 },
                                 onDragEnd = {
                                     onOrderChange(visualList.toList())
@@ -195,46 +191,53 @@ fun UnifiedPdfPreview(
                                     change.consume()
                                     dragOffset += dragAmount
                                     
-                                    val currentDragged = draggedIndex ?: return@detectDragGesturesAfterLongPress
+                                    val currentIdx = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                     val layoutInfo = gridState.layoutInfo
+                                    val currentItem = layoutInfo.visibleItemsInfo.find { it.index == currentIdx } ?: return@detectDragGesturesAfterLongPress
                                     
-                                    // NITRO HIT-TEST: Use absolute coordinates for target detection
-                                    val draggedItemInfo = layoutInfo.visibleItemsInfo.find { it.index == currentDragged } ?: return@detectDragGesturesAfterLongPress
+                                    // Finger center in screen-space
+                                    val fingerX = currentItem.offset.x + initialTouchPosition.x + dragOffset.x
+                                    val fingerY = currentItem.offset.y + initialTouchPosition.y + dragOffset.y
                                     
-                                    // Finger center in absolute coordinates
-                                    val fingerX = draggedItemInfo.offset.x + initialTouchPoint.x + dragOffset.x
-                                    val fingerY = draggedItemInfo.offset.y + initialTouchPoint.y + dragOffset.y
-                                    
-                                    // Find target item by checking if finger is within its bounds
+                                    // Hit-test center point of target items
                                     val targetItem = layoutInfo.visibleItemsInfo.find { item ->
-                                        fingerX.toInt() in item.offset.x..(item.offset.x + item.size.width) &&
-                                        fingerY.toInt() in item.offset.y..(item.offset.y + item.size.height)
+                                        if (item.index == currentIdx) return@find false
+                                        val centerX = item.offset.x + item.size.width / 2
+                                        val centerY = item.offset.y + item.size.height / 2
+                                        
+                                        // Swap if finger crosses the center of another item
+                                        Math.abs(fingerX - centerX) < item.size.width / 2 &&
+                                        Math.abs(fingerY - centerY) < item.size.height / 2
                                     }
                                     
-                                    if (targetItem != null && targetItem.index != currentDragged) {
+                                    if (targetItem != null) {
                                         val targetIdx = targetItem.index
-                                        if (targetIdx < visualList.size) {
-                                            // Perform swap in the visual list
-                                            val item = visualList.removeAt(currentDragged)
-                                            visualList.add(targetIdx, item)
-                                            
-                                            // Recalculate dragOffset to prevent item jumping
-                                            val newTargetInfo = layoutInfo.visibleItemsInfo.find { it.index == targetIdx }
-                                            if (newTargetInfo != null) {
-                                                val prevOffset = draggedItemInfo.offset
-                                                val newOffset = newTargetInfo.offset
-                                                dragOffset = androidx.compose.ui.geometry.Offset(
-                                                    dragOffset.x + (prevOffset.x - newOffset.x),
-                                                    dragOffset.y + (prevOffset.y - newOffset.y)
-                                                )
-                                            }
-                                            draggedIndex = targetIdx
-                                        }
+                                        val item = visualList.removeAt(currentIdx)
+                                        visualList.add(targetIdx, item)
+                                        
+                                        // Nitro Compensation: Maintain fixed finger position relative to floating item
+                                        val deltaX = targetItem.offset.x - currentItem.offset.x
+                                        val deltaY = targetItem.offset.y - currentItem.offset.y
+                                        dragOffset = androidx.compose.ui.geometry.Offset(dragOffset.x - deltaX, dragOffset.y - deltaY)
+                                        draggedIndex = targetIdx
                                     }
                                 }
                             )
                         }
                 ) {
+                    PdfPageItem(
+                        uri = uri,
+                        index = pageIdx,
+                        password = password,
+                        imageLoader = imageLoader,
+                        accentColor = accentColor,
+                        onClick = { if (mode != PreviewMode.REORDER) lightboxPage = pageIdx },
+                        scale = 0.6f,
+                        modifier = if (isDragging) Modifier.shadow(32.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
+                    )
+                }
+            }
+        }
                     PdfPageItem(
                         uri = uri,
                         index = pageIdx,

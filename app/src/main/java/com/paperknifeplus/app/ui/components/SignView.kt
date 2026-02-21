@@ -432,86 +432,6 @@ fun SignOptionCard(title: String, icon: androidx.compose.ui.graphics.vector.Imag
 }
 
 @Composable
-fun SignaturePlacementOverlay(
-    uri: Uri,
-    pageIndex: Int,
-    signature: Bitmap,
-    offset: androidx.compose.ui.geometry.Offset,
-    scale: Float,
-    rotation: Float,
-    onTransform: (androidx.compose.ui.geometry.Offset, Float, Float) -> Unit,
-    onCancel: () -> Unit,
-    onConfirm: () -> Unit,
-    accentColor: Color
-) {
-    val imageLoader = coil.compose.LocalImageLoader.current
-    val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
-
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        // Page Preview
-        ComposeImage(
-            painter = rememberAsyncImagePainter(request, imageLoader),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
-        )
-
-        // The Signature
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, rot ->
-                        onTransform(offset + pan, (scale * zoom).coerceIn(0.5f, 3f), rotation + rot)
-                    }
-                }
-        ) {
-            ComposeImage(
-                bitmap = signature.asImageBitmap(),
-                contentDescription = "Signature",
-                modifier = Modifier
-                    .size(150.dp)
-                    .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        rotationZ = rotation
-                    }
-                    .border(1.dp, accentColor.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-            )
-        }
-
-        // Controls
-        Row(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Button(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                shape = RoundedCornerShape(16.dp)
-            ) { Text("CANCEL") }
-            
-            Button(
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                shape = RoundedCornerShape(16.dp)
-            ) { Text("BURN SIGNATURE", fontWeight = FontWeight.Black) }
-        }
-        
-        Surface(
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp),
-            color = Color.Black.copy(0.6f),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Text("Drag to move • Pinch to resize/rotate", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-        }
-    }
-}
-
-@Composable
 fun SignaturePadDialog(
     onDismiss: () -> Unit,
     onSave: (Bitmap, Boolean) -> Unit,
@@ -544,7 +464,7 @@ fun SignaturePadDialog(
                                     change.consume()
                                     currentPath?.lineTo(change.position.x, change.position.y)
                                     // Trigger recomposition
-                                    val last = paths.last()
+                                    val last = if (paths.isNotEmpty()) paths.last() else return@detectDragGestures
                                     paths.removeAt(paths.size - 1)
                                     paths.add(last)
                                 }
@@ -556,7 +476,11 @@ fun SignaturePadDialog(
                             drawPath(
                                 path = path.asComposePath(),
                                 color = Color.Black,
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = with(density) { 4.dp.toPx() })
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                    width = with(density) { 4.dp.toPx() },
+                                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                    join = androidx.compose.ui.graphics.StrokeJoin.Round
+                                )
                             )
                         }
                     }
@@ -582,18 +506,26 @@ fun SignaturePadDialog(
             Button(
                 onClick = {
                     if (paths.isEmpty()) return@Button
-                    val bitmap = Bitmap.createBitmap(800, 600, Bitmap.Config.ARGB_8888)
+                    // NITRO: Create larger bitmap with padding to prevent cut-off
+                    val bitmap = Bitmap.createBitmap(1000, 800, Bitmap.Config.ARGB_8888)
                     val canvas = Canvas(bitmap)
                     canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+                    
                     val paint = Paint().apply {
                         color = android.graphics.Color.BLACK
                         style = Paint.Style.STROKE
-                        strokeWidth = 12f
+                        strokeWidth = 14f
                         isAntiAlias = true
                         strokeCap = Paint.Cap.ROUND
                         strokeJoin = Paint.Join.ROUND
                     }
+                    
+                    // Center the drawing in the bitmap
+                    canvas.save()
+                    canvas.translate(100f, 100f) 
                     paths.forEach { path -> canvas.drawPath(path, paint) }
+                    canvas.restore()
+                    
                     onSave(bitmap, shouldSaveSignature)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
@@ -609,4 +541,84 @@ fun SignaturePadDialog(
             }
         }
     )
+}
+
+@Composable
+fun SignaturePlacementOverlay(
+    uri: Uri,
+    pageIndex: Int,
+    signature: Bitmap,
+    offset: androidx.compose.ui.geometry.Offset,
+    scale: Float,
+    rotation: Float,
+    onTransform: (androidx.compose.ui.geometry.Offset, Float, Float) -> Unit,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    accentColor: Color
+) {
+    val imageLoader = coil.compose.LocalImageLoader.current
+    val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
+
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        // Page Preview
+        ComposeImage(
+            painter = rememberAsyncImagePainter(request, imageLoader),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+
+        // The Signature - Refactored for smooth, independent gestures
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTransformGestures { centroid, pan, zoom, rot ->
+                        onTransform(offset + pan, (scale * zoom).coerceIn(0.2f, 5f), rotation + rot)
+                    }
+                }
+        ) {
+            ComposeImage(
+                bitmap = signature.asImageBitmap(),
+                contentDescription = "Signature",
+                modifier = Modifier
+                    .size(200.dp)
+                    .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        rotationZ = rotation
+                    }
+                    .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
+            )
+        }
+
+        // Controls
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp).padding(horizontal = 24.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                shape = RoundedCornerShape(16.dp)
+            ) { Text("CANCEL") }
+            
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                shape = RoundedCornerShape(16.dp)
+            ) { Text("BURN SIGNATURE", fontWeight = FontWeight.Black) }
+        }
+        
+        Surface(
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 80.dp),
+            color = Color.Black.copy(0.6f),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Text("Drag to move • Pinch to resize/rotate", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        }
+    }
 }
