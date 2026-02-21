@@ -233,19 +233,6 @@ fun UnifiedPdfPreview(
                 }
             }
         }
-                    PdfPageItem(
-                        uri = uri,
-                        index = pageIdx,
-                        password = password,
-                        imageLoader = imageLoader,
-                        accentColor = accentColor,
-                        onClick = { if (mode != PreviewMode.REORDER) lightboxPage = pageIdx },
-                        scale = 0.6f,
-                        modifier = if (isDragging) Modifier.shadow(32.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
-                    )
-                }
-            }
-        }
     } else {
         // --- TYPE A: MINI PREVIEW GRID (Blitz Mode / Selection / Rotate) ---
         LazyVerticalGrid(
