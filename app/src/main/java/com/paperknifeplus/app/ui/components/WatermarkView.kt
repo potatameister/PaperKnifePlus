@@ -252,10 +252,48 @@ fun WatermarkView(
                                             }
                                         }
                                     }
-                                )
-                            }
-                            
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    )
+                                }
+                                
+                                private fun createTextBitmap(text: String, color: Color): Bitmap {
+                                    val bitmap = Bitmap.createBitmap(1000, 400, Bitmap.Config.ARGB_8888)
+                                    val canvas = Canvas(bitmap)
+                                    val paint = Paint().apply {
+                                        this.color = color.toArgb()
+                                        alpha = 140
+                                        textSize = 120f
+                                        isAntiAlias = true
+                                        textAlign = Paint.Align.CENTER
+                                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                                    }
+                                    canvas.drawText(text, 500f, 220f, paint)
+                                    return bitmap
+                                }
+                                
+                                fun Color.toArgb(): Int {
+                                    return (this.alpha * 255.0f + 0.5f).toInt() shl 24 or
+                                           ((this.red * 255.0f + 0.5f).toInt() shl 16) or
+                                           ((this.green * 255.0f + 0.5f).toInt() shl 8) or
+                                           (this.blue * 255.0f + 0.5f).toInt()
+                                }
+                                
+                                @Composable
+                                fun SignOptionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
+                                    Surface(
+                                        onClick = onClick,
+                                        modifier = modifier.height(100.dp),
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = color.copy(alpha = 0.05f),
+                                        border = BorderStroke(1.dp, color.copy(alpha = 0.1f))
+                                    ) {
+                                        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
+                                            Spacer(Modifier.height(8.dp))
+                                            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = color)
+                                        }
+                                    }
+                                }
+                                                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Button(
                                     onClick = { showWatermarkOptions = true },
                                     modifier = Modifier.weight(1f).height(60.dp),
