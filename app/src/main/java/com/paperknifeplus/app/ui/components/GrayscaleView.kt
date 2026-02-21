@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GrayscaleView(onBack: () -> Unit) {
+fun GrayscaleView(onBack: () -> Unit, onOpenPreview: (Uri, String, Int) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black

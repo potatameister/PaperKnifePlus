@@ -339,7 +339,16 @@ fun SignView(
                                 accentColor = accentColor
                             )
                         } else {
-                            ProcessingStateView(accentColor, selectedUri, "Processing...", 0, 0, false)
+                            ProcessingStateView(
+                                accentColor = accentColor,
+                                preview = null,
+                                uri = selectedUri,
+                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                text = "Processing...",
+                                current = 0,
+                                total = 0,
+                                showWarning = false
+                            )
                         }
                     }
                     ToolState.SUCCESS -> {
@@ -537,6 +546,30 @@ fun SignaturePadDialog(
             ) { Text("ADOPT", fontWeight = FontWeight.Black) }
         }
     )
+}
+
+fun Color.toArgb(): Int {
+    return (this.alpha * 255.0f + 0.5f).toInt() shl 24 or
+           ((this.red * 255.0f + 0.5f).toInt() shl 16) or
+           ((this.green * 255.0f + 0.5f).toInt() shl 8) or
+           (this.blue * 255.0f + 0.5f).toInt()
+}
+
+@Composable
+fun SignOptionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(100.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = color.copy(alpha = 0.05f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.1f))
+    ) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = color)
+        }
+    }
 }
 
 @Composable

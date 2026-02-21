@@ -200,7 +200,13 @@ class MainActivity : ComponentActivity() {
                                         )
                                         "protect" -> ProtectView(onBack = { currentTool = null })
                                         "unlock" -> UnlockView(onBack = { currentTool = null })
-                                        "grayscale" -> GrayscaleView(onBack = { currentTool = null })
+                                        "grayscale" -> GrayscaleView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "metadata" -> MetadataView(onBack = { currentTool = null })
                                         "img2pdf" -> ImageToPdfView(onBack = { currentTool = null })
                                         "pdf2img" -> PdfToImageView(onBack = { currentTool = null })

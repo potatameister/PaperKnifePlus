@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image as ComposeImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -289,7 +290,14 @@ fun WatermarkView(
                                 accentColor = accentColor
                             )
                         } else {
-                            ProcessingStateView(accentColor, selectedUri, "Applying Watermarks...", 0, 0, false)
+                            ProcessingStateView(
+                                accentColor = accentColor,
+                                uri = selectedUri,
+                                text = "Applying Watermarks...",
+                                current = 0,
+                                total = 0,
+                                showWarning = false
+                            )
                         }
                     }
                     ToolState.SUCCESS -> {
