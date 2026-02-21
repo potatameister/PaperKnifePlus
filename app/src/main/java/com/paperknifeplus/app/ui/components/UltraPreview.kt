@@ -78,12 +78,13 @@ fun UltraPreview(
     var isDecrypting by remember { mutableStateOf(false) }
     var activePageCount by remember { mutableIntStateOf(pageCount) }
 
+    // NITRO 12.0: Platinum High-Res Reader ImageLoader (45% RAM usage)
     val imageLoader = remember {
         ImageLoader.Builder(context)
             .components { add(PdfPageFetcher.Factory(context)) }
             .memoryCache {
                 coil.memory.MemoryCache.Builder(context)
-                    .maxSizePercent(0.40)
+                    .maxSizePercent(0.45)
                     .build()
             }
             .build()
@@ -177,7 +178,7 @@ fun UltraPreview(
                 .padding(padding)
         ) {
             if (isInitializing) {
-                LoadingStateView(PaperPink, false, "Processing Ultra Preview...")
+                LoadingStateView(PaperPink, false, "Loading Platinum View...")
             } else if (fileToUnlock == null) {
                 Box(
                     modifier = Modifier
@@ -219,7 +220,7 @@ fun UltraPreview(
                                 translationX = offset.x
                                 translationY = offset.y
                             },
-                        contentPadding = PaddingValues(top = 100.dp, bottom = 120.dp),
+                        contentPadding = PaddingValues(bottom = 120.dp), // REMOVED TOP PADDING TO FIX VOID
                         verticalArrangement = Arrangement.spacedBy(0.dp), 
                         horizontalAlignment = Alignment.CenterHorizontally,
                         userScrollEnabled = scale == 1f 
@@ -246,7 +247,6 @@ fun UltraPreview(
                 }
             }
 
-            // Scrollbar & UI elements inside BoxScope
             if (!isInitializing && fileToUnlock == null) {
                 val currentPage by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
                 var trackHeight by remember { mutableFloatStateOf(0f) }
@@ -328,7 +328,6 @@ fun UltraPreview(
             }
         }
 
-        // Top Bar
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
@@ -345,7 +344,7 @@ fun UltraPreview(
                     
                     Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                         Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1, color = MaterialTheme.colorScheme.onSurface)
-                        Text("PREMIUM ULTRA READER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                        Text("PLATINUM ULTRA READER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                     }
                     
                     IconButton(onClick = {
@@ -435,8 +434,9 @@ fun PdfPageReaderItem(
     links: List<PdfLink>,
     onLinkClick: (String) -> Unit
 ) {
+    // NITRO 12.0: Pro 6.0f Resolution
     val lowResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.7f, priority = 1) }
-    val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 4.0f, priority = 0) }
+    val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 6.0f, priority = 0) }
     
     BoxWithConstraints(
         modifier = Modifier

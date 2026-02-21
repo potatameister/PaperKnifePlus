@@ -55,6 +55,9 @@ fun PageNumbersView(
     var position by remember { mutableStateOf("Bottom Right") }
     var fontSize by remember { mutableFloatStateOf(12f) }
     var format by remember { mutableStateOf("Page {n}") }
+    
+    // Pro Feature: Compare Toggle
+    var showPreviewOverlay by remember { mutableStateOf(true) }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -171,38 +174,50 @@ fun PageNumbersView(
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("${selectedPages.size} / $pageCount PAGES SELECTED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
-                                Row {
-                                    TextButton(onClick = { selectedPages = (0 until pageCount).toSet() }) {
-                                        Text("ALL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
-                                    }
-                                    TextButton(onClick = { selectedPages = emptySet() }) {
-                                        Text("NONE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                                    }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("PREVIEW", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showPreviewOverlay) accentColor else Color.Gray)
+                                    Switch(checked = showPreviewOverlay, onCheckedChange = { showPreviewOverlay = it }, colors = SwitchDefaults.colors(checkedThumbColor = accentColor))
                                 }
                             }
 
-                            // Options Row
+                            // Format Options Row
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Surface(
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
                                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    onClick = { /* Show Position Menu */ }
+                                    onClick = { 
+                                        position = when(position) {
+                                            "Bottom Right" -> "Bottom Left"
+                                            "Bottom Left" -> "Bottom Center"
+                                            "Bottom Center" -> "Top Right"
+                                            "Top Right" -> "Top Left"
+                                            "Top Left" -> "Top Center"
+                                            else -> "Bottom Right"
+                                        }
+                                    }
                                 ) {
                                     Column(Modifier.padding(12.dp)) {
                                         Text("POSITION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                                        Text(position, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(position, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                                 Surface(
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
                                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    onClick = { /* Show Format Menu */ }
+                                    onClick = { 
+                                        format = when(format) {
+                                            "Page {n}" -> "{n}"
+                                            "{n}" -> "- {n} -"
+                                            "- {n} -" -> "P. {n}"
+                                            else -> "Page {n}"
+                                        }
+                                    }
                                 ) {
                                     Column(Modifier.padding(12.dp)) {
                                         Text("FORMAT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                                        Text(format, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(format.replace("{n}", "1"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -221,6 +236,25 @@ fun PageNumbersView(
                                         selectedPages = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
                                     }
                                 )
+                                
+                                // LIVE PRO PREVIEW OVERLAY
+                                if (showPreviewOverlay) {
+                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Surface(
+                                            color = Color.Black.copy(0.7f),
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier.padding(16.dp)
+                                        ) {
+                                            Text(
+                                                "LIVE PREVIEW ON PAGES", 
+                                                color = Color.White, 
+                                                fontSize = 9.sp, 
+                                                fontWeight = FontWeight.Black,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             
                             Button(

@@ -227,6 +227,7 @@ class MainActivity : ComponentActivity() {
                                                 currentTool = "ultra_preview"
                                             }
                                         )
+                                        "bookmarks" -> BookmarksView(onBack = { currentTool = null })
                                         "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
                                         "ultra_preview" -> {
                                             previewData?.let { (uri, name, count) ->
@@ -238,7 +239,6 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
                                         }
-                                        "bookmarks" -> ComingSoonView("Bookmarks", onBack = { currentTool = null })
                                         "compare" -> ComingSoonView("Compare PDF", onBack = { currentTool = null })
                                     }
                                 }

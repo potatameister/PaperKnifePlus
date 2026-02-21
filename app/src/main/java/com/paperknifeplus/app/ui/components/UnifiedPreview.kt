@@ -109,7 +109,7 @@ fun UnifiedPdfPreview(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 120.dp)
             ) {
-                items(pageCount, key = { it }) { index ->
+                items(pageCount, key = { pageOrder?.get(it) ?: it }) { index ->
                     val isSelected = selectedPages?.contains(index) == true
                     val pageIdx = pageOrder?.get(index) ?: index
                     
