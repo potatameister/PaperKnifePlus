@@ -33,24 +33,34 @@ jobs:
       run: |
         gradle clean assembleRelease --stacktrace --no-daemon --console=plain
 
-    - name: Sign Android Release
-      uses: r0adkll/sign-android-release@v1
-      id: sign_app
-      with:
-        releaseDirectory: app/build/outputs/apk/release
-        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-        alias: ${{ secrets.ALIAS }}
-        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-        keyPassword: ${{ secrets.KEY_PASSWORD }}
-        buildToolsVersion: 34.0.0
+    - name: Sign and Zipalign
+      run: |
+        # Locate tools
+        ZIPALIGN=$ANDROID_HOME/build-tools/34.0.0/zipalign
+        APKSIGNER=$ANDROID_HOME/build-tools/34.0.0/apksigner
+        
+        # Zipalign
+        $ZIPALIGN -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/app-release-aligned.apk
+        
+        # Sign
+        echo "${{ secrets.SIGNING_KEY }}" | base64 -d > keystore.jks
+        $APKSIGNER sign --ks keystore.jks \
+          --ks-key-alias "${{ secrets.ALIAS }}" \
+          --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
+          --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
+          --out app/build/outputs/apk/release/app-release-signed.apk \
+          app/build/outputs/apk/release/app-release-aligned.apk
+        
+        # Cleanup
+        rm keystore.jks
 
     - name: Log APK Size
       run: |
         echo "=== SIGNED RELEASE APK SIZE ==="
-        ls -lh ${{ steps.sign_app.outputs.signedReleaseFile }}
+        ls -lh app/build/outputs/apk/release/app-release-signed.apk
 
     - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
         name: PaperKnifePlus-Release
-        path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+        path: app/build/outputs/apk/release/app-release-signed.apk
