@@ -430,7 +430,7 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                         
                         matches.add(TextMatch(
                             currentPageNo - 1,
-                            PDRectangle(x, y - h, x + w, y) // Y is top of text, Y-H is bottom
+                            PDRectangle(x, y, x + w, y + h) // Correct top-down mapping
                         ))
                         index = text.indexOf(query, index + 1, ignoreCase = true)
                     }

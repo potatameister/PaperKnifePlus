@@ -168,7 +168,17 @@ fun UnifiedPdfPreview(
                         .pointerInput(Unit) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = { offset ->
-                                    draggedIndex = index
+                                    // NITRO 7.0: Dynamic index detection based on absolute touch point
+                                    val layoutInfo = gridState.layoutInfo
+                                    val absoluteX = layoutInfo.visibleItemsInfo.find { it.index == index }?.offset?.x?.plus(offset.x) ?: 0f
+                                    val absoluteY = layoutInfo.visibleItemsInfo.find { it.index == index }?.offset?.y?.plus(offset.y) ?: 0f
+                                    
+                                    val touchedItem = layoutInfo.visibleItemsInfo.find { item ->
+                                        absoluteX.toInt() in item.offset.x..(item.offset.x + item.size.width) &&
+                                        absoluteY.toInt() in item.offset.y..(item.offset.y + item.size.height)
+                                    }
+                                    
+                                    draggedIndex = touchedItem?.index ?: index
                                     initialTouchPoint = offset
                                     dragOffset = androidx.compose.ui.geometry.Offset.Zero
                                 },

@@ -525,7 +525,7 @@ fun PdfPageReaderItem(
         PdfPageRequest(uri, index, password, 0.7f, priority = 1) 
     }
     val highResRequest = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 7.0f, priority = 0) 
+        PdfPageRequest(uri, index, password, 10.0f, priority = 0) 
     }
     
     SelectionContainer {
@@ -600,7 +600,7 @@ fun PdfPageReaderItem(
                 matches.forEach { match ->
                     // NITRO 5.0: Direct Top-Down Mapping using raw PDF points
                     val left = match.rect.lowerLeftX * scaleX
-                    val top = match.rect.lowerLeftY * scaleY // PDRectangle(x, y-h, x+w, y) -> lowerLeftY is top
+                    val top = match.rect.lowerLeftY * scaleY // Correct: lowerLeftY is the Y from ToolUtils
                     val width = match.rect.width * scaleX
                     val height = match.rect.height * scaleY
 

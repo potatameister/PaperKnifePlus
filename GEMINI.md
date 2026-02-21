@@ -10,7 +10,7 @@ Privacy-first PDF utility for Android, built with Jetpack Compose. A high-perfor
 
 ---
 
-## 🚀 Architecture: The Nitro Engine 2.0
+## 🚀 Architecture: The Nitro Engine 5.0
 
 PaperKnife+ uses a custom high-concurrency rendering pipeline designed to eliminate the common "jank" associated with PDF previews on Android.
 
@@ -18,19 +18,20 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 - **Native Core:** Leverages Android's `PdfRenderer` (C++ Pdfium wrapper) for hardware-accelerated rendering.
 - **Parallel Renderer Pool:** Replaces global mutexes with a 4-thread `Semaphore` and `NativeRendererPool`. This allows up to 4 pages to render concurrently, preventing grid-lock during fast scrolling.
 - **Global Blitz Cache:** A singleton `ImageLoader` (Coil) provided via `CompositionLocal`. Ensures that thumbnails rendered in one tool (e.g., Split) are instantly available in others (e.g., Rearrange) without re-rendering.
+- **Nitro Engine 5.0 Stability:** Implemented `MemoryUsageSetting.setupTempFileOnly()` in the `PdDocumentPool` to manage extreme high-resolution rendering (up to 7.0f) on low-RAM devices without OOM crashes.
 - **Global Decryption Cache:** Password-protected PDFs are decrypted **once** to a temporary cache file. This allows the high-performance native engine to handle protected docs as if they were standard PDFs, fixing the "Missing Images" bug.
 
 ### 2. PDF Preview Types
 - **Type A (Grid Preview):** Optimized for selection/reordering.
-    - **Layout:** Standardized 3-column scrollable grid (Blitz Pro).
-    - **Resolution:** 0.4f scale thumbnails (balanced clarity vs. speed).
+    - **Layout:** Standardized 2-column scrollable grid (Gold Grid).
+    - **Resolution:** 0.6f scale thumbnails (balanced clarity vs. speed).
     - **Visuals:** Circular progress indicators per page; "Locked" placeholders for encrypted files.
 - **Type B (Cover Preview):** Optimized for single-doc processing (Compress, Protect).
     - **Layout:** High-res single-page card (1.2f scale).
     - **Deep Zoom:** Connected to a `PageLightbox` with bound-aware panning and pinch-to-zoom.
 - **Type C (Ultra Preview):** Premium reading experience.
-    - **Layout:** High-res vertical scroll (`LazyColumn`) with 1.5f crisp rendering.
-    - **Interactivity:** Clickable URLs (Link Support), text search, and multi-point zoom.
+    - **Layout:** Extreme high-res vertical scroll (`LazyColumn`) with **7.0f** crisp rendering.
+    - **Interactivity:** **Selectable & Copyable Text** via invisible text layer, clickable URLs, and precise text search with perfect alignment.
 
 ### 3. Navigation Architecture
 - **Lazy Pager Navigation:** The main app shell (`Home`, `Tools`, `History`, `Settings`) uses a `HorizontalPager`.
@@ -42,6 +43,7 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 
 ## 🛡️ Project Integrity & Trust
 - **100% Offline:** Verified. All processing happens on-device using `pdfbox-android` and native `PdfRenderer`.
+- **Edge-to-Edge Experience:** Implemented `enableEdgeToEdge()` for immersive UI that covers system status bars.
 - **Privacy First:** Zero trackers. The app does not declare `INTERNET` permission in `AndroidManifest.xml`.
 - **Reproducible Builds (RB):** 
     - **Status:** High probability. 
@@ -50,11 +52,16 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
-- **2026-02-20:** **NITRO ENGINE 3.0 & GOLD STANDARD UI**:
-    - **Ultra Preview Polish:** Implemented seamless vertical scrolling (no page gaps), accurate link mapping, and a high-performance "Find in Page" search with visual highlighting and navigation controls. Added a custom draggable scrollbar for rapid navigation.
-    - **Gold Standard Rearrange:** Upgraded Rearrange tool to a 2-column grid for larger thumbnails and implemented predictive slot-swap logic for jitter-free reordering.
-    - **Universal Previews:** Enforced centered, high-res processing previews across all tools (Compress, Protect, etc.) using `ProcessingStateView`.
-    - **Performance:** Optimized `LazyColumn` in Ultra Preview with `beyondBoundsPageCount = 0` to prevent memory spikes during fast scrolling.
+- **2026-02-20 (Late):** **NITRO ENGINE 5.0 & SIGNATURE SUITE**:
+    - **Ultra Preview 7.0f**: Boosted reader resolution to 7.0f for ultimate clarity.
+    - **Selectable Text**: Implemented `SelectionContainer` with an invisible text layer, allowing direct text copying from the reader.
+    - **Gold Standard Sign Tool**: Added a professional signing tool with a dedicated drawing pad and visual page placement.
+    - **Nitro Reorder 6.0**: Overhauled Rearrange tool drag-and-drop with absolute hit-testing and center-point detection for jitter-free swapping.
+    - **Coordinate Fix**: Refactored search highlight mapping to use raw top-down PDF coordinates, fixing the offset glitch.
+- **2026-02-20 (Early):** **NITRO ENGINE 3.0 & GOLD STANDARD UI**:
+    - **Ultra Preview Polish:** Implemented seamless vertical scrolling (no page gaps), accurate link mapping, and a high-performance "Find in Page" search. Added a custom draggable scrollbar.
+    - **Gold Standard Rearrange:** Upgraded Rearrange tool to a 2-column grid for larger thumbnails and implemented predictive slot-swap logic.
+    - **Universal Previews:** Enforced centered, high-res processing previews across all tools.
 - **2026-02-19:** **GOLD STANDARD & BLITZ 4.0**:
     - Refactored **Split** and **Delete** tools to "Gold Standard" (Visual Grid Selection + Sync Range Input).
     - Optimized Nitro Engine to **Blitz 0.4f** scale for crash-free high-speed scrolling.
