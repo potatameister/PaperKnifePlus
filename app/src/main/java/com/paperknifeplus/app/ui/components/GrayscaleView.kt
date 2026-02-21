@@ -39,6 +39,7 @@ fun GrayscaleView(onBack: () -> Unit) {
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
+    var outputUri by remember { mutableStateOf<Uri?>(null) }
     var fileName by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
@@ -98,7 +99,8 @@ fun GrayscaleView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Grayscale", "Converted to B&W", Icons.Outlined.Palette)
+                        outputUri = saveUri
+                        SessionManager.addEntry(fileName, "Grayscale", "Converted to B&W", Icons.Outlined.Palette, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -159,13 +161,29 @@ fun GrayscaleView(onBack: () -> Unit) {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("• $pageCount PAGES READY", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("COMPARE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showGrayscalePreview) accentColor else Color.Gray)
-                                    Switch(
-                                        checked = showGrayscalePreview, 
-                                        onCheckedChange = { showGrayscalePreview = it },
-                                        colors = SwitchDefaults.colors(checkedThumbColor = accentColor)
-                                    )
+                                
+                                // NITRO CUSTOM TOGGLE
+                                Surface(
+                                    onClick = { showGrayscalePreview = !showGrayscalePreview },
+                                    color = if (showGrayscalePreview) accentColor.copy(0.15f) else Color.Gray.copy(0.1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, if (showGrayscalePreview) accentColor.copy(0.3f) else Color.Transparent)
+                                ) {
+                                    Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            if (showGrayscalePreview) Icons.Filled.Preview else Icons.Filled.VisibilityOff, 
+                                            null, 
+                                            tint = if (showGrayscalePreview) accentColor else Color.Gray, 
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            if (showGrayscalePreview) "PREVIEW" else "ORIGINAL", 
+                                            fontSize = 9.sp, 
+                                            fontWeight = FontWeight.Black,
+                                            color = if (showGrayscalePreview) accentColor else Color.Gray
+                                        )
+                                    }
                                 }
                             }
                             
@@ -194,23 +212,6 @@ fun GrayscaleView(onBack: () -> Unit) {
                                         }
                                     }
                                 )
-                                
-                                // Comparison Overlay Label
-                                if (showGrayscalePreview) {
-                                    Surface(
-                                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp),
-                                        color = Color.Black.copy(0.7f),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Text(
-                                            "SIMULATED GRAYSCALE PREVIEW", 
-                                            color = Color.White, 
-                                            fontSize = 9.sp, 
-                                            fontWeight = FontWeight.Black,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                        )
-                                    }
-                                }
                             }
                             
                             Button(
@@ -244,6 +245,7 @@ fun GrayscaleView(onBack: () -> Unit) {
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { selectedUri = null; unlockPassword = ""; currentState = ToolState.SELECTING },
+                            onPreview = { outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
                             accentColor = accentColor
                         )
                     }

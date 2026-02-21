@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import androidx.compose.foundation.Image as ComposeImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,8 +65,8 @@ fun WatermarkView(
     var showWatermarkOptions by remember { mutableStateOf(false) }
     var showTextInput by remember { mutableStateOf(false) }
     var selectedPages by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var wmColor by remember { mutableStateOf(Color.Black) }
 
-    // Transformation State
     var wmOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var wmScale by remember { mutableFloatStateOf(1f) }
     var wmRotation by remember { mutableFloatStateOf(0f) }
@@ -129,8 +130,8 @@ fun WatermarkView(
                                         val drawWidth = 250f * wmScale
                                         val drawHeight = (250f * (wm.height.toFloat() / wm.width.toFloat())) * wmScale
                                         
-                                        val xPos = (pdfWidth / 2) - (drawWidth / 2) + (wmOffset.x / 2)
-                                        val yPos = (pdfHeight / 2) - (drawHeight / 2) - (wmOffset.y / 2)
+                                        val xPos = (pdfWidth / 2) - (drawWidth / 2) + (wmOffset.x * (pdfWidth / 360f))
+                                        val yPos = (pdfHeight / 2) - (drawHeight / 2) - (wmOffset.y * (pdfHeight / 510f))
                                         
                                         cs.saveGraphicsState()
                                         cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
@@ -200,9 +201,28 @@ fun WatermarkView(
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("${selectedPages.size} / $pageCount PAGES SELECTED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("COMPARE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showPreview) accentColor else Color.Gray)
-                                    Switch(checked = showPreview, onCheckedChange = { showPreview = it }, colors = SwitchDefaults.colors(checkedThumbColor = accentColor))
+                                // NITRO CUSTOM TOGGLE
+                                Surface(
+                                    onClick = { showPreview = !showPreview },
+                                    color = if (showPreview) accentColor.copy(0.15f) else Color.Gray.copy(0.1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, if (showPreview) accentColor.copy(0.3f) else Color.Transparent)
+                                ) {
+                                    Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            if (showPreview) Icons.Filled.Preview else Icons.Filled.VisibilityOff, 
+                                            null, 
+                                            tint = if (showPreview) accentColor else Color.Gray, 
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            if (showPreview) "PREVIEW" else "ORIGINAL", 
+                                            fontSize = 9.sp, 
+                                            fontWeight = FontWeight.Black,
+                                            color = if (showPreview) accentColor else Color.Gray
+                                        )
+                                    }
                                 }
                             }
 
@@ -218,14 +238,15 @@ fun WatermarkView(
                                         selectedPages = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
                                     },
                                     itemOverlay = { index ->
-                                        if (showPreview && selectedPages.contains(index)) {
+                                        if (showPreview && selectedPages.contains(index) && watermarkBitmap != null) {
                                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                                 Surface(
-                                                    color = accentColor.copy(0.8f),
-                                                    shape = RoundedCornerShape(4.dp),
-                                                    modifier = Modifier.size(50.dp, 25.dp)
+                                                    color = Color.White.copy(0.7f),
+                                                    shape = RoundedCornerShape(2.dp),
+                                                    border = BorderStroke(1.dp, accentColor.copy(0.4f)),
+                                                    modifier = Modifier.size(60.dp, 40.dp)
                                                 ) {
-                                                    Icon(Icons.Filled.TextFields, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                                    ComposeImage(watermarkBitmap!!.asImageBitmap(), null, modifier = Modifier.padding(2.dp), contentScale = ContentScale.Fit)
                                                 }
                                             }
                                         }
@@ -233,14 +254,23 @@ fun WatermarkView(
                                 )
                             }
                             
-                            Button(
-                                onClick = { showWatermarkOptions = true },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
-                                enabled = selectedPages.isNotEmpty(),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                            ) {
-                                Text("CONTINUE TO PLACEMENT", fontWeight = FontWeight.Black)
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Button(
+                                    onClick = { showWatermarkOptions = true },
+                                    modifier = Modifier.weight(1f).height(60.dp),
+                                    enabled = selectedPages.isNotEmpty(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor.copy(0.1f), contentColor = accentColor)
+                                ) { Text("PICK WATERMARK", fontWeight = FontWeight.Black) }
+                                
+                                if (watermarkBitmap != null) {
+                                    Button(
+                                        onClick = { saveLauncher.launch(fileName.replace(".pdf", "-watermarked.pdf")) },
+                                        modifier = Modifier.weight(1f).height(60.dp),
+                                        shape = RoundedCornerShape(20.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                    ) { Text("SAVE WATERMARK", fontWeight = FontWeight.Black) }
+                                }
                             }
                         }
                     }
@@ -255,18 +285,11 @@ fun WatermarkView(
                                 rotation = wmRotation,
                                 onTransform = { o, s, r -> wmOffset = o; wmScale = s; wmRotation = r },
                                 onCancel = { currentState = ToolState.CONFIGURING },
-                                onConfirm = { saveLauncher.launch(fileName.replace(".pdf", "-watermarked.pdf")) },
+                                onConfirm = { currentState = ToolState.CONFIGURING },
                                 accentColor = accentColor
                             )
                         } else {
-                            ProcessingStateView(
-                                accentColor = accentColor,
-                                uri = selectedUri,
-                                text = "Applying Watermarks...",
-                                current = 0,
-                                total = 0,
-                                showWarning = false
-                            )
+                            ProcessingStateView(accentColor, selectedUri, "Applying Watermarks...", 0, 0, false)
                         }
                     }
                     ToolState.SUCCESS -> {
@@ -309,27 +332,6 @@ fun WatermarkView(
                     SignOptionCard("Upload Image", Icons.Filled.CloudUpload, Color.Gray, Modifier.fillMaxWidth()) { 
                         imgLauncher.launch("image/*")
                     }
-                    
-                    Text("TEMPLATES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp, modifier = Modifier.padding(top = 12.dp))
-                    
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TemplateCard("CONFIDENTIAL", Color.Red, Modifier.weight(1f)) {
-                            watermarkBitmap = createTextBitmap("CONFIDENTIAL", Color.Red)
-                            wmOffset = androidx.compose.ui.geometry.Offset.Zero
-                            wmScale = 1f
-                            wmRotation = 0f
-                            showWatermarkOptions = false
-                            currentState = ToolState.PROCESSING
-                        }
-                        TemplateCard("DRAFT", Color.DarkGray, Modifier.weight(1f)) {
-                            watermarkBitmap = createTextBitmap("DRAFT", Color.DarkGray)
-                            wmOffset = androidx.compose.ui.geometry.Offset.Zero
-                            wmScale = 1f
-                            wmRotation = 0f
-                            showWatermarkOptions = false
-                            currentState = ToolState.PROCESSING
-                        }
-                    }
                 }
                 Spacer(Modifier.height(40.dp))
             }
@@ -338,22 +340,35 @@ fun WatermarkView(
 
     if (showTextInput) {
         var text by remember { mutableStateOf("") }
+        var selectedColor by remember { mutableStateOf(Color.Black) }
         AlertDialog(
             onDismissRequest = { showTextInput = false },
             title = { Text("Text Watermark", fontWeight = FontWeight.Black) },
             text = {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    label = { Text("Enter watermark text") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                Column {
+                    Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(Color.Black, Color.Blue, Color(0xFFC00000), Color(0xFF0070C0), PaperPink).forEach { color ->
+                            Surface(
+                                onClick = { selectedColor = color },
+                                modifier = Modifier.size(32.dp).border(2.dp, if (selectedColor == color) accentColor else Color.Transparent, CircleShape),
+                                shape = CircleShape,
+                                color = color
+                            ) {}
+                        }
+                    }
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        label = { Text("Enter watermark text") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             },
             confirmButton = {
                 Button(onClick = {
                     if (text.isNotBlank()) {
-                        watermarkBitmap = createTextBitmap(text, PaperPink)
+                        watermarkBitmap = createTextBitmap(text, selectedColor)
                         wmOffset = androidx.compose.ui.geometry.Offset.Zero
                         wmScale = 1f
                         wmRotation = 0f
@@ -365,41 +380,4 @@ fun WatermarkView(
             }
         )
     }
-}
-
-private fun createTextBitmap(text: String, color: Color): Bitmap {
-    val bitmap = Bitmap.createBitmap(1000, 400, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val paint = Paint().apply {
-        this.color = color.toArgb()
-        alpha = 140
-        textSize = 120f
-        isAntiAlias = true
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    }
-    canvas.drawText(text, 500f, 220f, paint)
-    return bitmap
-}
-
-@Composable
-fun TemplateCard(text: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(60.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = color.copy(alpha = 0.05f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(text, color = color, fontWeight = FontWeight.Black, fontSize = 10.sp)
-        }
-    }
-}
-
-fun Color.toArgb(): Int {
-    return (this.alpha * 255.0f + 0.5f).toInt() shl 24 or
-           ((this.red * 255.0f + 0.5f).toInt() shl 16) or
-           ((this.green * 255.0f + 0.5f).toInt() shl 8) or
-           (this.blue * 255.0f + 0.5f).toInt()
 }

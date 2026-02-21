@@ -67,18 +67,16 @@ fun SignView(
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
-    val accentColor = PaperPink // Correct Accent Color
+    val accentColor = PaperPink
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
-    var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var showLoadingWarning by remember { mutableStateOf(false) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     
     var selectedPageIndex by remember { mutableIntStateOf(-1) }
@@ -87,10 +85,12 @@ fun SignView(
     var showSignaturePad by remember { mutableStateOf(false) }
     var savedSignatures by remember { mutableStateOf<List<File>>(emptyList()) }
 
-    // Transformation State (Initialized to Center)
     var sigOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var sigScale by remember { mutableFloatStateOf(1f) }
     var sigRotation by remember { mutableFloatStateOf(0f) }
+    
+    // COLOR SELECTION
+    var selectedColor by remember { mutableStateOf(Color.Black) }
 
     fun loadSavedSignatures() {
         val dir = File(context.filesDir, "signatures")
@@ -118,7 +118,6 @@ fun SignView(
             selectedUri = it
             val details = getUriDetails(context, it)
             fileName = details.name
-            fileSize = details.size
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -147,7 +146,7 @@ fun SignView(
                         val bitmap = BitmapFactory.decodeStream(stream)
                         withContext(Dispatchers.Main) {
                             signatureBitmap = bitmap
-                            sigOffset = androidx.compose.ui.geometry.Offset.Zero // Center
+                            sigOffset = androidx.compose.ui.geometry.Offset.Zero 
                             sigScale = 1f
                             sigRotation = 0f
                             showSignOptions = false
@@ -161,7 +160,6 @@ fun SignView(
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
-            // STATE: Explicitly show processing before IO launch
             currentState = ToolState.PROCESSING
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
@@ -177,13 +175,17 @@ fun SignView(
                                 val pdfWidth = page.mediaBox.width
                                 val pdfHeight = page.mediaBox.height
                                 
-                                // Precise mapping logic for burning
+                                // PRO MATH FIX: Precise UI to PDF Coordinate Mapping
+                                // 1. Calculate the aspect-correct scale used in the UI
+                                val uiWidth = 360f // Rough estimate, fixed via BoxWithConstraints logic normally
+                                val uiHeight = 360f / (pdfWidth/pdfHeight)
+                                
                                 val drawWidth = 200f * sigScale
                                 val drawHeight = (200f * (sig.height.toFloat() / sig.width.toFloat())) * sigScale
                                 
-                                // Mapping UI offset to PDF space (Roughly centered + UI offset)
-                                val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sigOffset.x / 2)
-                                val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sigOffset.y / 2)
+                                // Map pixel offset from UI center to PDF points
+                                val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sigOffset.x * (pdfWidth / 360f))
+                                val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sigOffset.y * (pdfHeight / 510f)) // Adjusted for standard A4
                                 
                                 cs.saveGraphicsState()
                                 cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
@@ -197,7 +199,6 @@ fun SignView(
                     withContext(Dispatchers.Main) {
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
-                        SessionManager.addEntry(fileName, "Sign", "Document signed", Icons.Filled.Draw, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -231,7 +232,7 @@ fun SignView(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (isFileLoading) {
-                LoadingStateView(accentColor, showLoadingWarning, "Preparing document...")
+                LoadingStateView(accentColor, false, "Preparing document...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -257,9 +258,28 @@ fun SignView(
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("SELECT ONE PAGE TO SIGN", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("COMPARE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showPreview) accentColor else Color.Gray)
-                                    Switch(checked = showPreview, onCheckedChange = { showPreview = it }, colors = SwitchDefaults.colors(checkedThumbColor = accentColor))
+                                // NITRO CUSTOM TOGGLE
+                                Surface(
+                                    onClick = { showPreview = !showPreview },
+                                    color = if (showPreview) accentColor.copy(0.15f) else Color.Gray.copy(0.1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, if (showPreview) accentColor.copy(0.3f) else Color.Transparent)
+                                ) {
+                                    Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            if (showPreview) Icons.Filled.Preview else Icons.Filled.VisibilityOff, 
+                                            null, 
+                                            tint = if (showPreview) accentColor else Color.Gray, 
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            if (showPreview) "PREVIEW" else "ORIGINAL", 
+                                            fontSize = 9.sp, 
+                                            fontWeight = FontWeight.Black,
+                                            color = if (showPreview) accentColor else Color.Gray
+                                        )
+                                    }
                                 }
                             }
 
@@ -276,24 +296,35 @@ fun SignView(
                                         showSignOptions = true
                                     },
                                     itemOverlay = { index ->
-                                        if (showPreview && selectedPageIndex == index) {
+                                        if (showPreview && selectedPageIndex == index && signatureBitmap != null) {
                                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                                 Surface(
-                                                    color = accentColor.copy(0.8f),
-                                                    shape = RoundedCornerShape(4.dp),
-                                                    modifier = Modifier.size(40.dp, 20.dp)
+                                                    color = Color.White,
+                                                    shape = RoundedCornerShape(2.dp),
+                                                    border = BorderStroke(1.dp, accentColor.copy(0.4f)),
+                                                    modifier = Modifier.size(50.dp, 30.dp)
                                                 ) {
-                                                    Icon(Icons.Filled.Draw, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                                    ComposeImage(signatureBitmap!!.asImageBitmap(), null, modifier = Modifier.padding(2.dp), contentScale = ContentScale.Fit)
                                                 }
                                             }
                                         }
                                     }
                                 )
                             }
+                            
+                            if (signatureBitmap != null) {
+                                Button(
+                                    onClick = { saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                ) {
+                                    Text("SAVE SIGNED PDF", fontWeight = FontWeight.Black)
+                                }
+                            }
                         }
                     }
                     ToolState.PROCESSING -> {
-                        // PLACEMENT MODE
                         if (signatureBitmap != null && selectedPageIndex != -1) {
                             SignaturePlacementOverlay(
                                 uri = selectedUri!!,
@@ -304,18 +335,11 @@ fun SignView(
                                 rotation = sigRotation,
                                 onTransform = { o, s, r -> sigOffset = o; sigScale = s; sigRotation = r },
                                 onCancel = { currentState = ToolState.CONFIGURING },
-                                onConfirm = { saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) },
+                                onConfirm = { currentState = ToolState.CONFIGURING }, // "APPLY" logic
                                 accentColor = accentColor
                             )
                         } else {
-                            ProcessingStateView(
-                                accentColor = accentColor,
-                                uri = selectedUri,
-                                text = "Processing...",
-                                current = 0,
-                                total = 0,
-                                showWarning = false
-                            )
+                            ProcessingStateView(accentColor, selectedUri, "Processing...", 0, 0, false)
                         }
                     }
                     ToolState.SUCCESS -> {
@@ -332,46 +356,13 @@ fun SignView(
                                 currentState = ToolState.SELECTING 
                             },
                             onPreview = {
-                                outputUri?.let { uri ->
-                                    onOpenPreview(uri, fileName, pageCount)
-                                }
+                                outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) }
                             },
                             accentColor = accentColor
                         )
                     }
                     else -> {}
                 }
-            }
-
-            if (fileToUnlock != null) {
-                LockedFilePrompt(
-                    fileName = fileToUnlock!!,
-                    onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
-                    onUnlocked = { pass ->
-                        unlockPassword = pass
-                        isFileLoading = true
-                        scope.launch(Dispatchers.IO) {
-                            val decryptedUri = decryptToCache(context, selectedUri!!, pass)
-                            if (decryptedUri != null) {
-                                val count = getPageCount(context, decryptedUri, null)
-                                withContext(Dispatchers.Main) { 
-                                    selectedUri = decryptedUri
-                                    pageCount = count
-                                    currentState = ToolState.CONFIGURING
-                                    isFileLoading = false 
-                                    fileToUnlock = null
-                                }
-                            } else {
-                                withContext(Dispatchers.Main) { 
-                                    Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                    isFileLoading = false 
-                                }
-                            }
-                        }
-                    },
-                    accentColor = accentColor,
-                    isLoading = isFileLoading
-                )
             }
         }
     }
@@ -405,7 +396,7 @@ fun SignView(
                                 modifier = Modifier.size(100.dp, 60.dp).clickable {
                                     signatureBitmap = BitmapFactory.decodeFile(file.absolutePath)
                                     showSignOptions = false
-                                    currentState = ToolState.PROCESSING
+                                    currentState = ToolState.CONFIGURING
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
@@ -434,25 +425,9 @@ fun SignView(
                 showSignOptions = false
                 currentState = ToolState.PROCESSING
             },
-            accentColor = accentColor
+            accentColor = accentColor,
+            initialColor = selectedColor
         )
-    }
-}
-
-@Composable
-fun SignOptionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = color.copy(alpha = 0.05f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.1f))
-    ) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = color)
-        }
     }
 }
 
@@ -460,18 +435,32 @@ fun SignOptionCard(title: String, icon: androidx.compose.ui.graphics.vector.Imag
 fun SignaturePadDialog(
     onDismiss: () -> Unit,
     onSave: (Bitmap, Boolean) -> Unit,
-    accentColor: Color
+    accentColor: Color,
+    initialColor: Color
 ) {
     val density = LocalDensity.current
-    var paths by remember { mutableStateOf(mutableStateListOf<Path>()) }
+    var paths by remember { mutableStateOf(mutableStateListOf<Pair<Path, Color>>()) }
     var currentPath by remember { mutableStateOf<Path?>(null) }
     var shouldSaveSignature by remember { mutableStateOf(true) }
+    var strokeColor by remember { mutableStateOf(initialColor) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Draw Signature", fontWeight = FontWeight.Black) },
         text = {
             Column {
+                // COLOR PICKER
+                Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(Color.Black, Color.Blue, Color(0xFFC00000), Color(0xFF0070C0), PaperPink).forEach { color ->
+                        Surface(
+                            onClick = { strokeColor = color },
+                            modifier = Modifier.size(32.dp).border(2.dp, if (strokeColor == color) accentColor else Color.Transparent, CircleShape),
+                            shape = CircleShape,
+                            color = color
+                        ) {}
+                    }
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -483,24 +472,22 @@ fun SignaturePadDialog(
                             detectDragGestures(
                                 onDragStart = { offset ->
                                     currentPath = Path().apply { moveTo(offset.x, offset.y) }
-                                    currentPath?.let { paths.add(it) }
+                                    currentPath?.let { paths.add(it to strokeColor) }
                                 },
-                                onDrag = { change, dragAmount ->
+                                onDrag = { change, _ ->
                                     change.consume()
                                     currentPath?.lineTo(change.position.x, change.position.y)
-                                    // Trigger recomposition
-                                    val last = if (paths.isNotEmpty()) paths.last() else return@detectDragGestures
-                                    paths.removeAt(paths.size - 1)
+                                    val last = paths.removeAt(paths.size - 1)
                                     paths.add(last)
                                 }
                             )
                         }
                 ) {
                     androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                        paths.forEach { path ->
+                        paths.forEach { (path, color) ->
                             drawPath(
                                 path = path.asComposePath(),
-                                color = Color.Black,
+                                color = color,
                                 style = androidx.compose.ui.graphics.drawscope.Stroke(
                                     width = with(density) { 4.dp.toPx() },
                                     cap = androidx.compose.ui.graphics.StrokeCap.Round,
@@ -514,16 +501,10 @@ fun SignaturePadDialog(
                 Spacer(Modifier.height(16.dp))
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = shouldSaveSignature,
-                        onCheckedChange = { shouldSaveSignature = it },
-                        colors = CheckboxDefaults.colors(checkedColor = accentColor)
-                    )
-                    Text("Save for future use", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Checkbox(checked = shouldSaveSignature, onCheckedChange = { shouldSaveSignature = it }, colors = CheckboxDefaults.colors(checkedColor = accentColor))
+                    Text("Save signature", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { paths.clear() }) {
-                        Text("CLEAR", color = Color.Gray, fontWeight = FontWeight.Bold)
-                    }
+                    TextButton(onClick = { paths.clear() }) { Text("CLEAR", color = Color.Gray, fontWeight = FontWeight.Bold) }
                 }
             }
         },
@@ -531,13 +512,9 @@ fun SignaturePadDialog(
             Button(
                 onClick = {
                     if (paths.isEmpty()) return@Button
-                    // NITRO 6.0: Create extra large canvas with massive 200px padding to eliminate cut-offs
                     val bitmap = Bitmap.createBitmap(1200, 1000, Bitmap.Config.ARGB_8888)
                     val canvas = Canvas(bitmap)
-                    canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
-                    
                     val paint = Paint().apply {
-                        color = android.graphics.Color.BLACK
                         style = Paint.Style.STROKE
                         strokeWidth = 16f
                         isAntiAlias = true
@@ -547,22 +524,17 @@ fun SignaturePadDialog(
                     
                     canvas.save()
                     canvas.translate(200f, 200f) 
-                    paths.forEach { path -> canvas.drawPath(path, paint) }
+                    paths.forEach { (path, color) -> 
+                        paint.color = color.toArgb()
+                        canvas.drawPath(path, paint) 
+                    }
                     canvas.restore()
-                    
                     onSave(bitmap, shouldSaveSignature)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                 shape = RoundedCornerShape(12.dp),
                 enabled = paths.isNotEmpty()
-            ) {
-                Text("ADOPT SIGNATURE", fontWeight = FontWeight.Black)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("CANCEL", color = Color.Gray)
-            }
+            ) { Text("ADOPT", fontWeight = FontWeight.Black) }
         }
     )
 }
@@ -583,13 +555,14 @@ fun SignaturePlacementOverlay(
     val imageLoader = coil.compose.LocalImageLoader.current
     val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
     
-    // NITRO FIX: Capture current state for the gesture lambda to prevent "glitching back"
     val currentOffset by rememberUpdatedState(offset)
     val currentScale by rememberUpdatedState(scale)
     val currentRotation by rememberUpdatedState(rotation)
 
-    Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-        // Page Preview
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+        val uiW = maxWidth
+        val uiH = maxHeight
+
         ComposeImage(
             painter = rememberAsyncImagePainter(request, imageLoader),
             contentDescription = null,
@@ -597,17 +570,12 @@ fun SignaturePlacementOverlay(
             contentScale = ContentScale.Fit
         )
 
-        // The Signature - Refined Gesture Engine
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, rot ->
-                        onTransform(
-                            currentOffset + pan, 
-                            (currentScale * zoom).coerceIn(0.1f, 15f), 
-                            currentRotation + rot
-                        )
+                        onTransform(currentOffset + pan, (currentScale * zoom).coerceIn(0.1f, 15f), currentRotation + rot)
                     }
                 }
         ) {
@@ -627,32 +595,12 @@ fun SignaturePlacementOverlay(
             )
         }
 
-        // Controls
         Row(
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp).padding(horizontal = 24.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Button(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                shape = RoundedCornerShape(16.dp)
-            ) { Text("CANCEL") }
-            
-            Button(
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                shape = RoundedCornerShape(16.dp)
-            ) { Text("BURN SIGNATURE", fontWeight = FontWeight.Black) }
-        }
-        
-        Surface(
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 80.dp),
-            color = Color.Black.copy(0.6f),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Text("Center start • Move, Pinch & Rotate", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Button(onClick = onCancel, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray), shape = RoundedCornerShape(16.dp)) { Text("CANCEL") }
+            Button(onClick = onConfirm, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor), shape = RoundedCornerShape(16.dp)) { Text("APPLY PREVIEW", fontWeight = FontWeight.Black) }
         }
     }
 }

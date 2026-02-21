@@ -239,7 +239,13 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
                                         }
-                                        "compare" -> ComingSoonView("Compare PDF", onBack = { currentTool = null })
+                                        "compare" -> CompareView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                     }
                                 }
                             }

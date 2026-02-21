@@ -59,11 +59,11 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             Tool("metadata", "Metadata", "Edit props", Icons.Outlined.Fingerprint, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
             
             // CONVERT - Teal
-            Tool("pdf2img", "To Image", "Export JPG", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-            Tool("img2pdf", "To PDF", "Photos to PDF", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-            Tool("pdf2zip", "To ZIP", "Archive PDF", Icons.Outlined.FolderZip, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-            Tool("extract-images", "Extract", "Save photos", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-            Tool("pdf2text", "To Text", "Plain text", Icons.Outlined.Article, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
+            Tool("pdf2img", "PDF to Image", "High-res export", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("img2pdf", "Image to PDF", "Build from photos", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("pdf2zip", "PDF to ZIP", "Archive for sharing", Icons.Outlined.FolderZip, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("extract-images", "Extract", "Save page assets", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
+            Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Outlined.Article, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
         )
     }
 

@@ -169,14 +169,37 @@ fun PageNumbersView(
                     }
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                            Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Column {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("${selectedPages.size} / $pageCount PAGES SELECTED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("PREVIEW", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showPreviewOverlay) accentColor else Color.Gray)
-                                    Switch(checked = showPreviewOverlay, onCheckedChange = { showPreviewOverlay = it }, colors = SwitchDefaults.colors(checkedThumbColor = accentColor))
+                                // NITRO CUSTOM TOGGLE
+                                Surface(
+                                    onClick = { showPreviewOverlay = !showPreviewOverlay },
+                                    color = if (showPreviewOverlay) accentColor.copy(0.15f) else Color.Gray.copy(0.1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, if (showPreviewOverlay) accentColor.copy(0.3f) else Color.Transparent)
+                                ) {
+                                    Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            if (showPreviewOverlay) Icons.Filled.Preview else Icons.Filled.VisibilityOff, 
+                                            null, 
+                                            tint = if (showPreviewOverlay) accentColor else Color.Gray, 
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            if (showPreviewOverlay) "PREVIEW" else "ORIGINAL", 
+                                            fontSize = 9.sp, 
+                                            fontWeight = FontWeight.Black,
+                                            color = if (showPreviewOverlay) accentColor else Color.Gray
+                                        )
+                                    }
                                 }
                             }
 

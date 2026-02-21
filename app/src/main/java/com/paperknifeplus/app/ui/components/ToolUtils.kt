@@ -225,8 +225,10 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
 }
 
 fun toGrayscaleBitmap(src: Bitmap): Bitmap {
-    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.RGB_565)
+    val bmpGrayscale = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bmpGrayscale)
+    // Draw white background first to eliminate black box on transparency
+    canvas.drawColor(android.graphics.Color.WHITE)
     val paint = Paint()
     val cm = ColorMatrix().apply { setSaturation(0f) }
     paint.colorFilter = ColorMatrixColorFilter(cm)
@@ -243,12 +245,13 @@ suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: 
         
         for (i in 0 until total) {
             onProgress(i + 1, total)
-            // Render to bitmap to ensure 100% grayscale (Nuclear Option)
-            val rgbBitmap = renderer.renderImage(i, 1.5f, ImageType.RGB)
+            // Render to high-res bitmap (2.0f) to ensure clarity
+            val rgbBitmap = renderer.renderImage(i, 2.0f, ImageType.RGB)
             val grayBitmap = toGrayscaleBitmap(rgbBitmap)
             rgbBitmap.recycle()
             
-            val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.75f)
+            // High quality compression (0.9f)
+            val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.9f)
             val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
             targetDoc.addPage(page)
             PDPageContentStream(targetDoc, page).use { it.drawImage(pdImage, 0f, 0f) }
