@@ -77,17 +77,22 @@ class MainActivity : ComponentActivity() {
 
             CompositionLocalProvider(coil.compose.LocalImageLoader provides nitroImageLoader) {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
+                    val sheetState = rememberModalBottomSheetState()
+                    var showToolPicker by remember { mutableStateOf(false) }
+                    val scope = rememberCoroutineScope()
+
                     Box(Modifier.fillMaxSize()) {
                         var currentTool by remember { mutableStateOf<String?>(null) }
                         var previewData by remember { mutableStateOf<Triple<Uri, String, Int>?>(null) }
                         
                         val mainScreens = listOf("home", "tools", "history", "settings")
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
-                        val scope = rememberCoroutineScope()
 
                         // --- INTELLIGENT BACK NAVIGATION ---
-                        BackHandler(enabled = currentTool != null || pagerState.currentPage != 0) {
-                            if (currentTool != null) {
+                        BackHandler(enabled = currentTool != null || pagerState.currentPage != 0 || showToolPicker) {
+                            if (showToolPicker) {
+                                scope.launch { sheetState.hide() }.invokeOnCompletion { showToolPicker = false }
+                            } else if (currentTool != null) {
                                 currentTool = null
                             } else if (pagerState.currentPage != 0) {
                                 scope.launch { pagerState.animateScrollToPage(0) }
@@ -124,11 +129,6 @@ class MainActivity : ComponentActivity() {
                                         "settings" -> SettingsView(onNavigateToAbout = { currentTool = "about" })
                                     }
                                 }
-                                
-                                // Bottom Nav Spacer
-                                if (currentTool == null) {
-                                    Spacer(modifier = Modifier.height(72.dp).navigationBarsPadding())
-                                }
                             }
 
                             // Bottom Bar
@@ -142,8 +142,29 @@ class MainActivity : ComponentActivity() {
                                             // Use scrollToPage (instant) for bar clicks to avoid rendering in-between pages
                                             scope.launch { pagerState.scrollToPage(index) }
                                         }
-                                    }
+                                    },
+                                    onPlusClick = { showToolPicker = true }
                                 )
+                            }
+
+                            // TOOL PICKER SHEET
+                            if (showToolPicker) {
+                                ModalBottomSheet(
+                                    onDismissRequest = { showToolPicker = false },
+                                    sheetState = sheetState,
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray.copy(0.2f)) },
+                                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+                                ) {
+                                    ToolPickerContent(
+                                        onToolClick = { tool ->
+                                            scope.launch { sheetState.hide() }.invokeOnCompletion { 
+                                                showToolPicker = false
+                                                currentTool = tool 
+                                            }
+                                        }
+                                    )
+                                }
                             }
 
                             // NITRO TOOL OVERLAY
@@ -343,10 +364,83 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+fun ToolPickerContent(onToolClick: (String) -> Unit) {
+    val quickTools = listOf(
+        Triple("merge", "Merge", Icons.Filled.Layers),
+        Triple("split", "Split", Icons.Filled.ContentCut),
+        Triple("rearrange", "Rearrange", Icons.Filled.SwapVert),
+        Triple("compress", "Compress", Icons.Filled.Bolt),
+        Triple("sign", "Sign", Icons.Filled.Draw),
+        Triple("watermark", "Watermark", Icons.Filled.BrandingWatermark),
+        Triple("pdf2img", "To Image", Icons.Filled.Image),
+        Triple("img2pdf", "To PDF", Icons.Filled.PictureAsPdf)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .navigationBarsPadding()
+    ) {
+        Text("QUICK TOOLS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
+        Spacer(Modifier.height(20.dp))
+        
+        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+            columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(4),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.heightIn(max = 300.dp)
+        ) {
+            items(quickTools) { (id, name, icon) ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onToolClick(id) }
+                ) {
+                    Surface(
+                        modifier = Modifier.size(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(0.4f),
+                        border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(icon, null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(name, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(32.dp))
+        Divider(color = Color.Gray.copy(0.1f))
+        Spacer(Modifier.height(24.dp))
+        
+        Surface(
+            onClick = { onToolClick("tools") },
+            modifier = Modifier.fillMaxWidth().height(60.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = PaperPink.copy(0.1f),
+            border = BorderStroke(1.dp, PaperPink.copy(0.2f))
+        ) {
+            Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.GridView, null, tint = PaperPink, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(16.dp))
+                Text("Complete Engines Catalog", fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.Filled.ChevronRight, null, tint = PaperPink.copy(0.5f))
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
 fun FixedTitanBottomBar(
     modifier: Modifier = Modifier,
     currentScreen: String,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    onPlusClick: () -> Unit
 ) {
     Box(
         modifier = modifier
@@ -405,7 +499,7 @@ fun FixedTitanBottomBar(
                 .size(58.dp)
                 .border(2.5.dp, if (MaterialTheme.colorScheme.background == Color.Black) Color.Black else Color.White, RoundedCornerShape(20.dp))
                 .shadow(elevation = 12.dp, shape = RoundedCornerShape(20.dp), spotColor = PaperPink)
-                .clickable { /* Action */ },
+                .clickable { onPlusClick() },
             shape = RoundedCornerShape(20.dp),
             color = PaperPink
         ) {

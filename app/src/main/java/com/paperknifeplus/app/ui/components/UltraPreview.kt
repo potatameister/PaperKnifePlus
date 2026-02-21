@@ -445,14 +445,16 @@ fun PdfPageReaderItem(
     links: List<PdfLink>,
     onLinkClick: (String) -> Unit
 ) {
-    // NITRO 12.0: Platinum Pro 8.0f Resolution
-    val lowResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.7f, priority = 1) }
-    val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 8.0f, priority = 0) }
+    // NITRO 15.0: Platinum Pro 12.0f Resolution (Crisp even at 1x)
+    val lowResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 1.8f, priority = 1) }
+    val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 12.0f, priority = 0) }
     
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(pageSize?.let { it.first / it.second } ?: 0.707f)
+            .padding(vertical = 4.dp)
+            .shadow(4.dp)
             .background(Color.White)
     ) {
         val lowResPainter = rememberAsyncImagePainter(lowResRequest, imageLoader)
