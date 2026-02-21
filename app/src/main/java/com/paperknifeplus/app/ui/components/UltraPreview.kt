@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.ImageLoader
@@ -77,7 +78,6 @@ fun UltraPreview(
     var isDecrypting by remember { mutableStateOf(false) }
     var activePageCount by remember { mutableIntStateOf(pageCount) }
 
-    // NITRO 11.0: Dedicated High-Res Reader ImageLoader (40% RAM usage)
     val imageLoader = remember {
         ImageLoader.Builder(context)
             .components { add(PdfPageFetcher.Factory(context)) }
@@ -245,8 +245,90 @@ fun UltraPreview(
                     }
                 }
             }
+
+            // Scrollbar & UI elements inside BoxScope
+            if (!isInitializing && fileToUnlock == null) {
+                val currentPage by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
+                var trackHeight by remember { mutableFloatStateOf(0f) }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 4.dp)
+                        .fillMaxHeight(0.75f)
+                        .width(48.dp)
+                        .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
+                        .pointerInput(activePageCount, trackHeight) {
+                            detectTapGestures { offset ->
+                                val newPercent = (offset.y / trackHeight).coerceIn(0f, 1f)
+                                val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
+                                scope.launch { listState.scrollToItem(targetPage) }
+                            }
+                        }
+                ) {
+                    val scrollPercentage = if (activePageCount > 1) listState.firstVisibleItemIndex.toFloat() / (activePageCount - 1) else 0f
+                    Box(
+                        modifier = Modifier.fillMaxHeight().width(6.dp).align(Alignment.Center).background(Color.Gray.copy(alpha = 0.15f), CircleShape)
+                    )
+                    val minThumbHeight = 48.dp
+                    val thumbHeightFactor = 1f / activePageCount.coerceAtLeast(1)
+                    Box(
+                        modifier = Modifier
+                            .heightIn(min = minThumbHeight)
+                            .fillMaxHeight(thumbHeightFactor.coerceIn(0.08f, 0.25f))
+                            .width(12.dp)
+                            .graphicsLayer {
+                                val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
+                                val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeightPx)
+                                translationY = scrollPercentage * (trackHeight - thumbHeightPx)
+                            }
+                            .background(PaperPink, CircleShape)
+                            .align(Alignment.TopCenter)
+                            .draggable(
+                                orientation = Orientation.Vertical,
+                                state = rememberDraggableState { delta ->
+                                    if (trackHeight > 0) {
+                                        val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
+                                        val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeightPx)
+                                        val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
+                                        val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
+                                        scope.launch { listState.scrollToItem(targetPage) }
+                                    }
+                                }
+                            )
+                    )
+                }
+
+                Box(
+                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 24.dp)
+                ) {
+                    Surface(
+                        onClick = {
+                            jumpPageInput = currentPage.toString()
+                            showJumpDialog = true
+                        },
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        shape = RoundedCornerShape(24.dp),
+                        tonalElevation = 12.dp,
+                        border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("$currentPage", fontWeight = FontWeight.Black, fontSize = 14.sp, color = PaperPink)
+                            Text(" / $activePageCount PAGES", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                            Spacer(Modifier.width(16.dp))
+                            Box(Modifier.height(16.dp).width(1.dp).background(Color.Gray.copy(alpha = 0.2f)))
+                            Spacer(Modifier.width(16.dp))
+                            Icon(Icons.Filled.UnfoldMore, null, modifier = Modifier.size(16.dp).alpha(0.5f), tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            }
         }
 
+        // Top Bar
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
@@ -340,84 +422,6 @@ fun UltraPreview(
                 tonalElevation = 6.dp
             )
         }
-
-        val currentPage by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
-        var trackHeight by remember { mutableFloatStateOf(0f) }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 4.dp)
-                .fillMaxHeight(0.75f)
-                .width(48.dp)
-                .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
-                .pointerInput(activePageCount, trackHeight) {
-                    detectTapGestures { offset ->
-                        val newPercent = (offset.y / trackHeight).coerceIn(0f, 1f)
-                        val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
-                        scope.launch { listState.scrollToItem(targetPage) }
-                    }
-                }
-        ) {
-            val scrollPercentage = if (activePageCount > 1) listState.firstVisibleItemIndex.toFloat() / (activePageCount - 1) else 0f
-            Box(
-                modifier = Modifier.fillMaxHeight().width(6.dp).align(Alignment.Center).background(Color.Gray.copy(alpha = 0.15f), CircleShape)
-            )
-            val minThumbHeight = 48.dp
-            val thumbHeightFactor = 1f / activePageCount.coerceAtLeast(1)
-            Box(
-                modifier = Modifier
-                    .heightIn(min = minThumbHeight)
-                    .fillMaxHeight(thumbHeightFactor.coerceIn(0.08f, 0.25f))
-                    .width(12.dp)
-                    .graphicsLayer {
-                        val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
-                        val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeightPx)
-                        translationY = scrollPercentage * (trackHeight - thumbHeightPx)
-                    }
-                    .background(PaperPink, CircleShape)
-                    .align(Alignment.TopCenter)
-                    .draggable(
-                        orientation = Orientation.Vertical,
-                        state = rememberDraggableState { delta ->
-                            if (trackHeight > 0) {
-                                val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
-                                val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeightPx)
-                                val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
-                                val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
-                                scope.launch { listState.scrollToItem(targetPage) }
-                            }
-                        }
-                    )
-            )
-        }
-
-        Box(
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 24.dp)
-        ) {
-            Surface(
-                onClick = {
-                    jumpPageInput = currentPage.toString()
-                    showJumpDialog = true
-                },
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                shape = RoundedCornerShape(24.dp),
-                tonalElevation = 12.dp,
-                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("$currentPage", fontWeight = FontWeight.Black, fontSize = 14.sp, color = PaperPink)
-                    Text(" / $activePageCount PAGES", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
-                    Spacer(Modifier.width(16.dp))
-                    Box(Modifier.height(16.dp).width(1.dp).background(Color.Gray.copy(alpha = 0.2f)))
-                    Spacer(Modifier.width(16.dp))
-                    Icon(Icons.Filled.UnfoldMore, null, modifier = Modifier.size(16.dp).alpha(0.5f), tint = MaterialTheme.colorScheme.onSurface)
-                }
-            }
-        }
     }
 }
 
@@ -431,7 +435,6 @@ fun PdfPageReaderItem(
     links: List<PdfLink>,
     onLinkClick: (String) -> Unit
 ) {
-    // NITRO 11.0: Precise 4.0f Resolution (Pixel Perfect for Ultra Reader)
     val lowResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.7f, priority = 1) }
     val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 4.0f, priority = 0) }
     

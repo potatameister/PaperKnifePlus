@@ -372,3 +372,25 @@ private fun createTextBitmap(text: String, color: Color): Bitmap {
     canvas.drawText(text, 500f, 220f, paint)
     return bitmap
 }
+
+@Composable
+fun TemplateCard(text: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(60.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = color.copy(alpha = 0.05f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(text, color = color, fontWeight = FontWeight.Black, fontSize = 10.sp)
+        }
+    }
+}
+
+fun Color.toArgb(): Int {
+    return (this.alpha * 255.0f + 0.5f).toInt() shl 24 or
+           ((this.red * 255.0f + 0.5f).toInt() shl 16) or
+           ((this.green * 255.0f + 0.5f).toInt() shl 8) or
+           (this.blue * 255.0f + 0.5f).toInt()
+}
