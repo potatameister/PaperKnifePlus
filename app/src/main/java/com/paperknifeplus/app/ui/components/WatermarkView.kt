@@ -199,14 +199,10 @@ fun WatermarkView(
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("${selectedPages.size} / $pageCount PAGES SELECTED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
-                                
-                                Row {
-                                    TextButton(onClick = { selectedPages = (0 until pageCount).toSet() }) {
-                                        Text("ALL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
-                                    }
-                                    TextButton(onClick = { selectedPages = emptySet() }) {
-                                        Text("NONE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                                    }
+                                var showPreview by remember { mutableStateOf(true) }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("COMPARE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showPreview) accentColor else Color.Gray)
+                                    Switch(checked = showPreview, onCheckedChange = { showPreview = it }, colors = SwitchDefaults.colors(checkedThumbColor = accentColor))
                                 }
                             }
 
@@ -220,6 +216,19 @@ fun WatermarkView(
                                     selectedPages = selectedPages,
                                     onToggleSelection = { index ->
                                         selectedPages = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
+                                    },
+                                    itemOverlay = { index ->
+                                        if (showPreview && selectedPages.contains(index)) {
+                                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                                Surface(
+                                                    color = accentColor.copy(0.8f),
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    modifier = Modifier.size(50.dp, 25.dp)
+                                                ) {
+                                                    Icon(Icons.Filled.TextFields, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                                }
+                                            }
+                                        }
                                     }
                                 )
                             }

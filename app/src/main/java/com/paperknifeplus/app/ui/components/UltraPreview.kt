@@ -66,8 +66,19 @@ fun UltraPreview(
     var showJumpDialog by remember { mutableStateOf(false) }
     var jumpPageInput by remember { mutableStateOf("") }
 
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var targetScale by remember { mutableFloatStateOf(1f) }
+    var targetOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    
+    val scale by animateFloatAsState(
+        targetValue = targetScale, 
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
+        label = "scale"
+    )
+    val offset by animateOffsetAsState(
+        targetValue = targetOffset, 
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
+        label = "offset"
+    )
     
     var links by remember { mutableStateOf<List<PdfLink>>(emptyList()) }
     var pageSizes by remember { mutableStateOf<Map<Int, Pair<Float, Float>>>(emptyMap()) }
@@ -186,26 +197,26 @@ fun UltraPreview(
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onDoubleTap = { tapOffset ->
-                                    if (scale > 1.01f) {
-                                        scale = 1f
-                                        offset = androidx.compose.ui.geometry.Offset.Zero
+                                    if (targetScale > 1.01f) {
+                                        targetScale = 1f
+                                        targetOffset = androidx.compose.ui.geometry.Offset.Zero
                                     } else {
-                                        scale = 3f
+                                        targetScale = 3f
                                         val x = (size.width / 2 - tapOffset.x) * (3f - 1f)
                                         val y = (size.height / 2 - tapOffset.y) * (3f - 1f)
-                                        offset = androidx.compose.ui.geometry.Offset(x, y)
+                                        targetOffset = androidx.compose.ui.geometry.Offset(x, y)
                                     }
                                 }
                             )
                         }
                         .pointerInput(Unit) {
                             detectTransformGestures { _, pan, zoom, _ ->
-                                val newScale = (scale * zoom).coerceIn(1f, 8f)
-                                scale = newScale
-                                if (scale > 1f) {
-                                    offset += pan
+                                val newScale = (targetScale * zoom).coerceIn(1f, 10f)
+                                targetScale = newScale
+                                if (targetScale > 1f) {
+                                    targetOffset += pan
                                 } else {
-                                    offset = androidx.compose.ui.geometry.Offset.Zero
+                                    targetOffset = androidx.compose.ui.geometry.Offset.Zero
                                 }
                             }
                         }
@@ -344,7 +355,7 @@ fun UltraPreview(
                     
                     Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                         Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1, color = MaterialTheme.colorScheme.onSurface)
-                        Text("PLATINUM ULTRA READER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                        Text("PDF VIEWER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                     }
                     
                     IconButton(onClick = {
@@ -434,9 +445,9 @@ fun PdfPageReaderItem(
     links: List<PdfLink>,
     onLinkClick: (String) -> Unit
 ) {
-    // NITRO 12.0: Pro 6.0f Resolution
+    // NITRO 12.0: Platinum Pro 8.0f Resolution
     val lowResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 0.7f, priority = 1) }
-    val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 6.0f, priority = 0) }
+    val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 8.0f, priority = 0) }
     
     BoxWithConstraints(
         modifier = Modifier

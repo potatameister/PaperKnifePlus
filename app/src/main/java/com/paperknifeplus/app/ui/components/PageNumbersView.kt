@@ -234,27 +234,51 @@ fun PageNumbersView(
                                     selectedPages = selectedPages,
                                     onToggleSelection = { index ->
                                         selectedPages = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
+                                    },
+                                    itemOverlay = { index ->
+                                        if (showPreviewOverlay && selectedPages.contains(index)) {
+                                            val text = format.replace("{n}", (index + 1).toString())
+                                            Box(
+                                                modifier = Modifier.fillMaxSize().padding(8.dp),
+                                                contentAlignment = when {
+                                                    position.contains("Left") -> Alignment.TopStart
+                                                    position.contains("Center") -> Alignment.TopCenter
+                                                    else -> Alignment.TopEnd
+                                                }
+                                            ) {
+                                                // Adjust alignment for bottom positions
+                                                val finalAlign = when {
+                                                    position.contains("Bottom") && position.contains("Left") -> Alignment.BottomStart
+                                                    position.contains("Bottom") && position.contains("Center") -> Alignment.BottomCenter
+                                                    position.contains("Bottom") && position.contains("Right") -> Alignment.BottomEnd
+                                                    position.contains("Top") && position.contains("Left") -> Alignment.TopStart
+                                                    position.contains("Top") && position.contains("Center") -> Alignment.TopCenter
+                                                    position.contains("Top") && position.contains("Right") -> Alignment.TopEnd
+                                                    else -> Alignment.BottomEnd
+                                                }
+                                                
+                                                Box(Modifier.fillMaxSize(), contentAlignment = finalAlign) {
+                                                    Surface(
+                                                        color = Color.White,
+                                                        shape = RoundedCornerShape(2.dp),
+                                                        border = BorderStroke(0.5.dp, Color.Black.copy(0.2f)),
+                                                        modifier = Modifier.padding(2.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = text,
+                                                            color = Color.Black,
+                                                            fontSize = 7.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 )
                                 
-                                // LIVE PRO PREVIEW OVERLAY
-                                if (showPreviewOverlay) {
-                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        Surface(
-                                            color = Color.Black.copy(0.7f),
-                                            shape = RoundedCornerShape(12.dp),
-                                            modifier = Modifier.padding(16.dp)
-                                        ) {
-                                            Text(
-                                                "LIVE PREVIEW ON PAGES", 
-                                                color = Color.White, 
-                                                fontSize = 9.sp, 
-                                                fontWeight = FontWeight.Black,
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                            )
-                                        }
-                                    }
-                                }
+                                // REMOVED the old floating label overlay
                             }
                             
                             Button(

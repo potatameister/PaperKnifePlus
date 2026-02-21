@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Compare
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,8 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
-import coil.compose.LocalImageLoader
-import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GrayscaleView(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -49,6 +47,9 @@ fun GrayscaleView(onBack: () -> Unit) {
     var showLoadingWarning by remember { mutableStateOf(false) }
     var progressPage by remember { mutableIntStateOf(0) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
+
+    // Pro Comparison Toggle
+    var showGrayscalePreview by remember { mutableStateOf(true) }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
@@ -129,23 +130,9 @@ fun GrayscaleView(onBack: () -> Unit) {
                     }
                 }
             }
-        },
-        floatingActionButton = {
-            if (currentState == ToolState.CONFIGURING) {
-                FloatingActionButton(
-                    onClick = { 
-                        val defaultName = fileName.replace(".pdf", "", true) + "-grayscale.pdf"
-                        saveLauncher.launch(defaultName) 
-                    },
-                    containerColor = accentColor,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.padding(bottom = 16.dp)
-                ) { Icon(Icons.Filled.Save, "Save") }
-            }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (isFileLoading) {
                 LoadingStateView(accentColor, showLoadingWarning, "Reading document layers...")
             } else {
@@ -158,25 +145,85 @@ fun GrayscaleView(onBack: () -> Unit) {
                             title = "Tap to enter file",
                             subtitle = "GRAYSCALE ANY PDF DOCUMENT",
                             accentColor = accentColor,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize()) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("PREVIEW", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
-                                Spacer(Modifier.width(8.dp))
-                                Text("• $pageCount PAGES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
+                                    Text("• $pageCount PAGES READY", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("COMPARE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showGrayscalePreview) accentColor else Color.Gray)
+                                    Switch(
+                                        checked = showGrayscalePreview, 
+                                        onCheckedChange = { showGrayscalePreview = it },
+                                        colors = SwitchDefaults.colors(checkedThumbColor = accentColor)
+                                    )
+                                }
                             }
-                            Spacer(Modifier.height(12.dp))
                             
-                            UnifiedPdfPreview(
-                                uri = selectedUri!!,
-                                pageCount = pageCount,
-                                mode = PreviewMode.GRID,
-                                password = null, 
-                                accentColor = accentColor
-                            )
+                            Box(modifier = Modifier.weight(1f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.GRID,
+                                    password = null, 
+                                    accentColor = accentColor,
+                                    itemOverlay = { index ->
+                                        if (showGrayscalePreview) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color.Gray.copy(0.4f)) // Simulated grayscale overlay
+                                            ) {
+                                                Surface(
+                                                    modifier = Modifier.align(Alignment.Center),
+                                                    color = Color.Black.copy(0.6f),
+                                                    shape = CircleShape
+                                                ) {
+                                                    Icon(Icons.Outlined.Palette, null, tint = Color.White, modifier = Modifier.padding(6.dp).size(16.dp))
+                                                }
+                                            }
+                                        }
+                                    }
+                                )
+                                
+                                // Comparison Overlay Label
+                                if (showGrayscalePreview) {
+                                    Surface(
+                                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp),
+                                        color = Color.Black.copy(0.7f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text(
+                                            "SIMULATED GRAYSCALE PREVIEW", 
+                                            color = Color.White, 
+                                            fontSize = 9.sp, 
+                                            fontWeight = FontWeight.Black,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            Button(
+                                onClick = { 
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-grayscale.pdf"
+                                    saveLauncher.launch(defaultName) 
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text("CONVERT TO GRAYSCALE", fontWeight = FontWeight.Black)
+                            }
                         }
                     }
                     ToolState.PROCESSING -> {

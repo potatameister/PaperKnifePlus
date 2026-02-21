@@ -256,6 +256,11 @@ fun SignView(
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("SELECT ONE PAGE TO SIGN", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
+                                var showPreview by remember { mutableStateOf(true) }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("COMPARE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (showPreview) accentColor else Color.Gray)
+                                    Switch(checked = showPreview, onCheckedChange = { showPreview = it }, colors = SwitchDefaults.colors(checkedThumbColor = accentColor))
+                                }
                             }
 
                             Box(modifier = Modifier.weight(1f)) {
@@ -269,6 +274,19 @@ fun SignView(
                                     onToggleSelection = { index ->
                                         selectedPageIndex = index
                                         showSignOptions = true
+                                    },
+                                    itemOverlay = { index ->
+                                        if (showPreview && selectedPageIndex == index) {
+                                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                                Surface(
+                                                    color = accentColor.copy(0.8f),
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    modifier = Modifier.size(40.dp, 20.dp)
+                                                ) {
+                                                    Icon(Icons.Filled.Draw, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                                }
+                                            }
+                                        }
                                     }
                                 )
                             }
@@ -564,6 +582,11 @@ fun SignaturePlacementOverlay(
 ) {
     val imageLoader = coil.compose.LocalImageLoader.current
     val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
+    
+    // NITRO FIX: Capture current state for the gesture lambda to prevent "glitching back"
+    val currentOffset by rememberUpdatedState(offset)
+    val currentScale by rememberUpdatedState(scale)
+    val currentRotation by rememberUpdatedState(rotation)
 
     Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         // Page Preview
@@ -580,7 +603,11 @@ fun SignaturePlacementOverlay(
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, rot ->
-                        onTransform(offset + pan, (scale * zoom).coerceIn(0.1f, 10f), rotation + rot)
+                        onTransform(
+                            currentOffset + pan, 
+                            (currentScale * zoom).coerceIn(0.1f, 15f), 
+                            currentRotation + rot
+                        )
                     }
                 }
         ) {
@@ -596,7 +623,7 @@ fun SignaturePlacementOverlay(
                         scaleY = scale
                         rotationZ = rotation
                     }
-                    .border(1.dp, accentColor.copy(alpha = 0.2f), RoundedCornerShape(2.dp))
+                    .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
             )
         }
 

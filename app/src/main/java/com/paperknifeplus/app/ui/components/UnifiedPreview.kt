@@ -60,7 +60,8 @@ fun UnifiedPdfPreview(
     pageOrder: List<Int>? = null,
     onOrderChange: ((List<Int>) -> Unit)? = null,
     pageRotations: Map<Int, Int>? = null,
-    onRotatePage: ((Int) -> Unit)? = null
+    onRotatePage: ((Int) -> Unit)? = null,
+    itemOverlay: @Composable (BoxScope.(Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
@@ -133,6 +134,7 @@ fun UnifiedPdfPreview(
                                 Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp))
                             }
                         }
+                        itemOverlay?.invoke(this, index)
                     }
                 }
             }
@@ -191,6 +193,7 @@ fun UnifiedPdfPreview(
                             color = Color.Black.copy(0.3f), shape = CircleShape
                         ) { Icon(Icons.Filled.Fullscreen, null, tint = Color.White, modifier = Modifier.padding(4.dp)) }
                     }
+                    itemOverlay?.invoke(this, index)
                 }
             }
         }

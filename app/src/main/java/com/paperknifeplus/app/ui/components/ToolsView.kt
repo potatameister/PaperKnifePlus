@@ -45,11 +45,11 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             Tool("sign", "Sign", "Add signature", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("watermark", "Watermark", "Add overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("page-numbers", "Numbers", "Add pagination", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("bookmarks", "Outlines", "Edit bookmarks", Icons.Outlined.BookmarkBorder, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("bookmarks", "Bookmarks", "Edit bookmarks", Icons.Outlined.BookmarkBorder, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             
             // OPTIMIZE - Amber
             Tool("compress", "Compress", "Small size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("grayscale", "B&W", "Gray tones", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("grayscale", "Grayscale", "Gray tones", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("repair", "Repair", "Fix corruption", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             Tool("compare", "Compare", "Visual diff", Icons.Outlined.Compare, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             
