@@ -522,12 +522,12 @@ fun PdfPageReaderItem(
     matches: List<TextMatch>,
     onLinkClick: (String) -> Unit
 ) {
-    // NITRO 4.0: Two-Stage Progressive Loading
+    // NITRO 6.0: Extreme 20.0f Resolution
     val lowResRequest = remember(uri, index, password) { 
         PdfPageRequest(uri, index, password, 0.7f, priority = 1) 
     }
     val highResRequest = remember(uri, index, password) { 
-        PdfPageRequest(uri, index, password, 15.0f, priority = 0) 
+        PdfPageRequest(uri, index, password, 20.0f, priority = 0) 
     }
     
     BoxWithConstraints(
@@ -567,17 +567,17 @@ fun PdfPageReaderItem(
             }
         }
 
-        // --- ACCURATE LINK & MATCH MAPPING (NITRO ENGINE 3.0) ---
+        // --- ACCURATE LINK & MATCH MAPPING (NITRO ENGINE 6.0) ---
         if (pageSize != null) {
-            val pageWidth = pageSize.first
-            val pageHeight = pageSize.second
-            val scaleX = maxWidth.value / pageWidth
-            val scaleY = maxHeight.value / pageHeight
+            val pageWidthDp = maxWidth
+            val pageHeightDp = maxHeight
 
             // Draw Links (PDF coords are bottom-up)
             links.forEach { link ->
+                val scaleX = pageWidthDp.value / pageSize.first
+                val scaleY = pageHeightDp.value / pageSize.second
                 val left = link.rect.lowerLeftX * scaleX
-                val top = (pageHeight - link.rect.upperRightY) * scaleY
+                val top = (pageSize.second - link.rect.upperRightY) * scaleY
                 val width = (link.rect.upperRightX - link.rect.lowerLeftX) * scaleX
                 val height = (link.rect.upperRightY - link.rect.lowerLeftY) * scaleY
                 
@@ -591,18 +591,18 @@ fun PdfPageReaderItem(
 
             // Draw Search Highlights
             matches.forEach { match ->
-                // NITRO 5.0: Direct Top-Down Mapping using raw PDF points
-                val left = match.rect.lowerLeftX * scaleX
-                val top = match.rect.lowerLeftY * scaleY // Correct: lowerLeftY is the Y from ToolUtils
-                val width = match.rect.width * scaleX
-                val height = match.rect.height * scaleY
+                // NITRO 6.0: Percentage-Based Mapping (No more offsets!)
+                val left = match.rect.lowerLeftX * pageWidthDp.value
+                val top = match.rect.lowerLeftY * pageHeightDp.value
+                val width = match.rect.width * pageWidthDp.value
+                val height = match.rect.height * pageHeightDp.value
 
                 Box(
                     modifier = Modifier
                         .offset(x = left.dp, y = top.dp)
                         .size(width = width.dp, height = height.dp)
-                        .background(Color.Yellow.copy(alpha = 0.3f))
-                        .border(0.5.dp, Color.Yellow.copy(alpha = 0.5f))
+                        .background(Color.Yellow.copy(alpha = 0.35f))
+                        .border(0.5.dp, Color.Yellow.copy(alpha = 0.6f))
                 )
             }
         }

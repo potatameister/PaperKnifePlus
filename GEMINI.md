@@ -18,7 +18,7 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 - **Native Core:** Leverages Android's `PdfRenderer` (C++ Pdfium wrapper) for hardware-accelerated rendering.
 - **Parallel Renderer Pool:** Replaces global mutexes with a 4-thread `Semaphore` and `NativeRendererPool`. This allows up to 4 pages to render concurrently, preventing grid-lock during fast scrolling.
 - **Global Blitz Cache:** A singleton `ImageLoader` (Coil) provided via `CompositionLocal`. Ensures that thumbnails rendered in one tool (e.g., Split) are instantly available in others (e.g., Rearrange) without re-rendering.
-- **Nitro Engine 5.0 Stability:** Implemented `MemoryUsageSetting.setupTempFileOnly()` in the `PdDocumentPool` to manage extreme high-resolution rendering (up to 7.0f) on low-RAM devices without OOM crashes.
+- **Nitro Engine 5.0 Stability:** Implemented `MemoryUsageSetting.setupTempFileOnly()` in the `PdDocumentPool` to manage extreme high-resolution rendering (up to 15.0f) on low-RAM devices without OOM crashes.
 - **Global Decryption Cache:** Password-protected PDFs are decrypted **once** to a temporary cache file. This allows the high-performance native engine to handle protected docs as if they were standard PDFs, fixing the "Missing Images" bug.
 
 ### 2. PDF Preview Types
@@ -30,8 +30,8 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
     - **Layout:** High-res single-page card (1.2f scale).
     - **Deep Zoom:** Connected to a `PageLightbox` with bound-aware panning and pinch-to-zoom.
 - **Type C (Ultra Preview):** Premium reading experience.
-    - **Layout:** Extreme high-res vertical scroll (`LazyColumn`) with **7.0f** crisp rendering.
-    - **Interactivity:** **Selectable & Copyable Text** via invisible text layer, clickable URLs, and precise text search with perfect alignment.
+    - **Layout:** Extreme high-res vertical scroll (`LazyColumn`) with **15.0f** crisp rendering.
+    - **Interactivity:** Clickable URLs, precise text search with perfect alignment, and **Double-Tap Zoom** support.
 
 ### 3. Navigation Architecture
 - **Lazy Pager Navigation:** The main app shell (`Home`, `Tools`, `History`, `Settings`) uses a `HorizontalPager`.
@@ -52,11 +52,12 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
-- **2026-02-21:** **ULTRA PREVIEW 10.0f & SELECTABLE TEXT**:
-    - **Resolution 10.0f**: Pushed the reader to 10.0f scale for absolute clarity.
-    - **Selectable Text**: Refined the invisible text layer and coordinate mapping for reliable text copying.
-    - **Signature Suite 2.0**: Added visual placement mode with move, resize (pinch), and rotate support.
-    - **Nitro Reorder 7.0**: Implemented absolute hit-testing using `layoutInfo` for perfect drag accuracy.
+- **2026-02-21:** **GOLD STANDARD V5 & NITRO REORDER 8.0**:
+    - **Ultra Preview 15.0f**: Pushed resolution to 15.0f for absolute clarity and implemented **Double-Tap to Zoom**.
+    - **Nitro Reorder 8.0**: Complete overhaul of Rearrange tool with **smooth item-glide animations** and perfect hit-test accuracy (iLovePDF style).
+    - **Watermark Suite**: Added comprehensive tool for text and PNG watermarks with full visual placement (move, resize, rotate).
+    - **Signature Polish**: Fixed manual signing cut-off and overhauled transformation logic to eliminate placement jitter.
+    - **Pixel-Perfect Highlights**: Corrected coordinate mapping for search highlights using raw top-down PDF coordinates.
 - **2026-02-20 (Late):** **NITRO ENGINE 5.0 & SIGNATURE SUITE**:
     - **Ultra Preview 7.0f**: Boosted reader resolution to 7.0f for ultimate clarity.
     - **Selectable Text**: Implemented `SelectionContainer` with an invisible text layer, allowing direct text copying from the reader.

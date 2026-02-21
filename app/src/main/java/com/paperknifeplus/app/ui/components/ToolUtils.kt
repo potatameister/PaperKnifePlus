@@ -422,15 +422,18 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                         val last = textPositions[index + query.length - 1]
                         
                         val page = document.getPage(currentPageNo - 1)
+                        val pageWidth = page.mediaBox.width
+                        val pageHeight = page.mediaBox.height
                         
-                        val x = first.xDirAdj
-                        val y = first.yDirAdj
-                        val w = (last.xDirAdj + last.widthDirAdj) - first.xDirAdj
-                        val h = first.heightDir
+                        // NITRO 6.0: Percentage-Based Mapping (Normalized 0.0 - 1.0)
+                        val x = first.xDirAdj / pageWidth
+                        val y = first.yDirAdj / pageHeight
+                        val w = ((last.xDirAdj + last.widthDirAdj) - first.xDirAdj) / pageWidth
+                        val h = first.heightDir / pageHeight
                         
                         matches.add(TextMatch(
                             currentPageNo - 1,
-                            PDRectangle(x, y, x + w, y + h) // Correct top-down mapping
+                            PDRectangle(x, y, x + w, y + h) 
                         ))
                         index = text.indexOf(query, index + 1, ignoreCase = true)
                     }
