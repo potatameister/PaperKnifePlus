@@ -183,7 +183,13 @@ class MainActivity : ComponentActivity() {
                                                 currentTool = "ultra_preview"
                                             }
                                         )
-                                        "repair" -> RepairView(onBack = { currentTool = null })
+                                        "repair" -> RepairView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "rotate" -> RotateView(
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->
@@ -198,8 +204,20 @@ class MainActivity : ComponentActivity() {
                                                 currentTool = "ultra_preview"
                                             }
                                         )
-                                        "protect" -> ProtectView(onBack = { currentTool = null })
-                                        "unlock" -> UnlockView(onBack = { currentTool = null })
+                                        "protect" -> ProtectView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "unlock" -> UnlockView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "grayscale" -> GrayscaleView(
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->
@@ -207,11 +225,41 @@ class MainActivity : ComponentActivity() {
                                                 currentTool = "ultra_preview"
                                             }
                                         )
-                                        "metadata" -> MetadataView(onBack = { currentTool = null })
-                                        "img2pdf" -> ImageToPdfView(onBack = { currentTool = null })
-                                        "pdf2img" -> PdfToImageView(onBack = { currentTool = null })
-                                        "pdf2text" -> PdfToTextView(onBack = { currentTool = null })
-                                        "pdf2zip" -> PdfToZipView(onBack = { currentTool = null })
+                                        "metadata" -> MetadataView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "img2pdf" -> ImageToPdfView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "pdf2img" -> PdfToImageView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "pdf2text" -> PdfToTextView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "pdf2zip" -> PdfToZipView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "sign" -> SignView(
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->
@@ -233,8 +281,20 @@ class MainActivity : ComponentActivity() {
                                                 currentTool = "ultra_preview"
                                             }
                                         )
-                                        "bookmarks" -> BookmarksView(onBack = { currentTool = null })
-                                        "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
+                                        "bookmarks" -> BookmarksView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
+                                        "extract-images" -> ExtractImagesView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "ultra_preview" -> {
                                             previewData?.let { (uri, name, count) ->
                                                 UltraPreview(

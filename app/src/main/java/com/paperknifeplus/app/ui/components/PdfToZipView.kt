@@ -31,17 +31,20 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 @Composable
-fun PdfToZipView(onBack: () -> Unit) {
+fun PdfToZipView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
-    val accentColor = Color(0xFFF59E0B) // Amber for Optimize category
+    val accentColor = Color(0xFFF59E0B)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
-    var isFileLoading by remember { mutableStateOf(false) }
+    var pageCount by remember { mutableIntStateOf(0) }
     var processingTime by remember { mutableStateOf("") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -50,7 +53,10 @@ fun PdfToZipView(onBack: () -> Unit) {
             val details = getUriDetails(context, it)
             fileName = details.name
             fileSize = details.size
-            currentState = ToolState.CONFIGURING
+            scope.launch {
+                pageCount = getPageCount(context, it, null)
+                currentState = ToolState.CONFIGURING
+            }
         }
     }
 
@@ -105,7 +111,7 @@ fun PdfToZipView(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             when (currentState) {
                 ToolState.SELECTING -> {
                     SelectionGrid(
@@ -115,46 +121,33 @@ fun PdfToZipView(onBack: () -> Unit) {
                         title = "Tap to enter file",
                         subtitle = "CREATE ZIP ARCHIVE",
                         accentColor = accentColor,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
                 ToolState.CONFIGURING -> {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                        Spacer(Modifier.height(32.dp))
+                        Spacer(Modifier.height(16.dp))
                         
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF0F0F12) else Color.White),
-                            border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-                        ) {
-                            Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.Description, null, tint = accentColor, modifier = Modifier.size(40.dp))
-                                Spacer(Modifier.width(16.dp))
-                                Column {
-                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                                    Text(fileSize, fontSize = 11.sp, color = Color.Gray)
-                                }
-                            }
-                        }
+                        UnifiedPdfPreview(
+                            uri = selectedUri!!,
+                            pageCount = pageCount,
+                            mode = PreviewMode.COVER,
+                            accentColor = accentColor
+                        )
                         
                         Spacer(Modifier.height(32.dp))
-                        
                         Text("ARCHIVE INFO", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                        Text("This will wrap your PDF in a standard ZIP container for easier distribution.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                        Text("This will wrap '$fileName' in a ZIP container for easier distribution.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
                         
-                        Spacer(Modifier.height(48.dp))
+                        Spacer(Modifier.weight(1f))
                         
                         Button(
                             onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + ".zip") }, 
-                            modifier = Modifier.fillMaxWidth().height(60.dp), 
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp), 
                             shape = RoundedCornerShape(20.dp), 
                             colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                         ) {
-                            Text("CONVERT & SAVE", fontWeight = FontWeight.Black, color = Color.White)
-                        }
-                        TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
+                            Text("CONVERT & SAVE ZIP", fontWeight = FontWeight.Black, color = Color.White)
                         }
                     }
                 }
@@ -175,6 +168,7 @@ fun PdfToZipView(onBack: () -> Unit) {
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { selectedUri = null; currentState = ToolState.SELECTING },
+                        onPreview = { selectedUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
                         accentColor = accentColor
                     )
                 }

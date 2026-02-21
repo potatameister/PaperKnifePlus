@@ -39,7 +39,8 @@ data class Bookmark(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookmarksView(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -226,10 +227,27 @@ fun BookmarksView(
                         }
                     }
                     ToolState.PROCESSING -> {
-                        ProcessingStateView(accentColor, null, selectedUri, null, "Updating navigation...", 0, 0, false)
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            preview = null,
+                            uri = selectedUri,
+                            password = null,
+                            text = "Updating navigation...",
+                            current = 0,
+                            total = 0,
+                            showWarning = false
+                        )
                     }
                     ToolState.SUCCESS -> {
-                        SuccessView("Navigation Saved", "Bookmarks updated successfully", processingTime, onBack, { currentState = ToolState.SELECTING }, null, accentColor)
+                        SuccessView(
+                            message = "Navigation Saved",
+                            subMessage = "Bookmarks updated successfully",
+                            processingTime = processingTime,
+                            onDone = onBack,
+                            onProcessMore = { currentState = ToolState.SELECTING },
+                            onPreview = { outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
+                            accentColor = accentColor
+                        )
                     }
                     else -> {}
                 }

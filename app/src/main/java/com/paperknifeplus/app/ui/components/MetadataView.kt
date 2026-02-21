@@ -33,7 +33,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun MetadataView(onBack: () -> Unit) {
+fun MetadataView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -41,6 +44,7 @@ fun MetadataView(onBack: () -> Unit) {
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     
     var title by remember { mutableStateOf("") }
@@ -120,7 +124,8 @@ fun MetadataView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", Icons.Filled.Fingerprint)
+                        outputUri = saveUri
+                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", Icons.Filled.Fingerprint, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -244,6 +249,7 @@ fun MetadataView(onBack: () -> Unit) {
                                 unlockPassword = ""
                                 currentState = ToolState.SELECTING 
                             },
+                            onPreview = { outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
                             accentColor = accentColor
                         )
                     }

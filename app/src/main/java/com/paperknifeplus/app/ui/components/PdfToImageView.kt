@@ -36,7 +36,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun PdfToImageView(onBack: () -> Unit) {
+fun PdfToImageView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -259,6 +262,7 @@ fun PdfToImageView(onBack: () -> Unit) {
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { selectedUri = null; currentState = ToolState.SELECTING },
+                        onPreview = { selectedUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
                         accentColor = accentColor
                     )
                 }

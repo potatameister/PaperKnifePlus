@@ -40,7 +40,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun ImageToPdfView(onBack: () -> Unit) {
+fun ImageToPdfView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -53,6 +56,8 @@ fun ImageToPdfView(onBack: () -> Unit) {
     var progressCount by remember { mutableIntStateOf(0) }
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
+
+    var outputUri by remember { mutableStateOf<Uri?>(null) }
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {
@@ -80,7 +85,8 @@ fun ImageToPdfView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Filled.Description)
+                        outputUri = saveUri
+                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Filled.Description, saveUri, selectedUris.size)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -219,6 +225,7 @@ fun ImageToPdfView(onBack: () -> Unit) {
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { selectedUris = emptyList(); currentState = ToolState.CONFIGURING },
+                        onPreview = { outputUri?.let { uri -> onOpenPreview(uri, "Created PDF", selectedUris.size) } },
                         accentColor = accentColor
                     )
                 }
@@ -226,4 +233,5 @@ fun ImageToPdfView(onBack: () -> Unit) {
             }
         }
     }
+}
 }

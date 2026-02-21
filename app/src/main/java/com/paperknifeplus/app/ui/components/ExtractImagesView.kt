@@ -45,7 +45,10 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 @Composable
-fun ExtractImagesView(onBack: () -> Unit) {
+fun ExtractImagesView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -61,6 +64,7 @@ fun ExtractImagesView(onBack: () -> Unit) {
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
+    var extractedCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
@@ -108,15 +112,16 @@ fun ExtractImagesView(onBack: () -> Unit) {
                             context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                                 val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                                 var imageCount = 0
-                                for (page in document.pages) {
+                                document.pages.forEachIndexed { pIdx, page ->
                                     val resources = page.resources
                                     for (name in resources.xObjectNames) {
                                         try {
                                             val xobject = resources.getXObject(name)
                                             if (xobject is PDImageXObject) {
                                                 imageCount++
+                                                withContext(Dispatchers.Main) { extractedCount = imageCount }
                                                 val bitmap = xobject.image
-                                                val entry = ZipEntry("image_$imageCount.jpg")
+                                                val entry = ZipEntry("page_${pIdx + 1}_img_$imageCount.jpg")
                                                 zipOut.putNextEntry(entry)
                                                 bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
                                                 zipOut.closeEntry()
@@ -135,7 +140,7 @@ fun ExtractImagesView(onBack: () -> Unit) {
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Extract Images", "Extracted assets", Icons.Filled.Collections)
+                        SessionManager.addEntry(fileName, "Extract Images", "$extractedCount assets", Icons.Filled.Collections)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -193,7 +198,7 @@ fun ExtractImagesView(onBack: () -> Unit) {
                                 uri = selectedUri!!,
                                 pageCount = pageCount,
                                 mode = PreviewMode.COVER,
-                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                password = unlockPassword.ifEmpty { null },
                                 accentColor = accentColor
                             )
                             
@@ -229,23 +234,25 @@ fun ExtractImagesView(onBack: () -> Unit) {
                             accentColor = accentColor,
                             uri = selectedUri,
                             password = unlockPassword.ifEmpty { null },
-                            text = "Extracting embedded images...",
-                            current = 0,
-                            total = 0,
+                            text = "Extracting images...",
+                            current = extractedCount,
+                            total = 0, // Unknown total images
                             showWarning = showLoadingWarning
                         )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
                             message = "Extraction Complete",
-                            subMessage = "Images saved to ZIP archive",
+                            subMessage = "Found $extractedCount images in document",
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
                                 selectedUri = null
                                 unlockPassword = ""
+                                extractedCount = 0
                                 currentState = ToolState.SELECTING 
                             },
+                            onPreview = { selectedUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
                             accentColor = accentColor
                         )
                     }
@@ -262,17 +269,15 @@ fun ExtractImagesView(onBack: () -> Unit) {
                         isFileLoading = true
                         scope.launch(Dispatchers.IO) {
                             val count = getPageCount(context, selectedUri!!, pass)
-                            if (count > 0) {
-                                withContext(Dispatchers.Main) { 
+                            withContext(Dispatchers.Main) { 
+                                fileToUnlock = null
+                                if (count > 0) {
                                     pageCount = count
                                     currentState = ToolState.CONFIGURING
-                                    isFileLoading = false 
-                                    fileToUnlock = null
-                                }
-                            } else {
-                                withContext(Dispatchers.Main) { 
+                                    isFileLoading = false
+                                } else {
                                     Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                    isFileLoading = false 
+                                    isFileLoading = false
                                 }
                             }
                         }

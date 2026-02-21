@@ -37,7 +37,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun PdfToTextView(onBack: () -> Unit) {
+fun PdfToTextView(
+    onBack: () -> Unit,
+    onOpenPreview: (Uri, String, Int) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
@@ -52,6 +55,7 @@ fun PdfToTextView(onBack: () -> Unit) {
     var showLoadingWarning by remember { mutableStateOf(false) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     var isFileLoading by remember { mutableStateOf(false) }
+    var pageCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(currentState) {
         if (currentState == ToolState.PROCESSING) {
@@ -76,14 +80,11 @@ fun PdfToTextView(onBack: () -> Unit) {
                         isFileLoading = false
                     }
                 } else {
+                    val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) { 
-                        currentState = ToolState.PROCESSING 
+                        pageCount = count
+                        currentState = ToolState.CONFIGURING 
                         isFileLoading = false
-                    }
-                    processText(context, it, null) { text, time ->
-                        extractedText = text
-                        processingTime = time
-                        currentState = ToolState.SUCCESS
                     }
                 }
             }
@@ -97,6 +98,20 @@ fun PdfToTextView(onBack: () -> Unit) {
                     context.contentResolver.openOutputStream(saveUri)?.use { it.write(extractedText.toByteArray()) }
                     withContext(Dispatchers.Main) { Toast.makeText(context, "Saved as TXT", Toast.LENGTH_SHORT).show() }
                 } catch (e: Exception) { }
+            }
+        }
+    }
+
+    fun startExtraction() {
+        currentState = ToolState.PROCESSING
+        scope.launch(Dispatchers.IO) {
+            processText(context, selectedUri!!, unlockPassword.ifEmpty { null }) { text, time ->
+                extractedText = text
+                processingTime = time
+                withContext(Dispatchers.Main) {
+                    SessionManager.addEntry(fileName, "To Text", "${text.length} chars", Icons.Outlined.Description)
+                    currentState = ToolState.SUCCESS
+                }
             }
         }
     }
@@ -128,73 +143,106 @@ fun PdfToTextView(onBack: () -> Unit) {
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
-                    SelectionGrid(
-                        onSelect = { pickLauncher.launch("application/pdf") }, 
-                        isDark = isDark,
-                        icon = Icons.Outlined.Description,
-                        title = "Tap to select PDF",
-                        subtitle = "EXTRACT TEXT DATA",
-                        accentColor = accentColor,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-                ToolState.PROCESSING -> {
-                    LoadingStateView(accentColor, showLoadingWarning, "Reading text layers...")
-                }
-                ToolState.SUCCESS -> {
-                    Column(Modifier.fillMaxSize()) {
-                        Row(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("EXTRACTED CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Row {
-                                IconButton(onClick = { 
-                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                    val clip = android.content.ClipData.newPlainText("PDF Text", extractedText)
-                                    clipboard.setPrimaryClip(clip)
-                                    Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-                                }) {
-                                    Icon(Icons.Filled.ContentCopy, null, tint = accentColor)
-                                }
-                                IconButton(onClick = { saveTxtLauncher.launch(fileName.replace(".pdf", ".txt")) }) {
-                                    Icon(Icons.Filled.Save, null, tint = accentColor)
-                                }
+                        SelectionGrid(
+                            onSelect = { pickLauncher.launch("application/pdf") }, 
+                            isDark = isDark,
+                            icon = Icons.Outlined.Description,
+                            title = "Tap to select PDF",
+                            subtitle = "EXTRACT TEXT DATA",
+                            accentColor = accentColor,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    ToolState.CONFIGURING -> {
+                        Column(Modifier.fillMaxSize()) {
+                            Spacer(Modifier.height(16.dp))
+                            UnifiedPdfPreview(
+                                uri = selectedUri!!,
+                                pageCount = pageCount,
+                                mode = PreviewMode.COVER,
+                                password = unlockPassword.ifEmpty { null },
+                                accentColor = accentColor
+                            )
+                            Spacer(Modifier.height(32.dp))
+                            Text("READY TO EXTRACT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Text("This will scan the PDF text layers and output a plain .txt file.", fontSize = 12.sp, color = Color.Gray)
+                            Spacer(Modifier.weight(1f))
+                            Button(
+                                onClick = { startExtraction() },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                shape = RoundedCornerShape(20.dp)
+                            ) {
+                                Text("EXTRACT TEXT", fontWeight = FontWeight.Black)
                             }
-                        }
-                        
-                        Surface(
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                            color = if (isDark) Color(0xFF09090B) else Color.White,
-                            shape = RoundedCornerShape(20.dp),
-                            border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
-                        ) {
-                            Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {
-                                if (extractedText.trim().isEmpty()) {
-                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(Icons.Filled.Build, null, modifier = Modifier.size(48.dp).alpha(0.2f))
-                                            Text("No text found. Document might be a scan.", fontSize = 12.sp, color = Color.Gray, textAlign = TextAlign.Center)
-                                        }
-                                    }
-                                } else {
-                                    Text(text = extractedText, fontSize = 12.sp, fontFamily = FontFamily.Monospace, lineHeight = 18.sp)
-                                }
-                            }
-                        }
-                        
-                        Button(
-                            onClick = onBack,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text("Done", fontWeight = FontWeight.Black)
                         }
                     }
+                    ToolState.PROCESSING -> {
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            uri = selectedUri,
+                            password = unlockPassword.ifEmpty { null },
+                            text = "Reading text layers...",
+                            current = 0,
+                            total = pageCount,
+                            showWarning = showLoadingWarning
+                        )
+                    }
+                    ToolState.SUCCESS -> {
+                        Column(Modifier.fillMaxSize()) {
+                            Row(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("EXTRACTED CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                                Row {
+                                    IconButton(onClick = { 
+                                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                        val clip = android.content.ClipData.newPlainText("PDF Text", extractedText)
+                                        clipboard.setPrimaryClip(clip)
+                                        Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                                    }) {
+                                        Icon(Icons.Filled.ContentCopy, null, tint = accentColor)
+                                    }
+                                    IconButton(onClick = { saveTxtLauncher.launch(fileName.replace(".pdf", ".txt")) }) {
+                                        Icon(Icons.Filled.Save, null, tint = accentColor)
+                                    }
+                                }
+                            }
+                            
+                            Surface(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                color = if (isDark) Color(0xFF09090B) else Color.White,
+                                shape = RoundedCornerShape(20.dp),
+                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                            ) {
+                                Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {
+                                    if (extractedText.trim().isEmpty()) {
+                                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Icon(Icons.Filled.Build, null, modifier = Modifier.size(48.dp).alpha(0.2f))
+                                                Text("No text found. Document might be a scan.", fontSize = 12.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                                            }
+                                        }
+                                    } else {
+                                        Text(text = extractedText, fontSize = 12.sp, fontFamily = FontFamily.Monospace, lineHeight = 18.sp)
+                                    }
+                                }
+                            }
+                            
+                            SuccessView(
+                                message = "Text Extracted",
+                                subMessage = "Found ${extractedText.length} characters",
+                                processingTime = processingTime,
+                                onDone = onBack,
+                                onProcessMore = { selectedUri = null; extractedText = ""; currentState = ToolState.SELECTING },
+                                onPreview = { selectedUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
+                                accentColor = accentColor
+                            )
+                        }
+                    }
+                    else -> {}
                 }
-                else -> {}
             }
-        }
 
-        if (fileToUnlock != null) {
+            if (fileToUnlock != null) {
                 LockedFilePrompt(
                     fileName = fileToUnlock!!,
                     onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
@@ -202,14 +250,15 @@ fun PdfToTextView(onBack: () -> Unit) {
                         unlockPassword = pass
                         isFileLoading = true
                         scope.launch(Dispatchers.IO) {
+                            val count = getPageCount(context, selectedUri!!, pass)
                             withContext(Dispatchers.Main) { 
                                 fileToUnlock = null
-                            }
-                            processText(context, selectedUri!!, pass) { text, time ->
-                                extractedText = text
-                                processingTime = time
-                                withContext(Dispatchers.Main) { 
-                                    currentState = ToolState.SUCCESS 
+                                if (count > 0) {
+                                    pageCount = count
+                                    currentState = ToolState.CONFIGURING
+                                    isFileLoading = false
+                                } else {
+                                    Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
                                     isFileLoading = false
                                 }
                             }

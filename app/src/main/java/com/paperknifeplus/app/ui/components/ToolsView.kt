@@ -67,16 +67,15 @@ fun ToolsView(onToolClick: (String) -> Unit) {
         )
     }
 
-    val filteredTools by remember {
+    val categories = remember { listOf("Edit", "Optimize", "Secure", "Convert") }
+
+    val groupedTools by remember(searchQuery) {
         derivedStateOf {
-            allTools.filter { 
-                it.name.contains(searchQuery, ignoreCase = true) || 
-                it.description.contains(searchQuery, ignoreCase = true) 
-            }
+            allTools
+                .filter { it.name.contains(searchQuery, ignoreCase = true) || it.description.contains(searchQuery, ignoreCase = true) }
+                .groupBy { it.category }
         }
     }
-
-    val categories = remember { listOf("Edit", "Optimize", "Secure", "Convert") }
 
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         // Search Header
@@ -152,7 +151,7 @@ fun ToolsView(onToolClick: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             categories.forEach { category ->
-                val categoryTools = filteredTools.filter { it.category == category }
+                val categoryTools = groupedTools[category] ?: emptyList()
                 if (categoryTools.isNotEmpty()) {
                     item(key = "header_$category", span = { GridItemSpan(3) }) {
                         Text(
