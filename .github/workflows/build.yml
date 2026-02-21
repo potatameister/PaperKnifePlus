@@ -24,11 +24,14 @@ jobs:
         gradle-version: 8.7
         cache-disabled: true
 
-    - name: Build Debug APK
-      run: gradle clean assembleDebug --stacktrace --no-daemon --console=plain
+    - name: Build Release APK
+      run: |
+        gradle clean assembleRelease --stacktrace --no-daemon --console=plain
+        echo "=== RELEASE APK SIZE ==="
+        ls -lh app/build/outputs/apk/release/app-release-unsigned.apk || ls -lh app/build/outputs/apk/release/*.apk
 
-    - name: Upload Debug APK
+    - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: PaperKnifePlus-Debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: PaperKnifePlus-Release
+        path: app/build/outputs/apk/release/*.apk
