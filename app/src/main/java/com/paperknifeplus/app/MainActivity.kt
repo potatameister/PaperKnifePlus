@@ -220,6 +220,13 @@ class MainActivity : ComponentActivity() {
                                                 currentTool = "ultra_preview"
                                             }
                                         )
+                                        "page-numbers" -> PageNumbersView(
+                                            onBack = { currentTool = null },
+                                            onOpenPreview = { uri, name, count ->
+                                                previewData = Triple(uri, name, count)
+                                                currentTool = "ultra_preview"
+                                            }
+                                        )
                                         "extract-images" -> ExtractImagesView(onBack = { currentTool = null })
                                         "ultra_preview" -> {
                                             previewData?.let { (uri, name, count) ->
@@ -233,11 +240,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                         "bookmarks" -> ComingSoonView("Bookmarks", onBack = { currentTool = null })
                                         "compare" -> ComingSoonView("Compare PDF", onBack = { currentTool = null })
-                                        "sign" -> ComingSoonView("Sign PDF", onBack = { currentTool = null })
-                                        "watermark" -> ComingSoonView("Watermark", onBack = { currentTool = null })
-                                        "page-numbers" -> ComingSoonView("Page Numbers", onBack = { currentTool = null })
-                                        "watermark" -> ComingSoonView("Watermark", onBack = { currentTool = null })
-                                        "signature" -> ComingSoonView("Signature", onBack = { currentTool = null })
                                     }
                                 }
                             }

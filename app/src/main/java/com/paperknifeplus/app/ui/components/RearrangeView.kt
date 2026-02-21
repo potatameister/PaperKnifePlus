@@ -1,49 +1,33 @@
 package com.paperknifeplus.app.ui.components
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.ImageLoader
-import coil.compose.LocalImageLoader
-import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RearrangeView(
     onBack: () -> Unit,
@@ -59,32 +43,21 @@ fun RearrangeView(
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
-    var fileSize by remember { mutableStateOf("") }
     var pageOrder by remember { mutableStateOf<List<Int>>(emptyList()) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var showLoadingWarning by remember { mutableStateOf(false) }
-    var lightboxPage by remember { mutableStateOf<Int?>(null) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
-
-    // Use Shared Global Loader (MainActivity)
-    val imageLoader = coil.compose.LocalImageLoader.current
-
-    LaunchedEffect(isFileLoading, currentState) {
-        if (isFileLoading || currentState == ToolState.PROCESSING) {
-            delay(5000)
-            showLoadingWarning = true
-        } else {
-            showLoadingWarning = false
-        }
-    }
+    
+    // NEW REARRANGE STATE
+    var selectedPageIndex by remember { mutableStateOf<Int?>(null) }
+    var showMoveToDialog by remember { mutableStateOf(false) }
+    var moveToInput by remember { mutableStateOf("") }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedUri = it
             val details = getUriDetails(context, it)
             fileName = details.name
-            fileSize = details.size
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -119,9 +92,8 @@ fun RearrangeView(
                         document.close()
                     }
                     val endTime = System.currentTimeMillis()
-                    val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
-                        processingTime = timeStr
+                        processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
                         SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", Icons.Filled.GridView, saveUri, pageOrder.size)
                         currentState = ToolState.SUCCESS
@@ -151,7 +123,7 @@ fun RearrangeView(
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("Rearrange", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("REORDER DOCUMENT PAGES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        Text("MOVE PAGES TO NEW SLOTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
@@ -159,23 +131,22 @@ fun RearrangeView(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
-                LoadingStateView(accentColor, showLoadingWarning, "Reading document structure...")
+                LoadingStateView(accentColor, false, "Preparing Rearrange Grid...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.SwapVert, // Updated icon
+                            icon = Icons.Filled.SwapVert,
                             title = "Tap to enter file",
-                            subtitle = "REARRANGE ANY PDF DOCUMENT",
+                            subtitle = "REORDER PAGES RELIABLY",
                             accentColor = accentColor,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
                     ToolState.CONFIGURING -> {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            // Header Info
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -183,33 +154,10 @@ fun RearrangeView(
                             ) {
                                 Column {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                                    Text("${pageOrder.size} PAGES • DRAG TO SORT", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                    Text("${pageOrder.size} PAGES • TAP TO SELECT", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
-                                
-                                IconButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) { 
+                                IconButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING; selectedPageIndex = null }) { 
                                     Icon(Icons.Filled.Close, "Clear", tint = Color.Gray, modifier = Modifier.size(20.dp)) 
-                                }
-                            }
-
-                            // NITRO 4.0: Standardized Info Row
-                            Surface(
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                color = accentColor.copy(alpha = 0.05f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(Icons.Filled.Info, null, tint = accentColor, modifier = Modifier.size(14.dp))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        "Long-press to drag and reorder pages",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = accentColor
-                                    )
                                 }
                             }
 
@@ -218,20 +166,79 @@ fun RearrangeView(
                                     uri = selectedUri!!,
                                     pageCount = pageOrder.size,
                                     mode = PreviewMode.REORDER,
-                                    password = null, // Already decrypted
+                                    password = null,
                                     accentColor = accentColor,
                                     pageOrder = pageOrder,
-                                    onOrderChange = { pageOrder = it }
+                                    selectedPages = selectedPageIndex?.let { setOf(it) } ?: emptySet(),
+                                    onToggleSelection = { index -> 
+                                        selectedPageIndex = if (selectedPageIndex == index) null else index 
+                                    }
                                 )
                             }
 
-                            Button(
-                                onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-reordered.pdf") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                            // CONTROLS BAR
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(20.dp)
                             ) {
-                                Text(text = "Save New Order", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    horizontalArrangement = Arrangement.SpaceAround,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            selectedPageIndex?.let { current ->
+                                                if (current > 0) {
+                                                    val newList = pageOrder.toMutableList()
+                                                    val item = newList.removeAt(current)
+                                                    newList.add(current - 1, item)
+                                                    pageOrder = newList
+                                                    selectedPageIndex = current - 1
+                                                }
+                                            }
+                                        },
+                                        enabled = selectedPageIndex != null && selectedPageIndex!! > 0
+                                    ) {
+                                        Icon(Icons.Filled.ArrowBackIos, "Move Back", tint = if (selectedPageIndex != null && selectedPageIndex!! > 0) accentColor else Color.Gray)
+                                    }
+
+                                    Button(
+                                        onClick = { showMoveToDialog = true },
+                                        enabled = selectedPageIndex != null,
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text("MOVE TO...", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            selectedPageIndex?.let { current ->
+                                                if (current < pageOrder.size - 1) {
+                                                    val newList = pageOrder.toMutableList()
+                                                    val item = newList.removeAt(current)
+                                                    newList.add(current + 1, item)
+                                                    pageOrder = newList
+                                                    selectedPageIndex = current + 1
+                                                }
+                                            }
+                                        },
+                                        enabled = selectedPageIndex != null && selectedPageIndex!! < pageOrder.size - 1
+                                    ) {
+                                        Icon(Icons.Filled.ArrowForwardIos, "Move Forward", tint = if (selectedPageIndex != null && selectedPageIndex!! < pageOrder.size - 1) accentColor else Color.Gray)
+                                    }
+                                }
+                            }
+
+                            Button(
+                                onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-reordered.pdf") },
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Text(text = "SAVE NEW ORDER", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
                             }
                         }
                     }
@@ -239,11 +246,10 @@ fun RearrangeView(
                         ProcessingStateView(
                             accentColor = accentColor,
                             uri = selectedUri,
-                            password = unlockPassword.ifEmpty { null },
-                            text = "Applying new page order...",
+                            text = "Applying new order...",
                             current = 0,
                             total = 0,
-                            showWarning = showLoadingWarning
+                            showWarning = false
                         )
                     }
                     ToolState.SUCCESS -> {
@@ -254,19 +260,56 @@ fun RearrangeView(
                             onDone = onBack,
                             onProcessMore = { 
                                 selectedUri = null
-                                outputUri = null
+                                selectedPageIndex = null
                                 currentState = ToolState.SELECTING 
                             },
                             onPreview = {
-                                outputUri?.let { uri ->
-                                    onOpenPreview(uri, fileName, pageOrder.size)
-                                }
+                                outputUri?.let { uri -> onOpenPreview(uri, fileName, pageOrder.size) }
                             },
                             accentColor = accentColor
                         )
                     }
                     else -> {}
                 }
+            }
+
+            if (showMoveToDialog) {
+                AlertDialog(
+                    onDismissRequest = { showMoveToDialog = false },
+                    title = { Text("Move Page to Position", fontWeight = FontWeight.Black) },
+                    text = {
+                        Column {
+                            Text("Current position: ${selectedPageIndex!! + 1}", fontSize = 12.sp, color = Color.Gray)
+                            Spacer(Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = moveToInput,
+                                onValueChange = { if (it.all { c -> c.isDigit() }) moveToInput = it },
+                                label = { Text("Target Page (1-${pageOrder.size})") },
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val target = moveToInput.toIntOrNull()?.let { it - 1 }
+                            if (target != null && target in 0 until pageOrder.size && selectedPageIndex != null) {
+                                val newList = pageOrder.toMutableList()
+                                val item = newList.removeAt(selectedPageIndex!!)
+                                newList.add(target, item)
+                                pageOrder = newList
+                                selectedPageIndex = target
+                                showMoveToDialog = false
+                                moveToInput = ""
+                            } else {
+                                Toast.makeText(context, "Invalid Page Number", Toast.LENGTH_SHORT).show()
+                            }
+                        }) { Text("MOVE", color = accentColor, fontWeight = FontWeight.Black) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showMoveToDialog = false; moveToInput = "" }) { Text("CANCEL", color = Color.Gray) }
+                    }
+                )
             }
 
             if (fileToUnlock != null) {

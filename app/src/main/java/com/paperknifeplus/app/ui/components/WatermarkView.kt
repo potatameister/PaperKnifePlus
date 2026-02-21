@@ -6,11 +6,9 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image as ComposeImage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,15 +24,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -43,11 +36,9 @@ import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,16 +59,14 @@ fun WatermarkView(
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
-    var showLoadingWarning by remember { mutableStateOf(false) }
     
     var watermarkBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showWatermarkOptions by remember { mutableStateOf(false) }
-    var watermarkText by remember { mutableStateOf("") }
     var showTextInput by remember { mutableStateOf(false) }
     var selectedPages by remember { mutableStateOf<Set<Int>>(emptySet()) }
 
     // Transformation State
-    var wmOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset(100f, 100f)) }
+    var wmOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var wmScale by remember { mutableFloatStateOf(1f) }
     var wmRotation by remember { mutableFloatStateOf(0f) }
 
@@ -93,7 +82,7 @@ fun WatermarkView(
                 val count = getPageCount(context, it, null)
                 withContext(Dispatchers.Main) {
                     pageCount = count
-                    selectedPages = (0 until count).toSet() // Default select all
+                    selectedPages = (0 until count).toSet() 
                     currentState = ToolState.CONFIGURING
                     isFileLoading = false
                 }
@@ -109,6 +98,9 @@ fun WatermarkView(
                         val bitmap = BitmapFactory.decodeStream(stream)
                         withContext(Dispatchers.Main) {
                             watermarkBitmap = bitmap
+                            wmOffset = androidx.compose.ui.geometry.Offset.Zero
+                            wmScale = 1f
+                            wmRotation = 0f
                             showWatermarkOptions = false
                             currentState = ToolState.PROCESSING 
                         }
@@ -127,16 +119,21 @@ fun WatermarkView(
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = PDDocument.load(inputStream)
                         watermarkBitmap?.let { wm ->
-                            val pdImage = JPEGFactory.createFromImage(document, wm, 0.85f)
+                            val pdImage = JPEGFactory.createFromImage(document, wm, 0.9f)
                             selectedPages.forEach { pageIdx ->
                                 if (pageIdx < document.numberOfPages) {
                                     val page = document.getPage(pageIdx)
                                     PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
+                                        val pdfWidth = page.mediaBox.width
                                         val pdfHeight = page.mediaBox.height
                                         val drawWidth = 250f * wmScale
                                         val drawHeight = (250f * (wm.height.toFloat() / wm.width.toFloat())) * wmScale
+                                        
+                                        val xPos = (pdfWidth / 2) - (drawWidth / 2) + (wmOffset.x / 2)
+                                        val yPos = (pdfHeight / 2) - (drawHeight / 2) - (wmOffset.y / 2)
+                                        
                                         cs.saveGraphicsState()
-                                        cs.drawImage(pdImage, 50f + wmOffset.x/2, pdfHeight - drawHeight - 50f - wmOffset.y/2, drawWidth, drawHeight)
+                                        cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                         cs.restoreGraphicsState()
                                     }
                                 }
@@ -181,7 +178,7 @@ fun WatermarkView(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (isFileLoading) {
-                LoadingStateView(accentColor, showLoadingWarning, "Reading document structure...")
+                LoadingStateView(accentColor, false, "Reading document structure...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -190,7 +187,7 @@ fun WatermarkView(
                             isDark = isDark,
                             icon = Icons.Filled.TextFields,
                             title = "Tap to enter file",
-                            subtitle = "WATERMARK ALL PAGES",
+                            subtitle = "WATERMARK PAGES",
                             accentColor = accentColor,
                             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)
                         )
@@ -210,28 +207,6 @@ fun WatermarkView(
                                     TextButton(onClick = { selectedPages = emptySet() }) {
                                         Text("NONE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
                                     }
-                                }
-                            }
-
-                            // Info Row
-                            Surface(
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                color = accentColor.copy(alpha = 0.05f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(Icons.Filled.Info, null, tint = accentColor, modifier = Modifier.size(14.dp))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        "Select pages to watermark • Tap 'Continue' to place",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = accentColor
-                                    )
                                 }
                             }
 
@@ -256,7 +231,7 @@ fun WatermarkView(
                                 shape = RoundedCornerShape(20.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {
-                                Text("CONTINUE TO WATERMARK", fontWeight = FontWeight.Black)
+                                Text("CONTINUE TO PLACEMENT", fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -278,7 +253,7 @@ fun WatermarkView(
                             ProcessingStateView(
                                 accentColor = accentColor,
                                 uri = selectedUri,
-                                text = "Applying watermarks...",
+                                text = "Applying Watermarks...",
                                 current = 0,
                                 total = 0,
                                 showWarning = false
@@ -288,7 +263,7 @@ fun WatermarkView(
                     ToolState.SUCCESS -> {
                         SuccessView(
                             message = "Watermark Complete",
-                            subMessage = "All pages watermarked successfully",
+                            subMessage = "Document watermarked successfully",
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -331,11 +306,17 @@ fun WatermarkView(
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         TemplateCard("CONFIDENTIAL", Color.Red, Modifier.weight(1f)) {
                             watermarkBitmap = createTextBitmap("CONFIDENTIAL", Color.Red)
+                            wmOffset = androidx.compose.ui.geometry.Offset.Zero
+                            wmScale = 1f
+                            wmRotation = 0f
                             showWatermarkOptions = false
                             currentState = ToolState.PROCESSING
                         }
                         TemplateCard("DRAFT", Color.DarkGray, Modifier.weight(1f)) {
                             watermarkBitmap = createTextBitmap("DRAFT", Color.DarkGray)
+                            wmOffset = androidx.compose.ui.geometry.Offset.Zero
+                            wmScale = 1f
+                            wmRotation = 0f
                             showWatermarkOptions = false
                             currentState = ToolState.PROCESSING
                         }
@@ -363,7 +344,10 @@ fun WatermarkView(
             confirmButton = {
                 Button(onClick = {
                     if (text.isNotBlank()) {
-                        watermarkBitmap = createTextBitmap(text, Color.Red)
+                        watermarkBitmap = createTextBitmap(text, PaperPink)
+                        wmOffset = androidx.compose.ui.geometry.Offset.Zero
+                        wmScale = 1f
+                        wmRotation = 0f
                         showTextInput = false
                         showWatermarkOptions = false
                         currentState = ToolState.PROCESSING
@@ -375,38 +359,16 @@ fun WatermarkView(
 }
 
 private fun createTextBitmap(text: String, color: Color): Bitmap {
-    val bitmap = Bitmap.createBitmap(1000, 300, Bitmap.Config.ARGB_8888)
+    val bitmap = Bitmap.createBitmap(1000, 400, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     val paint = Paint().apply {
         this.color = color.toArgb()
-        alpha = 120
-        textSize = 100f
+        alpha = 140
+        textSize = 120f
         isAntiAlias = true
         textAlign = Paint.Align.CENTER
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
-    canvas.drawText(text, 500f, 180f, paint)
+    canvas.drawText(text, 500f, 220f, paint)
     return bitmap
-}
-
-@Composable
-fun TemplateCard(text: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(60.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = color.copy(alpha = 0.05f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(text, color = color, fontWeight = FontWeight.Black, fontSize = 10.sp)
-        }
-    }
-}
-
-fun Color.toArgb(): Int {
-    return (this.alpha * 255.0f + 0.5f).toInt() shl 24 or
-           ((this.red * 255.0f + 0.5f).toInt() shl 16) or
-           ((this.green * 255.0f + 0.5f).toInt() shl 8) or
-           (this.blue * 255.0f + 0.5f).toInt()
 }

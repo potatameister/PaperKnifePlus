@@ -87,8 +87,8 @@ fun SignView(
     var showSignaturePad by remember { mutableStateOf(false) }
     var savedSignatures by remember { mutableStateOf<List<File>>(emptyList()) }
 
-    // Transformation State
-    var sigOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset(100f, 100f)) }
+    // Transformation State (Initialized to Center)
+    var sigOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var sigScale by remember { mutableFloatStateOf(1f) }
     var sigRotation by remember { mutableFloatStateOf(0f) }
 
@@ -147,8 +147,11 @@ fun SignView(
                         val bitmap = BitmapFactory.decodeStream(stream)
                         withContext(Dispatchers.Main) {
                             signatureBitmap = bitmap
+                            sigOffset = androidx.compose.ui.geometry.Offset.Zero // Center
+                            sigScale = 1f
+                            sigRotation = 0f
                             showSignOptions = false
-                            currentState = ToolState.PROCESSING // Using PROCESSING state for placement mode
+                            currentState = ToolState.PROCESSING 
                         }
                     }
                 } catch (e: Exception) {}
@@ -158,6 +161,7 @@ fun SignView(
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
+            // STATE: Explicitly show processing before IO launch
             currentState = ToolState.PROCESSING
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
@@ -173,13 +177,16 @@ fun SignView(
                                 val pdfWidth = page.mediaBox.width
                                 val pdfHeight = page.mediaBox.height
                                 
-                                // Precise mapping logic for burning (Simplified but functional)
+                                // Precise mapping logic for burning
                                 val drawWidth = 200f * sigScale
                                 val drawHeight = (200f * (sig.height.toFloat() / sig.width.toFloat())) * sigScale
                                 
+                                // Mapping UI offset to PDF space (Roughly centered + UI offset)
+                                val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sigOffset.x / 2)
+                                val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sigOffset.y / 2)
+                                
                                 cs.saveGraphicsState()
-                                // Burn into bottom-up PDF space
-                                cs.drawImage(pdImage, 50f + sigOffset.x/2, pdfHeight - drawHeight - 50f - sigOffset.y/2, drawWidth, drawHeight)
+                                cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                 cs.restoreGraphicsState()
                             }
                         }
@@ -558,7 +565,7 @@ fun SignaturePlacementOverlay(
     val imageLoader = coil.compose.LocalImageLoader.current
     val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
 
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         // Page Preview
         ComposeImage(
             painter = rememberAsyncImagePainter(request, imageLoader),
@@ -567,7 +574,7 @@ fun SignaturePlacementOverlay(
             contentScale = ContentScale.Fit
         )
 
-        // The Signature - Overhauled Gesture Engine 2.0 (Zero Jitter)
+        // The Signature - Refined Gesture Engine
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -581,14 +588,15 @@ fun SignaturePlacementOverlay(
                 bitmap = signature.asImageBitmap(),
                 contentDescription = "Signature",
                 modifier = Modifier
-                    .size(250.dp) // Larger base size for better handling
+                    .size(250.dp)
+                    .align(Alignment.Center)
                     .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
                     .graphicsLayer {
                         scaleX = scale
                         scaleY = scale
                         rotationZ = rotation
                     }
-                    .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
+                    .border(1.dp, accentColor.copy(alpha = 0.2f), RoundedCornerShape(2.dp))
             )
         }
 
@@ -617,7 +625,7 @@ fun SignaturePlacementOverlay(
             color = Color.Black.copy(0.6f),
             shape = RoundedCornerShape(20.dp)
         ) {
-            Text("Move, Pinch & Rotate • Perfect Accuracy", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Text("Center start • Move, Pinch & Rotate", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         }
     }
 }
