@@ -368,15 +368,17 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ToolPickerContent(onToolClick: (String) -> Unit) {
     val quickTools = listOf(
-        Triple("merge", "Merge", Icons.Filled.Layers),
-        Triple("split", "Split", Icons.Filled.ContentCut),
-        Triple("rearrange", "Rearrange", Icons.Filled.SwapVert),
-        Triple("compress", "Compress", Icons.Filled.Bolt),
-        Triple("sign", "Sign", Icons.Filled.Draw),
-        Triple("watermark", "Watermark", Icons.Filled.BrandingWatermark),
-        Triple("pdf2img", "To Image", Icons.Filled.Image),
-        Triple("img2pdf", "To PDF", Icons.Filled.PictureAsPdf)
+        Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("split", "Split", "EXTRACT", Icons.Filled.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+        Tool("rearrange", "Rearrange", "ORGANIZE", Icons.Filled.SwapVert, "Edit", Color(0xFF10B981), Color(0xFFECFDF5)),
+        Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+        Tool("sign", "Sign", "SIGNATURE", Icons.Filled.Draw, "Edit", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+        Tool("watermark", "Watermark", "BRANDING", Icons.Filled.BrandingWatermark, "Security", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
+        Tool("pdf2img", "To Image", "EXPORT", Icons.Filled.Image, "Convert", Color(0xFFEC4899), Color(0xFFFDF2F8)),
+        Tool("img2pdf", "To PDF", "BUILD", Icons.Filled.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
     )
+
+    val isDark = MaterialTheme.colorScheme.background == Color.Black
 
     Column(
         modifier = Modifier
@@ -384,8 +386,14 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .navigationBarsPadding()
     ) {
-        Text("QUICK TOOLS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
-        Spacer(Modifier.height(20.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("QUICK TOOLS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = { onToolClick("tools") }) {
+                Text("SEE ALL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
         
         androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
             columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(4),
@@ -393,47 +401,28 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(20.dp),
             modifier = Modifier.heightIn(max = 300.dp)
         ) {
-            items(quickTools) { (id, name, icon) ->
+            items(quickTools) { tool ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onToolClick(id) }
+                    modifier = Modifier.clickable { onToolClick(tool.id) }
                 ) {
                     Surface(
                         modifier = Modifier.size(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(0.4f),
-                        border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                        color = if (isDark) tool.color.copy(alpha = 0.15f) else tool.bgColor,
+                        border = BorderStroke(1.dp, tool.color.copy(0.1f))
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(icon, null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(tool.icon ?: Icons.Filled.Build, null, modifier = Modifier.size(24.dp), tint = tool.color)
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text(name, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(tool.name, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
         
         Spacer(Modifier.height(32.dp))
-        Divider(color = Color.Gray.copy(0.1f))
-        Spacer(Modifier.height(24.dp))
-        
-        Surface(
-            onClick = { onToolClick("tools") },
-            modifier = Modifier.fillMaxWidth().height(60.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = PaperPink.copy(0.1f),
-            border = BorderStroke(1.dp, PaperPink.copy(0.2f))
-        ) {
-            Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.GridView, null, tint = PaperPink, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(16.dp))
-                Text("Complete Engines Catalog", fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(Modifier.weight(1f))
-                Icon(Icons.Filled.ChevronRight, null, tint = PaperPink.copy(0.5f))
-            }
-        }
-        Spacer(Modifier.height(24.dp))
     }
 }
 

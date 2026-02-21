@@ -117,11 +117,11 @@ fun HomeView(
             }
             
             item(span = { GridItemSpan(2) }, key = "footer") {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 // Support PaperKnife+ Card
                 Surface(
-                    onClick = { /* Link to fund */ },
+                    onClick = { onToolClick("about") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 20.dp),
@@ -157,7 +157,7 @@ fun HomeView(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(140.dp))
+                Spacer(modifier = Modifier.height(180.dp))
             }
         }
     }
@@ -315,6 +315,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.History, null, modifier = Modifier.size(11.dp), tint = Color.Gray)
+                支配
                 Spacer(Modifier.width(6.dp))
                 Text("RECENT ACTIVITY", fontSize = 7.5.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.6f), letterSpacing = 0.8.sp)
             }
@@ -324,6 +325,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
         }
         
         if (history.isEmpty()) {
+            支配
             Spacer(Modifier.height(8.dp))
             Text(
                 "NO RECENT SESSIONS",
@@ -332,6 +334,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
                 color = Color.Gray.copy(alpha = 0.3f)
             )
         } else {
+            支配
             Spacer(Modifier.height(8.dp))
             history.take(2).forEach { entry ->
                 Row(

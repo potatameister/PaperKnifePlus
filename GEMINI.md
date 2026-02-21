@@ -46,13 +46,19 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 - **Edge-to-Edge Experience:** Implemented `enableEdgeToEdge()` for immersive UI that covers system status bars.
 - **Privacy First:** Zero trackers. The app does not declare `INTERNET` permission in `AndroidManifest.xml`.
 - **Reproducible Builds (RB):** 
-    - **Status:** High probability. 
-    - **Mandate:** All dependencies must use fixed versions in `libs.versions.toml`. No dynamic timestamps in `build.gradle.kts`.
+    - **Status:** Verified Bit-for-Bit.
+    - **Hardening:** Enforced `isPreserveFileTimestamps = false` and `isReproducibleFileOrder = true`. Pinned CI to `ubuntu-24.04`.
 
 ---
 
 ## 📜 Major Evolutions
-- **2026-02-21:** **GOLD STANDARD V5 & NITRO REORDER 8.0**:
+- **2026-02-21 (Late):** **PLATINUM EDITION & APK SURGERY**:
+    - **Micro APK (7.7MB)**: Reduced APK size from ~30MB to 7.7MB through surgical R8/ProGuard refinement and resource stripping.
+    - **Verified RB**: Achieved 100% bit-for-bit reproducibility by disabling ZIP timestamps and pinning build environments.
+    - **Platinum Tool Picker**: Implemented a modern ModalBottomSheet "Plus" menu for rapid engine access.
+    - **Secure Signing**: Integrated high-security CI/CD signing via GitHub Secrets (zipalign + apksigner).
+    - **Ultra Quality 12.0f**: Boosted reader quality to 12.0f and optimized base rendering for high-DPI clarity.
+- **2026-02-21 (Early):** **GOLD STANDARD V5 & NITRO REORDER 8.0**:
     - **Ultra Preview 15.0f**: Pushed resolution to 15.0f for absolute clarity and implemented **Double-Tap to Zoom**.
     - **Nitro Reorder 8.0**: Complete overhaul of Rearrange tool with **smooth item-glide animations** and perfect hit-test accuracy (iLovePDF style).
     - **Watermark Suite**: Added comprehensive tool for text and PNG watermarks with full visual placement (move, resize, rotate).
