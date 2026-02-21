@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image as ComposeImage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposePath
@@ -61,6 +63,7 @@ fun SignView(
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     val accentColor = PaperPink // Correct Accent Color
@@ -88,6 +91,12 @@ fun SignView(
     var sigScale by remember { mutableFloatStateOf(1f) }
     var sigRotation by remember { mutableFloatStateOf(0f) }
 
+    fun loadSavedSignatures() {
+        val dir = File(context.filesDir, "signatures")
+        if (!dir.exists()) dir.mkdirs()
+        savedSignatures = dir.listFiles()?.filter { it.extension == "png" }?.sortedByDescending { it.lastModified() } ?: emptyList()
+    }
+
     fun saveSignature(bitmap: Bitmap) {
         val dir = File(context.filesDir, "signatures")
         if (!dir.exists()) dir.mkdirs()
@@ -96,12 +105,6 @@ fun SignView(
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
         }
         loadSavedSignatures()
-    }
-
-    fun loadSavedSignatures() {
-        val dir = File(context.filesDir, "signatures")
-        if (!dir.exists()) dir.mkdirs()
-        savedSignatures = dir.listFiles()?.filter { it.extension == "png" }?.sortedByDescending { it.lastModified() } ?: emptyList()
     }
 
     LaunchedEffect(Unit) { 
@@ -138,14 +141,16 @@ fun SignView(
     val pngLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             scope.launch(Dispatchers.IO) {
-                context.contentResolver.openInputStream(it)?.use { stream ->
-                    val bitmap = BitmapFactory.decodeStream(stream)
-                    withContext(Dispatchers.Main) {
-                        signatureBitmap = bitmap
-                        showSignOptions = false
-                        currentState = ToolState.PROCESSING // Using PROCESSING state for placement mode
+                try {
+                    context.contentResolver.openInputStream(it)?.use { stream ->
+                        val bitmap = BitmapFactory.decodeStream(stream)
+                        withContext(Dispatchers.Main) {
+                            signatureBitmap = bitmap
+                            showSignOptions = false
+                            currentState = ToolState.PROCESSING // Using PROCESSING state for placement mode
+                        }
                     }
-                }
+                } catch (e: Exception) {}
             }
         }
     }
@@ -165,16 +170,13 @@ fun SignView(
                             
                             PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
                                 // Convert UI coordinates to PDF coordinates (bottom-up)
-                                // This is a complex mapping, simplifying for initial "Gold" feel
-                                val pdfWidth = page.mediaBox.width
                                 val pdfHeight = page.mediaBox.height
                                 
-                                // Placeholder: Needs precise mapping from the placement overlay
                                 val drawWidth = 150f * sigScale
                                 val drawHeight = (150f * (sig.height.toFloat() / sig.width.toFloat())) * sigScale
                                 
                                 cs.saveGraphicsState()
-                                // Rotation and translation would go here
+                                // TODO: Precise mapping needed for Gold Standard
                                 cs.drawImage(pdImage, 50f + sigOffset.x/2, pdfHeight - drawHeight - 50f - sigOffset.y/2, drawWidth, drawHeight)
                                 cs.restoreGraphicsState()
                             }
@@ -280,7 +282,14 @@ fun SignView(
                                 accentColor = accentColor
                             )
                         } else {
-                            ProcessingStateView(accentColor, selectedUri, null, "Processing...", 0, 0, false)
+                            ProcessingStateView(
+                                accentColor = accentColor,
+                                uri = selectedUri,
+                                text = "Processing...",
+                                current = 0,
+                                total = 0,
+                                showWarning = false
+                            )
                         }
                     }
                     ToolState.SUCCESS -> {
@@ -304,6 +313,7 @@ fun SignView(
                             accentColor = accentColor
                         )
                     }
+                    else -> {}
                 }
             }
 
@@ -374,7 +384,7 @@ fun SignView(
                                 shape = RoundedCornerShape(12.dp),
                                 border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
                             ) {
-                                Image(
+                                ComposeImage(
                                     painter = rememberAsyncImagePainter(file),
                                     contentDescription = null,
                                     modifier = Modifier.padding(8.dp)
@@ -404,11 +414,109 @@ fun SignView(
 }
 
 @Composable
+fun SignOptionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(100.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = color.copy(alpha = 0.05f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.1f))
+    ) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = color)
+        }
+    }
+}
+
+@Composable
+fun SignaturePlacementOverlay(
+    uri: Uri,
+    pageIndex: Int,
+    signature: Bitmap,
+    offset: androidx.compose.ui.geometry.Offset,
+    scale: Float,
+    rotation: Float,
+    onTransform: (androidx.compose.ui.geometry.Offset, Float, Float) -> Unit,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    accentColor: Color
+) {
+    val imageLoader = coil.compose.LocalImageLoader.current
+    val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
+
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        // Page Preview
+        ComposeImage(
+            painter = rememberAsyncImagePainter(request, imageLoader),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+
+        // The Signature
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, rot ->
+                        onTransform(offset + pan, (scale * zoom).coerceIn(0.5f, 3f), rotation + rot)
+                    }
+                }
+        ) {
+            ComposeImage(
+                bitmap = signature.asImageBitmap(),
+                contentDescription = "Signature",
+                modifier = Modifier
+                    .size(150.dp)
+                    .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        rotationZ = rotation
+                    }
+                    .border(1.dp, accentColor.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+            )
+        }
+
+        // Controls
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                shape = RoundedCornerShape(16.dp)
+            ) { Text("CANCEL") }
+            
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                shape = RoundedCornerShape(16.dp)
+            ) { Text("BURN SIGNATURE", fontWeight = FontWeight.Black) }
+        }
+        
+        Surface(
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp),
+            color = Color.Black.copy(0.6f),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Text("Drag to move • Pinch to resize/rotate", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        }
+    }
+}
+
+@Composable
 fun SignaturePadDialog(
     onDismiss: () -> Unit,
     onSave: (Bitmap, Boolean) -> Unit,
     accentColor: Color
 ) {
+    val density = LocalDensity.current
     var paths by remember { mutableStateOf(mutableStateListOf<Path>()) }
     var currentPath by remember { mutableStateOf<Path?>(null) }
     var shouldSaveSignature by remember { mutableStateOf(true) }
@@ -500,101 +608,4 @@ fun SignaturePadDialog(
             }
         }
     )
-}
-
-@Composable
-fun SignOptionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = color.copy(alpha = 0.05f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.1f))
-    ) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = color)
-        }
-    }
-}
-
-@Composable
-fun SignaturePlacementOverlay(
-    uri: Uri,
-    pageIndex: Int,
-    signature: Bitmap,
-    offset: androidx.compose.ui.geometry.Offset,
-    scale: Float,
-    rotation: Float,
-    onTransform: (androidx.compose.ui.geometry.Offset, Float, Float) -> Unit,
-    onCancel: () -> Unit,
-    onConfirm: () -> Unit,
-    accentColor: Color
-) {
-    val imageLoader = coil.compose.LocalImageLoader.current
-    val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
-
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        // Page Preview
-        Image(
-            painter = rememberAsyncImagePainter(request, imageLoader),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
-        )
-
-        // The Signature
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, rot ->
-                        onTransform(offset + pan, (scale * zoom).coerceIn(0.5f, 3f), rotation + rot)
-                    }
-                }
-        ) {
-            Image(
-                bitmap = signature.asImageBitmap(),
-                contentDescription = "Signature",
-                modifier = Modifier
-                    .size(150.dp)
-                    .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        rotationZ = rotation
-                    }
-                    .border(1.dp, accentColor.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-            )
-        }
-
-        // Controls
-        Row(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Button(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                shape = RoundedCornerShape(16.dp)
-            ) { Text("CANCEL") }
-            
-            Button(
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                shape = RoundedCornerShape(16.dp)
-            ) { Text("BURN SIGNATURE", fontWeight = FontWeight.Black) }
-        }
-        
-        Surface(
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp),
-            color = Color.Black.copy(0.6f),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Text("Drag to move • Pinch to resize/rotate", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-        }
-    }
 }
