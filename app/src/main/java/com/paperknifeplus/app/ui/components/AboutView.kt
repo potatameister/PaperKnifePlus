@@ -7,9 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -146,11 +144,15 @@ fun SupportPage() {
 
         item {
             AboutMenuItem(Icons.Filled.CardGiftcard, "GitHub Sponsors", "Join our developer community") {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sponsors/potatameister")))
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sponsors/potatameister")))
+                } catch (e: Exception) {}
             }
             Spacer(Modifier.height(8.dp))
             AboutMenuItem(Icons.Filled.Coffee, "Buy Me a Coffee", "Buy us a spark of energy") {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/potatameister")))
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/potatameister")))
+                } catch (e: Exception) {}
             }
         }
     }
@@ -171,16 +173,16 @@ fun LibrariesPage() {
         contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(libraries) { (name, desc) ->
+        items(libraries) { lib ->
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text(name, fontWeight = FontWeight.Black, fontSize = 14.sp)
+                    Text(lib.first, fontWeight = FontWeight.Black, fontSize = 14.sp)
                     Spacer(Modifier.height(4.dp))
-                    Text(desc, fontSize = 11.sp, color = Color.Gray)
+                    Text(lib.second, fontSize = 11.sp, color = Color.Gray)
                 }
             }
         }
@@ -201,7 +203,6 @@ fun HallOfFamePage() {
         Text("Your name could be here!", fontSize = 12.sp, color = Color.Gray)
         Spacer(Modifier.height(32.dp))
         
-        // Use standard Box/Column for Hall of Fame instead of broken LazyVerticalGrid
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             HallSlot("Support to join", Modifier.weight(1f))
             HallSlot("Support to join", Modifier.weight(1f))
