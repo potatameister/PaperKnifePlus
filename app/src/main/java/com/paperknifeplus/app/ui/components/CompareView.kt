@@ -198,3 +198,20 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, onBack:
         }
     }
 }
+
+@Composable
+fun CompareFileCard(label: String, name: String, isSelected: Boolean, color: Color, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(100.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = if (isSelected) color.copy(0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
+        border = BorderStroke(1.dp, if (isSelected) color.copy(0.3f) else Color.Transparent)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.Center) {
+            Text(label, fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (isSelected) color else Color.Gray, letterSpacing = 1.sp)
+            Spacer(Modifier.height(4.dp))
+            Text(if (isSelected) name else "Tap to select file", fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+        }
+    }
+}

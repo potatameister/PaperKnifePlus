@@ -234,4 +234,3 @@ fun ImageToPdfView(
         }
     }
 }
-}
