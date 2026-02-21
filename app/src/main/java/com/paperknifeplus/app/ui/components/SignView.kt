@@ -57,6 +57,7 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignView(
     onBack: () -> Unit,
