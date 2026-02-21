@@ -7,11 +7,13 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -66,6 +68,7 @@ class MainActivity : ComponentActivity() {
             .build()
 
         setContent {
+            @OptIn(ExperimentalMaterial3Api::class)
             var isDarkMode by remember { mutableStateOf(false) }
             var isInitialized by remember { mutableStateOf(false) }
 
