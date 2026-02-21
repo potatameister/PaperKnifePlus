@@ -591,11 +591,11 @@ fun PdfPageReaderItem(
 
             // Draw Search Highlights
             matches.forEach { match ->
-                // NITRO 6.0: Percentage-Based Mapping (No more offsets!)
-                val left = match.rect.lowerLeftX * pageWidthDp.value
-                val top = match.rect.lowerLeftY * pageHeightDp.value
-                val width = match.rect.width * pageWidthDp.value
-                val height = match.rect.height * pageHeightDp.value
+                // NITRO 10.0: Precise Percentage-Based Mapping (Normalized 0.0-1.0)
+                val left = match.rect.lowerLeftX * maxWidth.value
+                val top = match.rect.lowerLeftY * maxHeight.value
+                val width = match.rect.width * maxWidth.value
+                val height = match.rect.height * maxHeight.value
 
                 Box(
                     modifier = Modifier

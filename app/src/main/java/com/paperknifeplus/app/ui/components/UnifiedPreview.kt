@@ -64,17 +64,14 @@ fun UnifiedPdfPreview(
 ) {
     val context = LocalContext.current
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
-    
-    // NITRO ENGINE: Use Shared Global Loader (MainActivity)
     val imageLoader = coil.compose.LocalImageLoader.current
 
     if (mode == PreviewMode.COVER) {
-        // ... TYPE B: ONE PAGE PREVIEW ---
         Box(contentAlignment = Alignment.BottomCenter) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(0.707f) // A4 Aspect Ratio
+                    .aspectRatio(0.707f)
                     .clickable { lightboxPage = 0 },
                 shape = RoundedCornerShape(24.dp),
                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
@@ -83,47 +80,31 @@ fun UnifiedPdfPreview(
                 val request = remember(uri, password) { PdfPageRequest(uri, 0, password, 1.2f) }
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     val painter = rememberAsyncImagePainter(request, imageLoader)
-                    val painterState = painter.state
-                    
                     Image(
                         painter = painter,
                         contentDescription = "Document Cover",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit
                     )
-
-                    if (painterState is AsyncImagePainter.State.Loading) {
+                    if (painter.state is AsyncImagePainter.State.Loading) {
                         CircularProgressIndicator(color = accentColor, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
-                    } else if (painterState is AsyncImagePainter.State.Error && password != null) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Filled.Lock, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
-                            Spacer(Modifier.height(12.dp))
-                            Text("Protected File", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
                     }
-                    
                     Surface(
                         modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                         color = Color.Black.copy(0.3f),
                         shape = CircleShape
                     ) {
-                        Icon(
-                            Icons.Filled.ZoomIn, 
-                            null, 
-                            tint = Color.White, 
-                            modifier = Modifier.padding(8.dp).size(20.dp)
-                        )
+                        Icon(Icons.Filled.ZoomIn, null, tint = Color.White, modifier = Modifier.padding(8.dp).size(20.dp))
                     }
                 }
             }
         }
     } else if (mode == PreviewMode.REORDER && pageOrder != null && onOrderChange != null) {
-        // --- NITRO REORDER 9.0: PROFESSIONAL SMOOTH OVERHAUL ---
-        val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+        val gridState = rememberLazyGridState()
         var draggedIndex by remember { mutableStateOf<Int?>(null) }
         var dragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
         var initialTouchPoint by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-        
+        val scope = rememberCoroutineScope()
         val visualList = remember(pageOrder) { pageOrder.toMutableStateList() }
 
         LaunchedEffect(draggedIndex, dragOffset) {
@@ -131,12 +112,10 @@ fun UnifiedPdfPreview(
                 while (true) {
                     val containerHeight = gridState.layoutInfo.viewportSize.height
                     val dragY = dragOffset.y
-                    val scrollThreshold = containerHeight * 0.15f
-                    
-                    if (dragY < -scrollThreshold) gridState.animateScrollBy(-600f)
-                    else if (dragY > scrollThreshold) gridState.animateScrollBy(600f)
+                    if (dragY < -containerHeight * 0.12f) gridState.animateScrollBy(-800f)
+                    else if (dragY > containerHeight * 0.12f) gridState.animateScrollBy(800f)
                     else break
-                    kotlinx.coroutines.delay(10)
+                    delay(10)
                 }
             }
         }
@@ -145,18 +124,18 @@ fun UnifiedPdfPreview(
             state = gridState,
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 120.dp)
         ) {
             itemsIndexed(visualList, key = { _, pageIdx -> pageIdx }) { index, pageIdx ->
                 val isDragging = draggedIndex == index
-                val scale by animateFloatAsState(if (isDragging) 1.3f else 1f, spring(stiffness = Spring.StiffnessLow))
+                val scale by animateFloatAsState(if (isDragging) 1.35f else 1f, spring(stiffness = Spring.StiffnessLow))
                 
                 Box(
                     modifier = Modifier
-                        .zIndex(if (isDragging) 100f else 1f)
-                        .animateItemPlacement(spring(stiffness = Spring.StiffnessMediumLow))
+                        .zIndex(if (isDragging) 1000f else 1f)
+                        .animateItemPlacement(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
                         .graphicsLayer {
                             scaleX = scale
                             scaleY = scale
@@ -184,57 +163,42 @@ fun UnifiedPdfPreview(
                                 onDrag = { change, dragAmount ->
                                     change.consume()
                                     dragOffset += dragAmount
-                                    
-                                    val currentIdx = draggedIndex ?: return@detectDragGesturesAfterLongPress
+                                    val currentDragged = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                     val layoutInfo = gridState.layoutInfo
-                                    val currentItem = layoutInfo.visibleItemsInfo.find { it.index == currentIdx } ?: return@detectDragGesturesAfterLongPress
-                                    
-                                    // Finger center in screen-space
-                                    val fingerX = currentItem.offset.x + initialTouchPoint.x + dragOffset.x
-                                    val fingerY = currentItem.offset.y + initialTouchPoint.y + dragOffset.y
-                                    
-                                    // Find target item by center-point hit-test
+                                    val draggedItemInfo = layoutInfo.visibleItemsInfo.find { it.index == currentDragged } ?: return@detectDragGesturesAfterLongPress
+                                    val fingerX = draggedItemInfo.offset.x + initialTouchPoint.x + dragOffset.x
+                                    val fingerY = draggedItemInfo.offset.y + initialTouchPoint.y + dragOffset.y
                                     val targetItem = layoutInfo.visibleItemsInfo.find { item ->
-                                        if (item.index == currentIdx) return@find false
+                                        if (item.index == currentDragged) return@find false
                                         val centerX = item.offset.x + item.size.width / 2
                                         val centerY = item.offset.y + item.size.height / 2
-                                        
-                                        Math.abs(fingerX - centerX) < item.size.width * 0.6f &&
-                                        Math.abs(fingerY - centerY) < item.size.height * 0.6f
+                                        Math.abs(fingerX - centerX) < item.size.width * 0.7f &&
+                                        Math.abs(fingerY - centerY) < item.size.height * 0.7f
                                     }
-                                    
-                                    if (targetItem != null) {
-                                        val targetIdx = targetItem.index
-                                        if (targetIdx < visualList.size) {
-                                            val item = visualList.removeAt(currentIdx)
-                                            visualList.add(targetIdx, item)
-                                            
-                                            // Maintain offset relative to the moving item to prevent jitter
-                                            val deltaX = targetItem.offset.x - currentItem.offset.x
-                                            val deltaY = targetItem.offset.y - currentItem.offset.y
-                                            dragOffset = androidx.compose.ui.geometry.Offset(dragOffset.x - deltaX, dragOffset.y - deltaY)
-                                            draggedIndex = targetIdx
-                                        }
+                                    if (targetItem != null && targetItem.index < visualList.size) {
+                                        val item = visualList.removeAt(currentDragged)
+                                        visualList.add(targetItem.index, item)
+                                        val prevOffset = draggedItemInfo.offset
+                                        val newOffset = targetItem.offset
+                                        dragOffset = androidx.compose.ui.geometry.Offset(
+                                            dragOffset.x + (prevOffset.x - newOffset.x),
+                                            dragOffset.y + (prevOffset.y - newOffset.y)
+                                        )
+                                        draggedIndex = targetItem.index
                                     }
                                 }
                             )
                         }
                 ) {
                     PdfPageItem(
-                        uri = uri,
-                        index = pageIdx,
-                        password = password,
-                        imageLoader = imageLoader,
-                        accentColor = accentColor,
-                        onClick = { if (mode != PreviewMode.REORDER) lightboxPage = pageIdx },
-                        scale = 0.6f,
-                        modifier = if (isDragging) Modifier.shadow(48.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
+                        uri = uri, index = pageIdx, password = password, imageLoader = imageLoader, accentColor = accentColor,
+                        onClick = { if (draggedIndex == null) lightboxPage = pageIdx }, scale = 0.6f,
+                        modifier = if (isDragging) Modifier.shadow(64.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
                     )
                 }
             }
         }
     } else {
-        // --- TYPE A: MINI PREVIEW GRID (Blitz Mode / Selection / Rotate) ---
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
@@ -245,14 +209,8 @@ fun UnifiedPdfPreview(
             items(pageCount, key = { it }) { index ->
                 val isSelected = selectedPages?.contains(index) == true
                 val rotation = pageRotations?.get(index) ?: 0
-                
                 PdfPageItem(
-                    uri = uri,
-                    index = index,
-                    password = password,
-                    imageLoader = imageLoader,
-                    accentColor = accentColor,
-                    rotation = rotation,
+                    uri = uri, index = index, password = password, imageLoader = imageLoader, accentColor = accentColor, rotation = rotation,
                     onClick = { 
                         if (mode == PreviewMode.ROTATE && onRotatePage != null) onRotatePage(index)
                         else if (onToggleSelection != null) onToggleSelection(index)
@@ -263,59 +221,20 @@ fun UnifiedPdfPreview(
                 ) {
                     if (mode == PreviewMode.ROTATE) {
                         Surface(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(28.dp),
-                            color = Color.Black.copy(0.4f),
-                            shape = CircleShape
-                        ) {
-                            Icon(
-                                Icons.Filled.RotateRight, 
-                                null, 
-                                tint = Color.White, 
-                                modifier = Modifier.padding(6.dp)
-                            )
-                        }
+                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(28.dp),
+                            color = Color.Black.copy(0.4f), shape = CircleShape
+                        ) { Icon(Icons.Filled.RotateRight, null, tint = Color.White, modifier = Modifier.padding(6.dp)) }
                     } else if (onToggleSelection != null) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(if (isSelected) accentColor.copy(alpha = 0.15f) else Color.Transparent)
-                        )
-                        
+                        Box(modifier = Modifier.fillMaxSize().background(if (isSelected) accentColor.copy(alpha = 0.15f) else Color.Transparent))
                         Surface(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(24.dp),
-                            color = if (isSelected) accentColor else Color.Black.copy(0.3f),
-                            shape = CircleShape
-                        ) {
-                            Icon(
-                                Icons.Filled.Check, 
-                                null, 
-                                tint = Color.White, 
-                                modifier = Modifier.padding(4.dp)
-                            )
-                        }
-
+                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp),
+                            color = if (isSelected) accentColor else Color.Black.copy(0.3f), shape = CircleShape
+                        ) { Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp)) }
                         Surface(
                             onClick = { lightboxPage = index },
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(8.dp)
-                                .size(24.dp),
-                            color = Color.Black.copy(0.3f),
-                            shape = CircleShape
-                        ) {
-                            Icon(
-                                Icons.Filled.Fullscreen, 
-                                null, 
-                                tint = Color.White, 
-                                modifier = Modifier.padding(4.dp)
-                            )
-                        }
+                            modifier = Modifier.align(Alignment.TopStart).padding(8.dp).size(24.dp),
+                            color = Color.Black.copy(0.3f), shape = CircleShape
+                        ) { Icon(Icons.Filled.Fullscreen, null, tint = Color.White, modifier = Modifier.padding(4.dp)) }
                     }
                 }
             }
@@ -324,13 +243,8 @@ fun UnifiedPdfPreview(
 
     if (lightboxPage != null) {
         PageLightbox(
-            uri = uri,
-            initialPage = lightboxPage!!,
-            totalCount = pageCount,
-            password = password,
-            onDismiss = { lightboxPage = null },
-            selectedPages = selectedPages,
-            onToggleSelection = onToggleSelection
+            uri = uri, initialPage = lightboxPage!!, totalCount = pageCount, password = password,
+            onDismiss = { lightboxPage = null }, selectedPages = selectedPages, onToggleSelection = onToggleSelection
         )
     }
 }
@@ -349,52 +263,28 @@ fun PdfPageItem(
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val request = remember(uri, index, password, scale, rotation) { PdfPageRequest(uri, index, password, scale, rotation) }
-    
     Box(
-        modifier = modifier
-            .aspectRatio(if (rotation % 180 != 0) 1.414f else 0.707f)
-            .clip(RoundedCornerShape(12.dp))
+        modifier = modifier.aspectRatio(if (rotation % 180 != 0) 1.414f else 0.707f).clip(RoundedCornerShape(12.dp))
             .background(if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF4F4F5))
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        val painter = rememberAsyncImagePainter(
-            model = request,
-            imageLoader = imageLoader
-        )
-        val painterState = painter.state
-
+        val painter = rememberAsyncImagePainter(model = request, imageLoader = imageLoader)
         Image(
-            painter = painter,
-            contentDescription = "Page ${index + 1}",
-            modifier = Modifier
-                .fillMaxSize(),
-            contentScale = ContentScale.Fit
+            painter = painter, contentDescription = "Page ${index + 1}",
+            modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit
         )
-
-        if (painterState is AsyncImagePainter.State.Loading) {
+        if (painter.state is AsyncImagePainter.State.Loading) {
             CircularProgressIndicator(color = accentColor, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-        } else if (painterState is AsyncImagePainter.State.Error && password != null) {
+        } else if (painter.state is AsyncImagePainter.State.Error && password != null) {
              Icon(Icons.Filled.Lock, null, tint = Color.Gray.copy(0.3f), modifier = Modifier.size(32.dp))
         }
-        
         Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp)
-                .graphicsLayer { rotationZ = 0f }, // Don't rotate page number
-            color = Color.Black.copy(0.6f),
-            shape = RoundedCornerShape(8.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp).graphicsLayer { rotationZ = 0f },
+            color = Color.Black.copy(0.6f), shape = RoundedCornerShape(8.dp)
         ) {
-            Text(
-                "${index + 1}", 
-                color = Color.White, 
-                fontSize = 11.sp, 
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-            )
+            Text("${index + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
         }
-        
         content()
     }
 }
