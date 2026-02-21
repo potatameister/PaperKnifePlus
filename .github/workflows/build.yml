@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     
@@ -27,11 +27,24 @@ jobs:
     - name: Build Release APK
       run: |
         gradle clean assembleRelease --stacktrace --no-daemon --console=plain
-        echo "=== RELEASE APK SIZE ==="
-        ls -lh app/build/outputs/apk/release/app-release-unsigned.apk || ls -lh app/build/outputs/apk/release/*.apk
+
+    - name: Sign Android Release
+      uses: r0adkll/sign-android-release@v1
+      id: sign_app
+      with:
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+        alias: ${{ secrets.ALIAS }}
+        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+    - name: Log APK Size
+      run: |
+        echo "=== SIGNED RELEASE APK SIZE ==="
+        ls -lh ${{ steps.sign_app.outputs.signedReleaseFile }}
 
     - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
         name: PaperKnifePlus-Release
-        path: app/build/outputs/apk/release/*.apk
+        path: ${{ steps.sign_app.outputs.signedReleaseFile }}
