@@ -3,6 +3,7 @@ package com.paperknifeplus.app.ui.components
 import android.net.Uri
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,9 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -48,6 +47,7 @@ enum class PreviewMode {
     ROTATE  // Tap to rotate (Rotate)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UnifiedPdfPreview(
     uri: Uri,
@@ -225,19 +225,6 @@ fun UnifiedPdfPreview(
                             )
                         }
                 ) {
-                    PdfPageItem(
-                        uri = uri,
-                        index = pageIdx,
-                        password = password,
-                        imageLoader = imageLoader,
-                        accentColor = accentColor,
-                        onClick = { if (mode != PreviewMode.REORDER) lightboxPage = pageIdx },
-                        scale = 0.6f,
-                        modifier = if (isDragging) Modifier.shadow(32.dp, RoundedCornerShape(12.dp), spotColor = accentColor) else Modifier
-                    )
-                }
-            }
-        }
                     PdfPageItem(
                         uri = uri,
                         index = pageIdx,

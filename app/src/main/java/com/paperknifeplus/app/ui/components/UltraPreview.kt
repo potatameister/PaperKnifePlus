@@ -239,7 +239,6 @@ fun UltraPreview(
                             password = activePassword,
                             imageLoader = imageLoader,
                             pageSize = pageSizes[index],
-                            pageText = pageTexts[index] ?: "",
                             links = links.filter { it.pageIndex == index },
                             matches = searchResults.filter { it.pageIndex == index },
                             onLinkClick = { url ->
