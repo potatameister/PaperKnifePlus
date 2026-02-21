@@ -117,7 +117,9 @@ fun BookmarksView(
                         bookmarks.forEach { bm ->
                             val item = PDOutlineItem()
                             item.title = bm.title
-                            item.destination = document.getPage(bm.pageIndex)
+                            val dest = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageFitWidthDestination()
+                            dest.page = document.getPage(bm.pageIndex)
+                            item.destination = dest
                             outline.addLast(item)
                         }
                         
@@ -129,7 +131,7 @@ fun BookmarksView(
                         outputUri = saveUri
                         currentState = ToolState.SUCCESS
                     }
-                } catch (e) {
+                } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                         currentState = ToolState.CONFIGURING
