@@ -43,7 +43,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalFoundationApi::class)
+    @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -68,7 +68,6 @@ class MainActivity : ComponentActivity() {
             .build()
 
         setContent {
-            @OptIn(ExperimentalMaterial3Api::class)
             var isDarkMode by remember { mutableStateOf(false) }
             var isInitialized by remember { mutableStateOf(false) }
 
