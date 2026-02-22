@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,11 +82,14 @@ class MainActivity : ComponentActivity() {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
                     val sheetState = rememberModalBottomSheetState()
                     var showToolPicker by remember { mutableStateOf(false) }
+                    var toolPickerInitialExpanded by remember { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
 
                     Box(Modifier.fillMaxSize()) {
                         var currentTool by remember { mutableStateOf<String?>(null) }
                         var previewData by remember { mutableStateOf<Triple<Uri, String, Int>?>(null) }
+                        var toolInitialUri by remember { mutableStateOf<Uri?>(null) }
+                        var aboutInitialPage by remember { mutableStateOf("main") }
                         
                         val mainScreens = listOf("home", "tools", "history", "settings")
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
@@ -117,18 +121,32 @@ class MainActivity : ComponentActivity() {
                                         "home" -> HomeView(
                                             isDarkMode = isDarkMode,
                                             onThemeToggle = { isDarkMode = !isDarkMode },
-                                            onToolClick = { currentTool = it },
+                                            onToolClick = { 
+                                                toolInitialUri = null
+                                                if (it == "about") {
+                                                    aboutInitialPage = "support"
+                                                    currentTool = "about"
+                                                } else {
+                                                    currentTool = it 
+                                                }
+                                            },
                                             onOpenPreview = { uri, name, count ->
                                                 previewData = Triple(uri, name, count)
                                                 currentTool = "ultra_preview"
                                             }
                                         )
-                                        "tools" -> ToolsView(onToolClick = { currentTool = it })
+                                        "tools" -> ToolsView(onToolClick = { 
+                                            toolInitialUri = null
+                                            currentTool = it 
+                                        })
                                         "history" -> HistoryView(onItemClick = { uri, name, count ->
                                             previewData = Triple(uri, name, count)
                                             currentTool = "ultra_preview"
                                         })
-                                        "settings" -> SettingsView(onNavigateToAbout = { currentTool = "about" })
+                                        "settings" -> SettingsView(onNavigateToAbout = { 
+                                            aboutInitialPage = it
+                                            currentTool = "about" 
+                                        })
                                     }
                                 }
                             }
@@ -141,11 +159,13 @@ class MainActivity : ComponentActivity() {
                                     onNavigate = { screen ->
                                         val index = mainScreens.indexOf(screen)
                                         if (index != -1) {
-                                            // Use scrollToPage (instant) for bar clicks to avoid rendering in-between pages
                                             scope.launch { pagerState.scrollToPage(index) }
                                         }
                                     },
-                                    onPlusClick = { showToolPicker = true }
+                                    onPlusClick = { 
+                                        toolPickerInitialExpanded = false
+                                        showToolPicker = true 
+                                    }
                                 )
                             }
 
@@ -159,9 +179,11 @@ class MainActivity : ComponentActivity() {
                                     shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
                                 ) {
                                     ToolPickerContent(
+                                        initialExpanded = toolPickerInitialExpanded,
                                         onToolClick = { tool ->
                                             scope.launch { sheetState.hide() }.invokeOnCompletion { 
                                                 showToolPicker = false
+                                                toolInitialUri = null
                                                 currentTool = tool 
                                             }
                                         }
@@ -177,8 +199,9 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                                     when (currentTool) {
-                                        "about" -> AboutView(onBack = { currentTool = null })
+                                        "about" -> AboutView(initialPage = aboutInitialPage, onBack = { currentTool = null })
                                         "merge" -> MergeView(
+                                            initialUri = toolInitialUri,
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->
                                                 previewData = Triple(uri, name, count)
@@ -186,6 +209,7 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                         "split" -> SplitView(
+                                            initialUri = toolInitialUri,
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->
                                                 previewData = Triple(uri, name, count)
@@ -200,6 +224,7 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                         "compress" -> CompressView(
+                                            initialUri = toolInitialUri,
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->
                                                 previewData = Triple(uri, name, count)
@@ -221,6 +246,7 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                         "rearrange" -> RearrangeView(
+                                            initialUri = toolInitialUri,
                                             onBack = { currentTool = null },
                                             onOpenPreview = { uri, name, count ->
                                                 previewData = Triple(uri, name, count)
@@ -324,7 +350,11 @@ class MainActivity : ComponentActivity() {
                                                     uri = uri,
                                                     fileName = name,
                                                     pageCount = count,
-                                                    onDismiss = { currentTool = null }
+                                                    onDismiss = { currentTool = null },
+                                                    onOpenInTool = { tool ->
+                                                        toolInitialUri = uri
+                                                        currentTool = tool
+                                                    }
                                                 )
                                             }
                                         }
@@ -362,67 +392,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ToolPickerContent(onToolClick: (String) -> Unit) {
-    val quickTools = listOf(
-        Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("split", "Split", "EXTRACT", Icons.Filled.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-        Tool("rearrange", "Rearrange", "ORGANIZE", Icons.Filled.SwapVert, "Edit", Color(0xFF10B981), Color(0xFFECFDF5)),
-        Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-        Tool("sign", "Sign", "SIGNATURE", Icons.Filled.Draw, "Edit", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-        Tool("watermark", "Watermark", "BRANDING", Icons.Filled.BrandingWatermark, "Security", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-        Tool("pdf2img", "To Image", "EXPORT", Icons.Filled.Image, "Convert", Color(0xFFEC4899), Color(0xFFFDF2F8)),
-        Tool("img2pdf", "To PDF", "BUILD", Icons.Filled.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
-    )
-
-    val isDark = MaterialTheme.colorScheme.background == Color.Black
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-            .navigationBarsPadding()
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("QUICK TOOLS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = { onToolClick("tools") }) {
-                Text("SEE ALL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink)
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        
-        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-            columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(4),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            modifier = Modifier.heightIn(max = 300.dp)
-        ) {
-            items(quickTools) { tool ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onToolClick(tool.id) }
-                ) {
-                    Surface(
-                        modifier = Modifier.size(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (isDark) tool.color.copy(alpha = 0.15f) else tool.bgColor,
-                        border = BorderStroke(1.dp, tool.color.copy(0.1f))
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(tool.icon ?: Icons.Filled.Build, null, modifier = Modifier.size(24.dp), tint = tool.color)
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(tool.name, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                }
-            }
-        }
-        
-        Spacer(Modifier.height(32.dp))
     }
 }
 

@@ -143,7 +143,7 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
                         item.uri?.let { uri -> onItemClick(uri, item.name, item.pageCount) }
                     })
                 }
-                item(key = "footer_spacer") { Spacer(modifier = Modifier.height(100.dp)) }
+                item(key = "footer_spacer") { Spacer(modifier = Modifier.height(200.dp)) }
             }
         }
     }

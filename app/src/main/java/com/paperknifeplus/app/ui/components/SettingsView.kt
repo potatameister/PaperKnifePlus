@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
-fun SettingsView(onNavigateToAbout: () -> Unit) {
+fun SettingsView(onNavigateToAbout: (String) -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     
@@ -122,15 +122,22 @@ fun SettingsView(onNavigateToAbout: () -> Unit) {
             }
 
             item {
+                SettingsGroup("COMMUNITY") {
+                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help PaperKnife+ reach Play Store") { onNavigateToAbout("support") }
+                    SettingsItem(Icons.Outlined.StarOutline, "Hall of Fame", "Our amazing supporters") { onNavigateToAbout("hall") }
+                }
+            }
+
+            item {
                 SettingsGroup("ABOUT") {
-                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Credits, License, and Privacy Policy", onClick = onNavigateToAbout)
+                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Credits, License, and Privacy Policy") { onNavigateToAbout("main") }
                     SettingsItem(Icons.Outlined.Shield, "Privacy Mode", "100% Local processing verified", enabled = false)
                 }
             }
 
             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 120.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 200.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Logo(modifier = Modifier.size(24.dp), partColor = if (isDark) Color.White else Color.Black)

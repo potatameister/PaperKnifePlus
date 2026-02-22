@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun ProtectView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -58,6 +59,34 @@ fun ProtectView(
     var showLoadingWarning by remember { mutableStateOf(false) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
 
+    fun handleFileSelection(uri: Uri) {
+        selectedUri = uri
+        val details = getUriDetails(context, uri)
+        fileName = details.name
+        fileSize = details.size
+        isFileLoading = true
+        scope.launch(Dispatchers.IO) {
+            val isEncrypted = checkIsEncryptedLocal(context, uri)
+            if (isEncrypted) {
+                withContext(Dispatchers.Main) {
+                    fileToUnlock = fileName
+                    isFileLoading = false
+                }
+            } else {
+                val count = getPageCount(context, uri, null)
+                withContext(Dispatchers.Main) {
+                    pageCount = count
+                    currentState = ToolState.CONFIGURING
+                    isFileLoading = false
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(initialUri) {
+        initialUri?.let { handleFileSelection(it) }
+    }
+
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {
             delay(5000)
@@ -68,29 +97,7 @@ fun ProtectView(
     }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            selectedUri = it
-            val details = getUriDetails(context, it)
-            fileName = details.name
-            fileSize = details.size
-            isFileLoading = true
-            scope.launch(Dispatchers.IO) {
-                val isEncrypted = checkIsEncryptedLocal(context, it)
-                if (isEncrypted) {
-                    withContext(Dispatchers.Main) {
-                        fileToUnlock = fileName
-                        isFileLoading = false
-                    }
-                } else {
-                    val count = getPageCount(context, it, null)
-                    withContext(Dispatchers.Main) {
-                        pageCount = count
-                        currentState = ToolState.CONFIGURING
-                        isFileLoading = false
-                    }
-                }
-            }
-        }
+        uri?.let { handleFileSelection(it) }
     }
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->

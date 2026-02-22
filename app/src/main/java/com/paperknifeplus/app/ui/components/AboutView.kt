@@ -29,9 +29,9 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutView(onBack: () -> Unit) {
+fun AboutView(initialPage: String = "main", onBack: () -> Unit) {
     val context = LocalContext.current
-    var currentSubPage by remember { mutableStateOf("main") }
+    var currentSubPage by remember { mutableStateOf(initialPage) }
 
     Scaffold(
         topBar = {
@@ -107,6 +107,8 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                 AboutMenuItem(Icons.Filled.Description, "License", "Apache License 2.0") { /* Link */ }
             }
         }
+        
+        item { Spacer(Modifier.height(100.dp)) }
     }
 }
 
@@ -155,6 +157,8 @@ fun SupportPage() {
                 } catch (e: Exception) {}
             }
         }
+        
+        item { Spacer(Modifier.height(100.dp)) }
     }
 }
 
@@ -186,6 +190,8 @@ fun LibrariesPage() {
                 }
             }
         }
+        
+        item { Spacer(Modifier.height(100.dp)) }
     }
 }
 
@@ -207,6 +213,8 @@ fun HallOfFamePage() {
             HallSlot("Support to join", Modifier.weight(1f))
             HallSlot("Support to join", Modifier.weight(1f))
         }
+        
+        Spacer(Modifier.height(100.dp))
     }
 }
 

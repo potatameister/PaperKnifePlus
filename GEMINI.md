@@ -52,10 +52,11 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
-- **2026-02-21 (Late):** **PLATINUM EDITION & APK SURGERY**:
+- **2026-02-21 (Late):** **PLATINUM EDITION & COMMUNITY HUB**:
     - **Micro APK (7.7MB)**: Reduced APK size from ~30MB to 7.7MB through surgical R8/ProGuard refinement and resource stripping.
     - **Verified RB**: Achieved 100% bit-for-bit reproducibility by disabling ZIP timestamps and pinning build environments.
-    - **Platinum Tool Picker**: Implemented a modern ModalBottomSheet "Plus" menu for rapid engine access.
+    - **Platinum Tool Picker**: Implemented a modern ModalBottomSheet "Plus" menu with branding-aware accent colors.
+    - **Community & Legal Hub**: Overhauled About section into a multi-page hub with Support (GitHub Sponsors/BMAC), Hall of Fame, and Open Source Credits.
     - **Secure Signing**: Integrated high-security CI/CD signing via GitHub Secrets (zipalign + apksigner).
     - **Ultra Quality 12.0f**: Boosted reader quality to 12.0f and optimized base rendering for high-DPI clarity.
 - **2026-02-21 (Early):** **GOLD STANDARD V5 & NITRO REORDER 8.0**:

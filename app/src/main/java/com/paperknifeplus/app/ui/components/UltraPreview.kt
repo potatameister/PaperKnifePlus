@@ -57,7 +57,8 @@ fun UltraPreview(
     fileName: String,
     pageCount: Int,
     password: String? = null,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onOpenInTool: (String) -> Unit
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -66,6 +67,8 @@ fun UltraPreview(
     
     var showJumpDialog by remember { mutableStateOf(false) }
     var jumpPageInput by remember { mutableStateOf("") }
+    var showToolPicker by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
 
     var targetScale by remember { mutableFloatStateOf(1f) }
     var targetOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
@@ -358,6 +361,10 @@ fun UltraPreview(
                         Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1, color = MaterialTheme.colorScheme.onSurface)
                         Text("PDF VIEWER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                     }
+
+                    IconButton(onClick = { showToolPicker = true }) {
+                        Icon(Icons.Filled.Add, null, tint = PaperPink, modifier = Modifier.size(22.dp))
+                    }
                     
                     IconButton(onClick = {
                         try {
@@ -375,6 +382,26 @@ fun UltraPreview(
                     }
                 }
                 Divider(color = Color.Gray.copy(alpha = 0.1f))
+            }
+        }
+
+        if (showToolPicker) {
+            ModalBottomSheet(
+                onDismissRequest = { showToolPicker = false },
+                sheetState = sheetState,
+                containerColor = MaterialTheme.colorScheme.surface,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray.copy(0.2f)) },
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            ) {
+                ToolPickerContent(
+                    initialExpanded = true,
+                    onToolClick = { tool ->
+                        scope.launch { sheetState.hide() }.invokeOnCompletion { 
+                            showToolPicker = false
+                            onOpenInTool(tool)
+                        }
+                    }
+                )
             }
         }
 

@@ -68,6 +68,7 @@ data class MergeFile(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MergeView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -89,7 +90,7 @@ fun MergeView(
 
     val imageLoader = coil.compose.LocalImageLoader.current
 
-    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+    fun handleUris(uris: List<Uri>) {
         if (uris.isNotEmpty()) {
             isFileLoading = true
             scope.launch {
@@ -107,6 +108,14 @@ fun MergeView(
                 isFileLoading = false
             }
         }
+    }
+
+    LaunchedEffect(initialUri) {
+        initialUri?.let { handleUris(listOf(it)) }
+    }
+
+    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        handleUris(uris)
     }
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
