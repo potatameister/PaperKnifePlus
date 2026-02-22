@@ -72,6 +72,7 @@ fun SignView(
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
+    var previewUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
@@ -89,7 +90,6 @@ fun SignView(
     var sigScale by remember { mutableFloatStateOf(1f) }
     var sigRotation by remember { mutableFloatStateOf(0f) }
     
-    // COLOR SELECTION
     var selectedColor by remember { mutableStateOf(Color.Black) }
 
     fun loadSavedSignatures() {
@@ -158,41 +158,49 @@ fun SignView(
         }
     }
 
+    suspend fun generatePreview() {
+        withContext(Dispatchers.IO) {
+            try {
+                context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
+                    val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
+                    signatureBitmap?.let { sig ->
+                        val page = document.getPage(selectedPageIndex)
+                        val pdImage = JPEGFactory.createFromImage(document, sig, 0.95f)
+                        PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
+                            val pdfWidth = page.mediaBox.width
+                            val pdfHeight = page.mediaBox.height
+                            val drawWidth = 200f * sigScale
+                            val drawHeight = (200f * (sig.height.toFloat() / sig.width.toFloat())) * sigScale
+                            val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sigOffset.x * (pdfWidth / 360f))
+                            val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sigOffset.y * (pdfHeight / 510f))
+                            cs.saveGraphicsState()
+                            cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
+                            cs.restoreGraphicsState()
+                        }
+                    }
+                    val tempUri = saveToTemp(context, document)
+                    withContext(Dispatchers.Main) {
+                        previewUri = tempUri
+                        currentState = ToolState.PREVIEW_RESULT
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Preview failed", Toast.LENGTH_SHORT).show()
+                    currentState = ToolState.CONFIGURING
+                }
+            }
+        }
+    }
+
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
             currentState = ToolState.PROCESSING
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                        val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
-                        
-                        signatureBitmap?.let { sig ->
-                            val page = document.getPage(selectedPageIndex)
-                            val pdImage = JPEGFactory.createFromImage(document, sig, 0.95f)
-                            
-                            PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
-                                val pdfWidth = page.mediaBox.width
-                                val pdfHeight = page.mediaBox.height
-                                
-                                // PRO MATH FIX: Precise UI to PDF Coordinate Mapping
-                                // 1. Calculate the aspect-correct scale used in the UI
-                                val uiWidth = 360f // Rough estimate, fixed via BoxWithConstraints logic normally
-                                val uiHeight = 360f / (pdfWidth/pdfHeight)
-                                
-                                val drawWidth = 200f * sigScale
-                                val drawHeight = (200f * (sig.height.toFloat() / sig.width.toFloat())) * sigScale
-                                
-                                // Map pixel offset from UI center to PDF points
-                                val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sigOffset.x * (pdfWidth / 360f))
-                                val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sigOffset.y * (pdfHeight / 510f)) // Adjusted for standard A4
-                                
-                                cs.saveGraphicsState()
-                                cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
-                                cs.restoreGraphicsState()
-                            }
-                        }
-                        
+                    context.contentResolver.openInputStream(previewUri!!)?.use { inputStream ->
+                        val document = PDDocument.load(inputStream)
                         saveAndFlush(context, document, saveUri)
                     }
                     val endTime = System.currentTimeMillis()
@@ -204,7 +212,7 @@ fun SignView(
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                        currentState = ToolState.CONFIGURING
+                        currentState = ToolState.PREVIEW_RESULT
                     }
                 }
             }
@@ -213,7 +221,7 @@ fun SignView(
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING && currentState != ToolState.PREVIEW_RESULT) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -248,7 +256,6 @@ fun SignView(
                     }
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                            var showPreview by remember { mutableStateOf(true) }
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -257,29 +264,6 @@ fun SignView(
                                 Column {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     Text("SELECT ONE PAGE TO SIGN", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
-                                }
-                                // NITRO CUSTOM TOGGLE
-                                Surface(
-                                    onClick = { showPreview = !showPreview },
-                                    color = if (showPreview) accentColor.copy(0.15f) else Color.Gray.copy(0.1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, if (showPreview) accentColor.copy(0.3f) else Color.Transparent)
-                                ) {
-                                    Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            if (showPreview) Icons.Filled.Preview else Icons.Filled.VisibilityOff, 
-                                            null, 
-                                            tint = if (showPreview) accentColor else Color.Gray, 
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            if (showPreview) "PREVIEW" else "ORIGINAL", 
-                                            fontSize = 9.sp, 
-                                            fontWeight = FontWeight.Black,
-                                            color = if (showPreview) accentColor else Color.Gray
-                                        )
-                                    }
                                 }
                             }
 
@@ -294,32 +278,18 @@ fun SignView(
                                     onToggleSelection = { index ->
                                         selectedPageIndex = index
                                         showSignOptions = true
-                                    },
-                                    itemOverlay = { index ->
-                                        if (showPreview && selectedPageIndex == index && signatureBitmap != null) {
-                                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                                Surface(
-                                                    color = Color.White,
-                                                    shape = RoundedCornerShape(2.dp),
-                                                    border = BorderStroke(1.dp, accentColor.copy(0.4f)),
-                                                    modifier = Modifier.size(50.dp, 30.dp)
-                                                ) {
-                                                    ComposeImage(signatureBitmap!!.asImageBitmap(), null, modifier = Modifier.padding(2.dp), contentScale = ContentScale.Fit)
-                                                }
-                                            }
-                                        }
                                     }
                                 )
                             }
                             
                             if (signatureBitmap != null) {
                                 Button(
-                                    onClick = { saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) },
+                                    onClick = { currentState = ToolState.PROCESSING },
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
                                     shape = RoundedCornerShape(20.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                                 ) {
-                                    Text("SAVE SIGNED PDF", fontWeight = FontWeight.Black)
+                                    Text("ADJUST PLACEMENT", fontWeight = FontWeight.Black)
                                 }
                             }
                         }
@@ -335,21 +305,23 @@ fun SignView(
                                 rotation = sigRotation,
                                 onTransform = { o, s, r -> sigOffset = o; sigScale = s; sigRotation = r },
                                 onCancel = { currentState = ToolState.CONFIGURING },
-                                onConfirm = { currentState = ToolState.CONFIGURING }, // "APPLY" logic
+                                onConfirm = { 
+                                    scope.launch { generatePreview() }
+                                }, 
                                 accentColor = accentColor
                             )
                         } else {
-                            ProcessingStateView(
-                                accentColor = accentColor,
-                                preview = null,
-                                uri = selectedUri,
-                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
-                                text = "Processing...",
-                                current = 0,
-                                total = 0,
-                                showWarning = false
-                            )
+                            LoadingStateView(accentColor, false, "Generating comparison...")
                         }
+                    }
+                    ToolState.PREVIEW_RESULT -> {
+                        SynchronizedComparison(
+                            originalUri = selectedUri!!,
+                            modifiedUri = previewUri!!,
+                            onBack = { currentState = ToolState.PROCESSING },
+                            onConfirm = { saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) },
+                            accentColor = accentColor
+                        )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
@@ -405,7 +377,7 @@ fun SignView(
                                 modifier = Modifier.size(100.dp, 60.dp).clickable {
                                     signatureBitmap = BitmapFactory.decodeFile(file.absolutePath)
                                     showSignOptions = false
-                                    currentState = ToolState.CONFIGURING
+                                    currentState = ToolState.PROCESSING
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
@@ -546,13 +518,6 @@ fun SignaturePadDialog(
             ) { Text("ADOPT", fontWeight = FontWeight.Black) }
         }
     )
-}
-
-fun Color.toArgb(): Int {
-    return (this.alpha * 255.0f + 0.5f).toInt() shl 24 or
-           ((this.red * 255.0f + 0.5f).toInt() shl 16) or
-           ((this.green * 255.0f + 0.5f).toInt() shl 8) or
-           (this.blue * 255.0f + 0.5f).toInt()
 }
 
 @Composable

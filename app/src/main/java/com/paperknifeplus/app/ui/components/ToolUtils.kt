@@ -366,6 +366,20 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
     } catch (e: Exception) { }
 }
 
+fun saveToTemp(context: Context, document: PDDocument): Uri {
+    val tempFile = File(context.cacheDir, "preview_${System.currentTimeMillis()}.pdf")
+    val info = document.documentInformation
+    info.creator = "PaperKnife+"
+    info.producer = "PaperKnife+ Preview Engine"
+    
+    FileOutputStream(tempFile).use { os ->
+        document.save(os)
+        os.flush()
+    }
+    document.close()
+    return Uri.fromFile(tempFile)
+}
+
 suspend fun repairPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
         val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
