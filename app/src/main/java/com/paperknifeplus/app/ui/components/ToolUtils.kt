@@ -325,15 +325,15 @@ suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, pa
                 
                 val cf = when(format) {
                     "PNG" -> Bitmap.CompressFormat.PNG
-                    "WebP" -> if (android.os.Build.VERSION.SDK_INT >= 30) Bitmap.CompressFormat.WEBP_LOSSLESS else Bitmap.CompressFormat.WEBP
+                    "WebP" -> if (Build.VERSION.SDK_INT >= 30) Bitmap.CompressFormat.WEBP_LOSSLESS else Bitmap.CompressFormat.WEBP
                     else -> Bitmap.CompressFormat.JPEG
                 }
                 val ext = format.lowercase()
                 
                 selectedPages.forEachIndexed { index, pageIdx ->
                     onProgress(index + 1, selectedPages.size)
-                    // Render to ARGB to capture everything correctly
-                    val sourceBitmap = renderer.renderImage(pageIdx, scale, ImageType.ARGB)
+                    // Render to RGB (Standard PDFBox support)
+                    val sourceBitmap = renderer.renderImage(pageIdx, scale, ImageType.RGB)
                     
                     // Flatten onto white background to ensure no transparency issues in JPEG/WebP
                     val finalBitmap = Bitmap.createBitmap(sourceBitmap.width, sourceBitmap.height, Bitmap.Config.ARGB_8888)

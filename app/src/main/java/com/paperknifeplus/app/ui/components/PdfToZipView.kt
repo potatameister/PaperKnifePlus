@@ -31,7 +31,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import java.util.zip.ZipOutputStream
 
 @Composable
 fun PdfToZipView(
@@ -78,7 +77,7 @@ fun PdfToZipView(
                                 for (i in 0 until total) {
                                     withContext(Dispatchers.Main) { progressCount = i + 1 }
                                     val singlePageDoc = PDDocument()
-                                    singlePageDoc.addPage(document.getPage(i))
+                                    singlePageDoc.importPage(document.getPage(i))
                                     
                                     val entryName = fileName.replace(".pdf", "", true) + "_page_${i + 1}.pdf"
                                     zipOut.putNextEntry(ZipEntry(entryName))
