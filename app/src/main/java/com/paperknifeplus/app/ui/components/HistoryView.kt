@@ -139,9 +139,21 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(filteredItems, key = { it.id }) { item ->
-                    HistoryItem(item, onClick = {
-                        item.uri?.let { uri -> onItemClick(uri, item.name, item.pageCount) }
-                    })
+                    HistoryItem(item, 
+                        onClick = { item.uri?.let { uri -> onItemClick(uri, item.name, item.pageCount) } },
+                        onShare = {
+                            try {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "application/pdf"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, item.uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(android.content.Intent.createChooser(intent, "Share PDF"))
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Cannot share file", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
                 }
                 item(key = "footer_spacer") { Spacer(modifier = Modifier.height(200.dp)) }
             }
@@ -150,8 +162,17 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
 }
 
 @Composable
-fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit) {
+fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onShare: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val entryColor = remember(entry.tool) { 
+        when {
+            entry.tool.contains("Merge", true) || entry.tool.contains("Split", true) -> Color(0xFFF43F5E)
+            entry.tool.contains("Compress", true) || entry.tool.contains("ZIP", true) -> Color(0xFFF59E0B)
+            entry.tool.contains("Rearrange", true) -> Color(0xFF10B981)
+            else -> PaperPink
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -160,7 +181,8 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit) {
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) Color(0xFF09090B) else Color.White
-        )
+        ),
+        border = BorderStroke(1.dp, if (isDark) entryColor.copy(alpha = 0.05f) else entryColor.copy(alpha = 0.03f))
     ) {
         Row(
             modifier = Modifier
@@ -171,22 +193,29 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit) {
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(10.dp),
-                color = PaperPink.copy(alpha = 0.1f)
+                color = entryColor.copy(alpha = 0.1f)
             ) {
-                Icon(entry.icon, null, tint = PaperPink, modifier = Modifier.padding(10.dp))
+                Icon(entry.icon, null, tint = entryColor, modifier = Modifier.padding(10.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(entry.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
                 Text("${entry.tool} • ${entry.size}", fontSize = 11.sp, color = Color.Gray)
             }
+            
+            IconButton(onClick = onShare, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Filled.Share, null, tint = entryColor.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
+            }
+            
+            Spacer(Modifier.width(8.dp))
+
             Text(
-                "DONE",
+                "READY",
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFF06D6A0),
+                color = entryColor,
                 modifier = Modifier
-                    .background(Color(0xFF06D6A0).copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                    .background(entryColor.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             )
         }

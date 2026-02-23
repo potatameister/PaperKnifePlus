@@ -340,11 +340,12 @@ suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, pa
                     val canvas = Canvas(finalBitmap)
                     canvas.drawColor(android.graphics.Color.WHITE)
                     canvas.drawBitmap(sourceBitmap, 0f, 0f, null)
-                    sourceBitmap.recycle()
-
+                    
                     zipOut.putNextEntry(ZipEntry("page_${pageIdx + 1}.$ext"))
                     finalBitmap.compress(cf, if (format == "PNG") 100 else 90, zipOut)
                     zipOut.closeEntry()
+                    
+                    sourceBitmap.recycle()
                     finalBitmap.recycle()
                 }
                 document.close()

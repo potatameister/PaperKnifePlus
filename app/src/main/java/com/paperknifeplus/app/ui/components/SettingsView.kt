@@ -123,8 +123,18 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
 
             item {
                 SettingsGroup("COMMUNITY") {
-                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help PaperKnife+ reach Play Store") { onNavigateToAbout("support") }
-                    SettingsItem(Icons.Outlined.StarOutline, "Hall of Fame", "Our amazing supporters") { onNavigateToAbout("hall") }
+                    SettingsItem(
+                        Icons.Outlined.FavoriteBorder, 
+                        "Support Us", 
+                        "Help PaperKnife+ reach Play Store",
+                        accentColor = Color(0xFFF43F5E)
+                    ) { onNavigateToAbout("support") }
+                    SettingsItem(
+                        Icons.Outlined.StarOutline, 
+                        "Hall of Fame", 
+                        "Our amazing supporters",
+                        accentColor = Color(0xFFF59E0B)
+                    ) { onNavigateToAbout("hall") }
                 }
             }
 
@@ -169,7 +179,7 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
         Surface(
             color = if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF09090B) else Color.White,
             shape = RoundedCornerShape(24.dp),
-            tonalElevation = 1.dp,
+            tonalElevation = 0.dp, // REMOVED ELEVATION
             border = BorderStroke(1.dp, if (MaterialTheme.colorScheme.background == Color.Black) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
         ) {
             Column(modifier = Modifier.padding(vertical = 4.dp)) {
@@ -185,6 +195,7 @@ fun SettingsItem(
     title: String, 
     subtitle: String, 
     enabled: Boolean = true,
+    accentColor: Color? = null,
     onClick: () -> Unit = {}
 ) {
     Row(
@@ -198,14 +209,14 @@ fun SettingsItem(
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(10.dp)),
+                .background(accentColor?.copy(alpha = 0.1f) ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(10.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                tint = accentColor ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
         }
         Spacer(Modifier.width(16.dp))

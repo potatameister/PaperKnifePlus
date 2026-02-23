@@ -113,7 +113,7 @@ fun HomeView(
             }
 
             item(span = { GridItemSpan(2) }, key = "more") {
-                MoreEnginesCard(onClick = { onToolClick("tools") })
+                MoreToolsCard(onClick = { onToolClick("tools") })
             }
             
             item(span = { GridItemSpan(2) }, key = "footer") {
@@ -334,6 +334,14 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
         } else {
             Spacer(Modifier.height(8.dp))
             history.take(2).forEach { entry ->
+                val entryColor = remember(entry.tool) { 
+                    when {
+                        entry.tool.contains("Merge", true) || entry.tool.contains("Split", true) -> Color(0xFFF43F5E)
+                        entry.tool.contains("Compress", true) || entry.tool.contains("ZIP", true) -> Color(0xFFF59E0B)
+                        entry.tool.contains("Rearrange", true) -> Color(0xFF10B981)
+                        else -> PaperPink
+                    }
+                }
                 Row(
                     modifier = Modifier
                         .padding(vertical = 3.dp)
@@ -342,10 +350,10 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
                         },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(entry.icon, null, modifier = Modifier.size(12.dp), tint = PaperPink.copy(alpha = 0.6f))
+                    Icon(entry.icon, null, modifier = Modifier.size(12.dp), tint = entryColor.copy(alpha = 0.6f))
                     Spacer(Modifier.width(10.dp))
                     Text(entry.name, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f), maxLines = 1)
-                    Text(entry.tool.uppercase(), fontSize = 7.sp, fontWeight = FontWeight.Black, color = PaperPink.copy(alpha = 0.5f))
+                    Text(entry.tool.uppercase(), fontSize = 7.sp, fontWeight = FontWeight.Black, color = entryColor.copy(alpha = 0.5f))
                 }
             }
         }
@@ -409,7 +417,7 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
 }
 
 @Composable
-fun MoreEnginesCard(onClick: () -> Unit) {
+fun MoreToolsCard(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = Modifier
@@ -452,7 +460,7 @@ fun MoreEnginesCard(onClick: () -> Unit) {
                     Spacer(modifier = Modifier.width(14.dp))
                     Column {
                         Text(
-                            text = "More Engines",
+                            text = "More Tools",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White,

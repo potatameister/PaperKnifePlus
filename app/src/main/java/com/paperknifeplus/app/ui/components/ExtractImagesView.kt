@@ -127,7 +127,7 @@ fun ExtractImagesView(
                                                 zipOut.putNextEntry(entry)
                                                 bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
                                                 zipOut.closeEntry()
-                                            } else if (xobject is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                                            } else if (xobject is PDFormXObject) {
                                                 extractFromResources(xobject.resources, pIdx)
                                             }
                                         } catch (e: Exception) { }
@@ -141,15 +141,14 @@ fun ExtractImagesView(
                                 document.close()
                                 if (imageCount == 0) throw Exception("No images found in PDF")
                             }
-                            zipOut.flush()
+                            zipOut.finish()
                         }
-                        outputStream.flush()
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "Extract Images", "$extractedCount assets", Icons.Filled.Collections)
+                        SessionManager.addEntry(fileName, "Extract Image", "$extractedCount assets", Icons.Filled.Collections)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -176,8 +175,8 @@ fun ExtractImagesView(
                     }
                     Spacer(Modifier.width(16.dp))
                     Column {
-                        Text("Extract Images", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("SAVE ALL PHOTOS FROM PDF", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        Text("Extract Image", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+                        Text("EXTRACT IMAGES FROM PDFS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }

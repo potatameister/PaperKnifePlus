@@ -145,16 +145,59 @@ fun SupportPage() {
         }
 
         item {
-            AboutMenuItem(Icons.Filled.CardGiftcard, "GitHub Sponsors", "Join our developer community") {
-                try {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sponsors/potatameister")))
-                } catch (e: Exception) {}
-            }
+            Text("WAYS TO HELP", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
             Spacer(Modifier.height(8.dp))
-            AboutMenuItem(Icons.Filled.Coffee, "Buy Me a Coffee", "Buy us a spark of energy") {
-                try {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/potatameister")))
-                } catch (e: Exception) {}
+            
+            // BUY ME A COFFEE (TOP)
+            Surface(
+                onClick = { 
+                    try {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/potatameister")))
+                    } catch (e: Exception) {}
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFFFFDD00).copy(alpha = 0.1f),
+                border = BorderStroke(1.dp, Color(0xFFFFDD00).copy(alpha = 0.2f))
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(40.dp).background(Color(0xFFFFDD00), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.Coffee, null, tint = Color.Black, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Buy Me a Coffee", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                        Text("Instant support for the developer", fontSize = 11.sp, color = Color.Gray)
+                    }
+                    Icon(Icons.Filled.ChevronRight, null, tint = Color.Gray)
+                }
+            }
+            
+            Spacer(Modifier.height(12.dp))
+
+            // GITHUB SPONSORS
+            Surface(
+                onClick = { 
+                    try {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sponsors/potatameister")))
+                    } catch (e: Exception) {}
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFFEA4AAA).copy(alpha = 0.1f),
+                border = BorderStroke(1.dp, Color(0xFFEA4AAA).copy(alpha = 0.2f))
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(40.dp).background(Color(0xFFEA4AAA), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.Favorite, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("GitHub Sponsors", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                        Text("Join our developer community", fontSize = 11.sp, color = Color.Gray)
+                    }
+                    Icon(Icons.Filled.ChevronRight, null, tint = Color.Gray)
+                }
             }
         }
         
