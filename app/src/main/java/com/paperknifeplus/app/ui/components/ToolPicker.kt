@@ -26,14 +26,14 @@ fun ToolPickerContent(initialExpanded: Boolean = false, onToolClick: (String) ->
     
     val quickTools = remember {
         listOf(
-            Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("split", "Split", "EXTRACT", Icons.Filled.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rearrange", "Rearrange", "ORGANIZE", Icons.Filled.SwapVert, "Edit", Color(0xFF10B981), Color(0xFFECFDF5)),
-            Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("sign", "Sign", "SIGNATURE", Icons.Filled.Draw, "Edit", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-            Tool("watermark", "Watermark", "BRANDING", Icons.Filled.BrandingWatermark, "Security", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-            Tool("pdf2img", "To Image", "EXPORT", Icons.Filled.Image, "Convert", Color(0xFFEC4899), Color(0xFFFDF2F8)),
-            Tool("img2pdf", "To PDF", "BUILD", Icons.Filled.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
+            Tool("merge", "Merge", "COMBINE", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("split", "Split", "EXTRACT", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("rearrange", "Rearrange", "ORGANIZE", Icons.Outlined.SwapVert, "Edit", Color(0xFF10B981), Color(0xFFECFDF5)),
+            Tool("compress", "Compress", "OPTIMIZE", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("sign", "Sign", "SIGNATURE", Icons.Outlined.Draw, "Edit", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+            Tool("watermark", "Watermark", "BRANDING", Icons.Outlined.BrandingWatermark, "Security", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
+            Tool("pdf2img", "To Image", "EXPORT", Icons.Outlined.BurstMode, "Convert", Color(0xFFEC4899), Color(0xFFFDF2F8)),
+            Tool("img2pdf", "To PDF", "BUILD", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
         )
     }
 

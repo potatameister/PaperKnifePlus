@@ -24,10 +24,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import androidx.compose.material.icons.outlined.FolderZip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import java.util.zip.ZipOutputStream
 
 @Composable
@@ -38,7 +41,7 @@ fun PdfToZipView(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
-    val accentColor = Color(0xFFF59E0B)
+    val accentColor = Color(0xFF14B8A6)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
@@ -46,6 +49,7 @@ fun PdfToZipView(
     var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
     var processingTime by remember { mutableStateOf("") }
+    var progressCount by remember { mutableIntStateOf(0) }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -69,9 +73,20 @@ fun PdfToZipView(
                     context.contentResolver.openOutputStream(saveUri)?.use { os ->
                         ZipOutputStream(os).use { zipOut ->
                             context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                                zipOut.putNextEntry(ZipEntry(fileName))
-                                inputStream.copyTo(zipOut)
-                                zipOut.closeEntry()
+                                val document = PDDocument.load(inputStream)
+                                val total = document.numberOfPages
+                                for (i in 0 until total) {
+                                    withContext(Dispatchers.Main) { progressCount = i + 1 }
+                                    val singlePageDoc = PDDocument()
+                                    singlePageDoc.addPage(document.getPage(i))
+                                    
+                                    val entryName = fileName.replace(".pdf", "", true) + "_page_${i + 1}.pdf"
+                                    zipOut.putNextEntry(ZipEntry(entryName))
+                                    singlePageDoc.save(zipOut)
+                                    zipOut.closeEntry()
+                                    singlePageDoc.close()
+                                }
+                                document.close()
                             }
                         }
                     }
@@ -79,7 +94,7 @@ fun PdfToZipView(
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "To ZIP", "Archived PDF", Icons.Filled.Build)
+                        SessionManager.addEntry(fileName, "PDF to Pages ZIP", "$pageCount pages archived", Icons.Outlined.FolderZip)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -105,7 +120,7 @@ fun PdfToZipView(
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("PDF to ZIP", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("ARCHIVE PDF FILE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        Text("PAGES TO ARCHIVE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
@@ -117,9 +132,9 @@ fun PdfToZipView(
                     SelectionGrid(
                         onSelect = { pickLauncher.launch("application/pdf") }, 
                         isDark = isDark,
-                        icon = Icons.Filled.Build,
+                        icon = Icons.Outlined.FolderZip,
                         title = "Tap to enter file",
-                        subtitle = "CREATE ZIP ARCHIVE",
+                        subtitle = "CREATE PAGES ARCHIVE",
                         accentColor = accentColor,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -137,12 +152,12 @@ fun PdfToZipView(
                         
                         Spacer(Modifier.height(32.dp))
                         Text("ARCHIVE INFO", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                        Text("This will wrap '$fileName' in a ZIP container for easier distribution.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                        Text("This tool will split '$fileName' into $pageCount separate PDF files (one for each page) and bundle them into a single ZIP archive for easier distribution.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
                         
                         Spacer(Modifier.weight(1f))
                         
                         Button(
-                            onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + ".zip") }, 
+                            onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-pages.zip") }, 
                             modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp), 
                             shape = RoundedCornerShape(20.dp), 
                             colors = ButtonDefaults.buttonColors(containerColor = accentColor)
@@ -155,20 +170,20 @@ fun PdfToZipView(
                     ProcessingStateView(
                         accentColor = accentColor,
                         uri = selectedUri,
-                        text = "Creating archive...",
-                        current = 0,
-                        total = 0,
+                        text = "Archiving page $progressCount of $pageCount...",
+                        current = progressCount,
+                        total = pageCount,
                         showWarning = false
                     )
                 }
                 ToolState.SUCCESS -> {
                     SuccessView(
                         message = "Archive Created",
-                        subMessage = "PDF saved inside ZIP successfully",
+                        subMessage = "$pageCount individual pages saved to ZIP",
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { selectedUri = null; currentState = ToolState.SELECTING },
-                        onPreview = { selectedUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
+                        showPreviewButton = false,
                         accentColor = accentColor
                     )
                 }

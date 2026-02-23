@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
+import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -112,23 +113,30 @@ fun ExtractImagesView(
                             context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                                 val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                                 var imageCount = 0
-                                document.pages.forEachIndexed { pIdx, page ->
-                                    val resources = page.resources
+
+                                fun extractFromResources(resources: com.tom_roush.pdfbox.pdmodel.PDResources, pIdx: Int) {
                                     for (name in resources.xObjectNames) {
                                         try {
                                             val xobject = resources.getXObject(name)
                                             if (xobject is PDImageXObject) {
                                                 imageCount++
-                                                withContext(Dispatchers.Main) { extractedCount = imageCount }
+                                                scope.launch(Dispatchers.Main) { extractedCount = imageCount }
                                                 val bitmap = xobject.image
                                                 val entry = ZipEntry("page_${pIdx + 1}_img_$imageCount.jpg")
                                                 zipOut.putNextEntry(entry)
                                                 bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
                                                 zipOut.closeEntry()
+                                            } else if (xobject is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                                                extractFromResources(xobject.resources, pIdx)
                                             }
                                         } catch (e: Exception) { }
                                     }
                                 }
+
+                                document.pages.forEachIndexed { pIdx, page ->
+                                    extractFromResources(page.resources, pIdx)
+                                }
+                                
                                 document.close()
                                 if (imageCount == 0) throw Exception("No images found in PDF")
                             }
@@ -252,7 +260,7 @@ fun ExtractImagesView(
                                 extractedCount = 0
                                 currentState = ToolState.SELECTING 
                             },
-                            onPreview = { selectedUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
+                            showPreviewButton = false,
                             accentColor = accentColor
                         )
                     }

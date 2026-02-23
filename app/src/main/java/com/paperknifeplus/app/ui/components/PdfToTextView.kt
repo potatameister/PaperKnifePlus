@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.FindInPage
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -191,18 +192,22 @@ fun PdfToTextView(
                     ToolState.SUCCESS -> {
                         Column(Modifier.fillMaxSize()) {
                             Row(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text("EXTRACTED CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                                Column {
+                                    Text("EXTRACTED CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                                    Text("${extractedText.length} CHARACTERS FOUND", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                                }
                                 Row {
                                     IconButton(onClick = { 
                                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                         val clip = android.content.ClipData.newPlainText("PDF Text", extractedText)
                                         clipboard.setPrimaryClip(clip)
                                         Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-                                    }) {
-                                        Icon(Icons.Filled.ContentCopy, null, tint = accentColor)
+                                    }, modifier = Modifier.background(accentColor.copy(alpha = 0.1f), CircleShape).size(36.dp)) {
+                                        Icon(Icons.Filled.ContentCopy, null, tint = accentColor, modifier = Modifier.size(18.dp))
                                     }
-                                    IconButton(onClick = { saveTxtLauncher.launch(fileName.replace(".pdf", ".txt")) }) {
-                                        Icon(Icons.Filled.Save, null, tint = accentColor)
+                                    Spacer(Modifier.width(8.dp))
+                                    IconButton(onClick = { saveTxtLauncher.launch(fileName.replace(".pdf", ".txt")) }, modifier = Modifier.background(accentColor.copy(alpha = 0.1f), CircleShape).size(36.dp)) {
+                                        Icon(Icons.Filled.Save, null, tint = accentColor, modifier = Modifier.size(18.dp))
                                     }
                                 }
                             }
@@ -213,27 +218,29 @@ fun PdfToTextView(
                                 shape = RoundedCornerShape(20.dp),
                                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
                             ) {
-                                Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {
+                                Box(Modifier.padding(16.dp)) {
                                     if (extractedText.trim().isEmpty()) {
-                                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                Icon(Icons.Filled.Build, null, modifier = Modifier.size(48.dp).alpha(0.2f))
-                                                Text("No text found. Document might be a scan.", fontSize = 12.sp, color = Color.Gray, textAlign = TextAlign.Center)
-                                            }
+                                        Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(Icons.Filled.FindInPage, null, modifier = Modifier.size(48.dp).alpha(0.2f), tint = accentColor)
+                                            Text("No text detected. The document might be a high-res scan.", fontSize = 11.sp, color = Color.Gray, textAlign = TextAlign.Center)
                                         }
                                     } else {
-                                        Text(text = extractedText, fontSize = 12.sp, fontFamily = FontFamily.Monospace, lineHeight = 18.sp)
+                                        Column(Modifier.verticalScroll(rememberScrollState())) {
+                                            Text(text = extractedText, fontSize = 12.sp, fontFamily = FontFamily.Monospace, lineHeight = 18.sp)
+                                        }
                                     }
                                 }
                             }
                             
+                            Spacer(Modifier.height(16.dp))
+                            
                             SuccessView(
                                 message = "Text Extracted",
-                                subMessage = "Found ${extractedText.length} characters",
+                                subMessage = "Successfully read document layers",
                                 processingTime = processingTime,
                                 onDone = onBack,
                                 onProcessMore = { selectedUri = null; extractedText = ""; currentState = ToolState.SELECTING },
-                                onPreview = { selectedUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
+                                showPreviewButton = false,
                                 accentColor = accentColor
                             )
                         }

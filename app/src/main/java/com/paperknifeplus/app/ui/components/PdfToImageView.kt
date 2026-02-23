@@ -133,17 +133,28 @@ fun PdfToImageView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("PDF to Image", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("EXTRACT PAGES AS IMAGES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("PDF to Image", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("PLATINUM EXPORT ENGINE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -164,24 +175,65 @@ fun PdfToImageView(
                 }
                 ToolState.CONFIGURING -> {
                     Column(Modifier.fillMaxSize()) {
-                        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("SELECT PAGES & EXPORT SETTINGS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                FilterChip(
-                                    selected = format == "JPEG",
-                                    onClick = { format = "JPEG" },
-                                    label = { Text("JPG", fontSize = 10.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = accentColor, selectedLabelColor = Color.White)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                FilterChip(
-                                    selected = quality == "HD",
-                                    onClick = { quality = if (quality == "HD") "Standard" else "HD" },
-                                    label = { Text("HD", fontSize = 10.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = accentColor, selectedLabelColor = Color.White)
-                                )
+                        Spacer(Modifier.height(16.dp))
+                        
+                        // Settings Panel
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text("EXPORT CONFIGURATION", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
+                                Spacer(Modifier.height(12.dp))
+                                
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("FORMAT", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            listOf("JPG", "PNG", "WebP").forEach { f ->
+                                                val isSel = format == f
+                                                Surface(
+                                                    onClick = { format = f },
+                                                    modifier = Modifier.weight(1f).height(32.dp),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (isSel) accentColor else Color.Gray.copy(0.1f)
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Text(f, fontSize = 10.sp, fontWeight = FontWeight.Black, color = if (isSel) Color.White else Color.Gray)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    Column(Modifier.weight(1f)) {
+                                        Text("QUALITY", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            listOf("Standard", "HD", "Ultra HD").forEach { q ->
+                                                val isSel = quality == q
+                                                Surface(
+                                                    onClick = { quality = q },
+                                                    modifier = Modifier.weight(1f).height(32.dp),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (isSel) accentColor else Color.Gray.copy(0.1f)
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Text(q.replace(" HD", "+"), fontSize = 10.sp, fontWeight = FontWeight.Black, color = if (isSel) Color.White else Color.Gray)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
+
+                        Spacer(Modifier.height(16.dp))
+                        Text("SELECT PAGES TO EXPORT", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp))
+                        Spacer(Modifier.height(8.dp))
 
                         Box(modifier = Modifier.weight(1f)) {
                             LazyVerticalGrid(
@@ -189,7 +241,7 @@ fun PdfToImageView(
                                 modifier = Modifier.fillMaxSize(),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                                contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                                contentPadding = PaddingValues(bottom = 100.dp)
                             ) {
                                 items(pageCount, key = { it }) { index ->
                                     val isSelected = selectedPages.contains(index)
@@ -262,7 +314,7 @@ fun PdfToImageView(
                         processingTime = processingTime,
                         onDone = onBack,
                         onProcessMore = { selectedUri = null; currentState = ToolState.SELECTING },
-                        onPreview = { selectedUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
+                        showPreviewButton = false,
                         accentColor = accentColor
                     )
                 }

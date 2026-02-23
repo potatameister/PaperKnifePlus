@@ -10,9 +10,11 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.LruCache
+import androidx.compose.material.icons.outlined.FolderZip
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
@@ -319,18 +321,31 @@ suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, pa
             context.contentResolver.openInputStream(pdfUri)?.use { inputStream ->
                 val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
                 val renderer = PDFRenderer(document)
-                val scale = when(quality) { "HD" -> 2.0f; "Standard" -> 1.5f; else -> 1.0f }
-                val cf = if (format == "PNG") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
-                val ext = if (format == "PNG") "png" else "jpg"
+                val scale = when(quality) { "Ultra HD" -> 3.0f; "HD" -> 2.0f; "Standard" -> 1.5f; else -> 1.0f }
+                
+                val cf = when(format) {
+                    "PNG" -> Bitmap.CompressFormat.PNG
+                    "WebP" -> if (android.os.Build.VERSION.SDK_INT >= 30) Bitmap.CompressFormat.WEBP_LOSSLESS else Bitmap.CompressFormat.WEBP
+                    else -> Bitmap.CompressFormat.JPEG
+                }
+                val ext = format.lowercase()
                 
                 selectedPages.forEachIndexed { index, pageIdx ->
                     onProgress(index + 1, selectedPages.size)
-                    // Use ImageType.RGB to ensure color is preserved
-                    val bitmap = renderer.renderImage(pageIdx, scale, ImageType.RGB)
+                    // Render to ARGB to capture everything correctly
+                    val sourceBitmap = renderer.renderImage(pageIdx, scale, ImageType.ARGB)
+                    
+                    // Flatten onto white background to ensure no transparency issues in JPEG/WebP
+                    val finalBitmap = Bitmap.createBitmap(sourceBitmap.width, sourceBitmap.height, Bitmap.Config.ARGB_8888)
+                    val canvas = Canvas(finalBitmap)
+                    canvas.drawColor(android.graphics.Color.WHITE)
+                    canvas.drawBitmap(sourceBitmap, 0f, 0f, null)
+                    sourceBitmap.recycle()
+
                     zipOut.putNextEntry(ZipEntry("page_${pageIdx + 1}.$ext"))
-                    bitmap.compress(cf, 90, zipOut)
+                    finalBitmap.compress(cf, if (format == "PNG") 100 else 90, zipOut)
                     zipOut.closeEntry()
-                    bitmap.recycle()
+                    finalBitmap.recycle()
                 }
                 document.close()
             }

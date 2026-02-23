@@ -362,10 +362,6 @@ fun UltraPreview(
                         Text("PDF VIEWER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                     }
 
-                    IconButton(onClick = { showToolPicker = true }) {
-                        Icon(Icons.Filled.Add, null, tint = PaperPink, modifier = Modifier.size(22.dp))
-                    }
-                    
                     IconButton(onClick = {
                         try {
                             val intent = Intent(Intent.ACTION_SEND).apply {
@@ -379,6 +375,10 @@ fun UltraPreview(
                         }
                     }) {
                         Icon(Icons.Filled.Share, null, tint = MaterialTheme.colorScheme.onSurface)
+                    }
+
+                    IconButton(onClick = { showToolPicker = true }) {
+                        Icon(Icons.Filled.Add, null, tint = PaperPink, modifier = Modifier.size(22.dp))
                     }
                 }
                 Divider(color = Color.Gray.copy(alpha = 0.1f))

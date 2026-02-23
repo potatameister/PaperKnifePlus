@@ -104,30 +104,32 @@ fun ImageToPdfView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Image to PDF", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("CONVERT PHOTOS TO DOCUMENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Image to PDF", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("PHOTO TO DOCUMENT CONVERTER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUris.isNotEmpty() && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { pickLauncher.launch("image/*") }) {
+                                Icon(Icons.Filled.Add, null, modifier = Modifier.size(14.dp), tint = accentColor)
+                                Spacer(Modifier.width(4.dp))
+                                Text("ADD", fontSize = 11.sp, fontWeight = FontWeight.Black, color = accentColor)
+                            }
+                        }
                     }
                 }
-            }
-        },
-        floatingActionButton = {
-            if (currentState == ToolState.CONFIGURING && selectedUris.isNotEmpty()) {
-                FloatingActionButton(
-                    onClick = { pickLauncher.launch("image/*") },
-                    containerColor = accentColor,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.padding(bottom = 16.dp)
-                ) { Icon(Icons.Filled.Add, "Add") }
             }
         }
     ) { padding ->
@@ -138,61 +140,129 @@ fun ImageToPdfView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("image/*") },
                             isDark = isDark,
-                            icon = Icons.Filled.AddCircle,
+                            icon = Icons.Outlined.PictureAsPdf,
                             title = "Tap to select images",
                             subtitle = "JPG, PNG, OR WEBP",
                             accentColor = accentColor,
                             modifier = Modifier.weight(1f)
                         )
                     } else {
+                        var selectedIndex by remember { mutableStateOf<Int?>(null) }
+                        
                         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("REORDER BY TAPPING ARROWS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                            Column {
+                                Text("REORDER ASSETS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                                Text("${selectedUris.size} IMAGES SELECTED", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                            }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 FilterChip(
                                     selected = pageSize == "Fit",
                                     onClick = { pageSize = "Fit" },
-                                    label = { Text("Original Size", fontSize = 10.sp) },
+                                    label = { Text("ORIGINAL", fontSize = 10.sp) },
                                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = accentColor, selectedLabelColor = Color.White)
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 FilterChip(
                                     selected = pageSize == "A4",
                                     onClick = { pageSize = "A4" },
-                                    label = { Text("A4 Paper", fontSize = 10.sp) },
+                                    label = { Text("A4 PAPER", fontSize = 10.sp) },
                                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = accentColor, selectedLabelColor = Color.White)
                                 )
                             }
                         }
 
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
+                            columns = GridCells.Fixed(2),
                             modifier = Modifier.weight(1f),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
                             itemsIndexed(selectedUris) { index, uri ->
-                                Box(modifier = Modifier.aspectRatio(0.8f).clip(RoundedCornerShape(12.dp)).background(if (isDark) Color(0xFF18181B) else Color(0xFFF4F4F5))) {
+                                val isSelected = selectedIndex == index
+                                Box(
+                                    modifier = Modifier
+                                        .aspectRatio(0.707f)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(if (isDark) Color(0xFF18181B) else Color(0xFFF4F4F5))
+                                        .border(BorderStroke(2.dp, if (isSelected) accentColor else Color.Transparent), RoundedCornerShape(16.dp))
+                                        .clickable { selectedIndex = if (isSelected) null else index }
+                                ) {
                                     Image(painter = rememberAsyncImagePainter(model = uri), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                     
-                                    // Subtle Controls
-                                    Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(20.dp).clickable { selectedUris = selectedUris.filterIndexed { i, _ -> i != index } }, color = Color.Black.copy(0.5f), shape = CircleShape) {
-                                        Icon(Icons.Filled.Close, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                    if (isSelected) {
+                                        Box(modifier = Modifier.fillMaxSize().background(accentColor.copy(alpha = 0.1f)))
+                                        Surface(
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp),
+                                            color = accentColor,
+                                            shape = CircleShape
+                                        ) {
+                                            Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                        }
                                     }
 
-                                    Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                        if (index > 0) {
-                                            IconButton(
-                                                onClick = { val list = selectedUris.toMutableList(); val tmp = list[index]; list[index] = list[index-1]; list[index-1] = tmp; selectedUris = list },
-                                                modifier = Modifier.size(24.dp).background(Color.Black.copy(0.4f), CircleShape)
-                                            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
-                                        }
-                                        
-                                        if (index < selectedUris.size - 1) {
-                                            IconButton(
-                                                onClick = { val list = selectedUris.toMutableList(); val tmp = list[index]; list[index] = list[index+1]; list[index+1] = tmp; selectedUris = list },
-                                                modifier = Modifier.size(24.dp).background(Color.Black.copy(0.4f), CircleShape)
-                                            ) { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
-                                        }
+                                    Surface(
+                                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+                                        color = Color.Black.copy(0.6f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("${index + 1}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                                    }
+                                    
+                                    IconButton(
+                                        onClick = { selectedUris = selectedUris.filterIndexed { i, _ -> i != index }; if (isSelected) selectedIndex = null },
+                                        modifier = Modifier.align(Alignment.TopStart).padding(4.dp).size(28.dp).background(Color.Black.copy(0.4f), CircleShape)
+                                    ) {
+                                        Icon(Icons.Filled.Close, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                    }
+                                }
+                            }
+                        }
+
+                        // REORDER CONTROLS (Floating style)
+                        if (selectedIndex != null) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(20.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    horizontalArrangement = Arrangement.SpaceAround,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            val current = selectedIndex!!
+                                            if (current > 0) {
+                                                val list = selectedUris.toMutableList()
+                                                val item = list.removeAt(current)
+                                                list.add(current - 1, item)
+                                                selectedUris = list
+                                                selectedIndex = current - 1
+                                            }
+                                        },
+                                        enabled = selectedIndex!! > 0
+                                    ) {
+                                        Icon(Icons.Filled.ArrowBackIos, null, tint = if (selectedIndex!! > 0) accentColor else Color.Gray)
+                                    }
+
+                                    Text("POSITION: ${selectedIndex!! + 1}", fontSize = 10.sp, fontWeight = FontWeight.Black)
+
+                                    IconButton(
+                                        onClick = {
+                                            val current = selectedIndex!!
+                                            if (current < selectedUris.size - 1) {
+                                                val list = selectedUris.toMutableList()
+                                                val item = list.removeAt(current)
+                                                list.add(current + 1, item)
+                                                selectedUris = list
+                                                selectedIndex = current + 1
+                                            }
+                                        },
+                                        enabled = selectedIndex!! < selectedUris.size - 1
+                                    ) {
+                                        Icon(Icons.Filled.ArrowForwardIos, null, tint = if (selectedIndex!! < selectedUris.size - 1) accentColor else Color.Gray)
                                     }
                                 }
                             }

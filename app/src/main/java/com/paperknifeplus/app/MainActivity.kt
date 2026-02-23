@@ -405,6 +405,7 @@ fun FixedTitanBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface) // Solid background for nav bar area
             .navigationBarsPadding()
             .height(90.dp),
         contentAlignment = Alignment.BottomCenter
