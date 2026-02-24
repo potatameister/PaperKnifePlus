@@ -196,17 +196,28 @@ fun SplitView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Split", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("EXTRACT PAGES FROM PDF", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Split", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("EXTRACT PAGES FROM PDF", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -380,18 +391,22 @@ fun SplitView(
                     fileName = fileToUnlock!!,
                     onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
                     onUnlocked = { pass ->
-                        unlockPassword = pass
                         isFileLoading = true
                         scope.launch(Dispatchers.IO) {
                             val decryptedUri = decryptToCache(context, selectedUri!!, pass)
                             if (decryptedUri != null) {
                                 val count = getPageCount(context, decryptedUri, null)
                                 withContext(Dispatchers.Main) { 
-                                    selectedUri = decryptedUri
-                                    pageCount = count
-                                    currentState = ToolState.CONFIGURING
+                                    if (count > 0) {
+                                        unlockPassword = pass
+                                        selectedUri = decryptedUri
+                                        pageCount = count
+                                        currentState = ToolState.CONFIGURING
+                                        fileToUnlock = null
+                                    } else {
+                                        Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    }
                                     isFileLoading = false 
-                                    fileToUnlock = null
                                 }
                             } else {
                                 withContext(Dispatchers.Main) { 
