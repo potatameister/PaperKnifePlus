@@ -52,7 +52,9 @@ fun SuccessView(
         Text(message, fontWeight = FontWeight.Black, fontSize = 28.sp, letterSpacing = (-0.5).sp)
         
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 8.dp)) {
-            Text(subMessage, fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            if (subMessage.isNotBlank()) {
+                Text(subMessage, fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            }
             if (processingTime.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Surface(

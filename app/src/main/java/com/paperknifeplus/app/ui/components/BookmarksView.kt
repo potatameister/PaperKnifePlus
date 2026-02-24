@@ -128,7 +128,10 @@ fun BookmarksView(
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
+                        if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
+                        
                         val target = PDDocument()
+                        if (target.isEncrypted) target.isAllSecurityToBeRemoved = true
                         
                         // Extract only pages that have bookmarks
                         val bookmarkedIndices = bookmarks.map { it.pageIndex }.toSet().sorted()
@@ -164,6 +167,8 @@ fun BookmarksView(
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                         val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
+                        if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
+                        
                         val outline = PDDocumentOutline()
                         document.documentCatalog.documentOutline = outline
                         
