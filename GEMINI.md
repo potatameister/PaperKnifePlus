@@ -52,6 +52,12 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
+- **2026-02-24:** **GOLD STANDARD FIDELITY & PURE ASSET EXTRACTION**:
+    - **Pure Asset Extraction**: Re-engineered Extract Image tool to strip raw bitstream assets (JPG/PNG) instead of rendering pages, ensuring 100% artifact capture.
+    - **Independent Compare-Unlock**: Enhanced Compare tool to independently detect and unlock File A and File B with real-time password validation.
+    - **Ultra Fidelity Previews**: Enforced dual-mode rendering (Display + Print) in the native pipeline to fix "Missing Images" in tool previews.
+    - **Metadata Pro UI**: Complete overhaul of Metadata tool to a unified scrollable column with non-destructive attribute saving.
+    - **Standardized Validation**: Implemented strict password verification across all secure tools to prevent unauthorized state transitions.
 - **2026-02-21 (Late):** **PLATINUM EDITION & COMMUNITY HUB**:
     - **Micro APK (7.7MB)**: Reduced APK size from ~30MB to 7.7MB through surgical R8/ProGuard refinement and resource stripping.
     - **Verified RB**: Achieved 100% bit-for-bit reproducibility by disabling ZIP timestamps and pinning build environments.

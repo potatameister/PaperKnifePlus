@@ -54,6 +54,7 @@ fun UnifiedPdfPreview(
     pageCount: Int,
     mode: PreviewMode = PreviewMode.GRID,
     password: String? = null,
+    isGrayscale: Boolean = false,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     selectedPages: Set<Int>? = null,
     onToggleSelection: ((Int) -> Unit)? = null,
@@ -85,7 +86,8 @@ fun UnifiedPdfPreview(
                         painter = painter,
                         contentDescription = "Document Cover",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Fit,
+                        colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setSaturation(0f) }) else null
                     )
                     if (painter.state is AsyncImagePainter.State.Loading) {
                         CircularProgressIndicator(color = accentColor, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
@@ -118,6 +120,7 @@ fun UnifiedPdfPreview(
                         uri = uri,
                         index = pageIdx,
                         password = password,
+                        isGrayscale = isGrayscale,
                         imageLoader = imageLoader,
                         accentColor = accentColor,
                         onClick = { onToggleSelection?.invoke(index) },
@@ -167,7 +170,7 @@ fun UnifiedPdfPreview(
                 val isSelected = selectedPages?.contains(index) == true
                 val rotation = pageRotations?.get(index) ?: 0
                 PdfPageItem(
-                    uri = uri, index = index, password = password, imageLoader = imageLoader, accentColor = accentColor, rotation = rotation,
+                    uri = uri, index = index, password = password, isGrayscale = isGrayscale, imageLoader = imageLoader, accentColor = accentColor, rotation = rotation,
                     onClick = { 
                         if (mode == PreviewMode.ROTATE && onRotatePage != null) onRotatePage(index)
                         else if (onToggleSelection != null) onToggleSelection(index)
@@ -218,6 +221,7 @@ fun PdfPageItem(
     accentColor: Color = MaterialTheme.colorScheme.primary,
     scale: Float = 0.6f,
     rotation: Int = 0,
+    isGrayscale: Boolean = false,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val request = remember(uri, index, password, scale, rotation) { PdfPageRequest(uri, index, password, scale, rotation) }
@@ -230,7 +234,8 @@ fun PdfPageItem(
         val painter = rememberAsyncImagePainter(model = request, imageLoader = imageLoader)
         Image(
             painter = painter, contentDescription = "Page ${index + 1}",
-            modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit
+            modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit,
+            colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setSaturation(0f) }) else null
         )
         if (painter.state is AsyncImagePainter.State.Loading) {
             CircularProgressIndicator(color = accentColor, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)

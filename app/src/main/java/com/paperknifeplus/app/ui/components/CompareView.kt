@@ -193,7 +193,8 @@ fun CompareView(
                             }
                         }
                     },
-                    accentColor = accentColor
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
                 )
             }
         }

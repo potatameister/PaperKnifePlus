@@ -46,8 +46,8 @@ fun GrayscaleView(
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
-    var previewUri by remember { mutableStateOf<Uri?>(null) }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
     
@@ -55,11 +55,14 @@ fun GrayscaleView(
     var showLoadingWarning by remember { mutableStateOf(false) }
     var progressPage by remember { mutableIntStateOf(0) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
+    
+    var isLivePreview by remember { mutableStateOf(true) }
 
     fun handleFileSelection(uri: Uri) {
         selectedUri = uri
         val details = getUriDetails(context, uri)
         fileName = details.name
+        fileSize = details.size
         isFileLoading = true
         scope.launch(Dispatchers.IO) {
             val isEncrypted = checkIsEncryptedLocal(context, uri)
@@ -96,38 +99,14 @@ fun GrayscaleView(
         uri?.let { handleFileSelection(it) }
     }
 
-    suspend fun generatePreview() {
-        currentState = ToolState.PROCESSING
-        val startTime = System.currentTimeMillis()
-        withContext(Dispatchers.IO) {
-            try {
-                val tempFile = java.io.File(context.cacheDir, "preview_grayscale_${System.currentTimeMillis()}.pdf")
-                val tempUri = Uri.fromFile(tempFile)
-                performGrayscaleRewrite(context, selectedUri!!, tempUri, if (unlockPassword.isEmpty()) null else unlockPassword) { current, total ->
-                    progressPage = current
-                }
-                withContext(Dispatchers.Main) {
-                    previewUri = tempUri
-                    currentState = ToolState.PREVIEW_RESULT
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Preview failed", Toast.LENGTH_SHORT).show()
-                    currentState = ToolState.CONFIGURING
-                }
-            }
-        }
-    }
-
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
             currentState = ToolState.PROCESSING
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    context.contentResolver.openInputStream(previewUri!!)?.use { inputStream ->
-                        val document = PDDocument.load(inputStream)
-                        saveAndFlush(context, document, saveUri)
+                    performGrayscaleRewrite(context, selectedUri!!, saveUri, if (unlockPassword.isEmpty()) null else unlockPassword) { current, total ->
+                        progressPage = current
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
@@ -140,7 +119,7 @@ fun GrayscaleView(
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                        currentState = ToolState.PREVIEW_RESULT
+                        currentState = ToolState.CONFIGURING
                     }
                 }
             }
@@ -151,18 +130,29 @@ fun GrayscaleView(
 
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING && currentState != ToolState.PREVIEW_RESULT) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Grayscale", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("CONVERT PDF TO B&W", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Grayscale", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("CONVERT PDF TO B&W", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -185,36 +175,61 @@ fun GrayscaleView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                                    Text("• $pageCount PAGES READY", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
-                                }
-                            }
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Spacer(Modifier.height(16.dp))
                             
-                            Box(modifier = Modifier.weight(1f)) {
+                            Box(modifier = Modifier.weight(1f).padding(horizontal = 20.dp)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
                                     mode = PreviewMode.GRID,
+                                    isGrayscale = isLivePreview,
                                     password = null, 
                                     accentColor = accentColor
                                 )
                             }
                             
+                            Spacer(Modifier.height(16.dp))
+                            
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(24.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("LIVE PREVIEW", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                                        Text("Visualize colors removal instantly", fontSize = 11.sp, color = Color.Gray)
+                                    }
+                                    Switch(
+                                        checked = isLivePreview, 
+                                        onCheckedChange = { isLivePreview = it },
+                                        colors = SwitchDefaults.colors(checkedThumbColor = accentColor, checkedTrackColor = accentColor.copy(alpha = 0.3f))
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(24.dp))
+                            
                             Button(
-                                onClick = { scope.launch { generatePreview() } },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
+                                onClick = { 
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-grayscale.pdf"
+                                    saveLauncher.launch(defaultName) 
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(60.dp),
                                 shape = RoundedCornerShape(20.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {
-                                Text("GENERATE PREVIEW", fontWeight = FontWeight.Black)
+                                Text("CONVERT & SAVE PDF", fontWeight = FontWeight.Black)
                             }
+                            Spacer(Modifier.height(32.dp))
                         }
                     }
                     ToolState.PROCESSING -> {
@@ -226,18 +241,6 @@ fun GrayscaleView(
                             current = progressPage,
                             total = pageCount,
                             showWarning = showLoadingWarning
-                        )
-                    }
-                    ToolState.PREVIEW_RESULT -> {
-                        SynchronizedComparison(
-                            originalUri = selectedUri!!,
-                            modifiedUri = previewUri!!,
-                            onBack = { currentState = ToolState.CONFIGURING },
-                            onConfirm = { 
-                                val defaultName = fileName.replace(".pdf", "", true) + "-grayscale.pdf"
-                                saveLauncher.launch(defaultName)
-                            },
-                            accentColor = accentColor
                         )
                     }
                     ToolState.SUCCESS -> {

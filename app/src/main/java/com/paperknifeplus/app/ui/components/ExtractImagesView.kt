@@ -126,19 +126,22 @@ fun ExtractImagesView(
                                             processedObjects.add(cosObj)
 
                                             if (xobject is PDImageXObject) {
-                                                imageCount++
-                                                scope.launch(Dispatchers.Main) { extractedCount = imageCount }
-                                                
-                                                val suffix = xobject.suffix ?: "jpg"
-                                                val entry = ZipEntry("asset_${imageCount}_p${pIdx + 1}.$suffix")
-                                                zipOut.putNextEntry(entry)
-                                                
-                                                // NITRO: Extract RAW bytes from stream for 100% fidelity and zero rendering overhead
-                                                xobject.createInputStream().use { imageStream ->
-                                                    imageStream.copyTo(zipOut)
+                                                val bitmap = xobject.image
+                                                if (bitmap != null) {
+                                                    imageCount++
+                                                    scope.launch(Dispatchers.Main) { extractedCount = imageCount }
+                                                    
+                                                    val suffix = xobject.suffix ?: "jpg"
+                                                    val entry = ZipEntry("asset_${imageCount}_p${pIdx + 1}.$suffix")
+                                                    zipOut.putNextEntry(entry)
+                                                    
+                                                    // NITRO: Compress Bitmap to ensure compatibility across all viewers
+                                                    val format = if (suffix.lowercase() == "png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+                                                    bitmap.compress(format, 90, zipOut)
+                                                    
+                                                    zipOut.closeEntry()
+                                                    bitmap.recycle() // Clean up
                                                 }
-                                                
-                                                zipOut.closeEntry()
                                             } else if (xobject is PDFormXObject) {
                                                 extractFromResources(xobject.resources, pIdx)
                                             }

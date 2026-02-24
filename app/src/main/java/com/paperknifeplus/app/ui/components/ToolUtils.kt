@@ -249,24 +249,50 @@ suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: 
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
         val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
         val targetDoc = PDDocument()
-        val renderer = PDFRenderer(sourceDoc)
+        
+        // NITRO: Use native renderer if possible for speed and 100% visual fidelity
+        val pfd = context.contentResolver.openFileDescriptor(inputUri, "r")
+        val nativeRenderer = if (pfd != null && password == null) android.graphics.pdf.PdfRenderer(pfd) else null
+        val pdfboxRenderer = PDFRenderer(sourceDoc)
         val total = sourceDoc.numberOfPages
         
         for (i in 0 until total) {
             onProgress(i + 1, total)
-            // Render to high-res bitmap (2.0f) to ensure clarity
-            val rgbBitmap = renderer.renderImage(i, 2.0f, ImageType.RGB)
+            
+            val page = sourceDoc.getPage(i)
+            val width = page.mediaBox.width * 2.0f
+            val height = page.mediaBox.height * 2.0f
+            
+            val rgbBitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(rgbBitmap)
+            canvas.drawColor(android.graphics.Color.WHITE)
+            
+            if (nativeRenderer != null && i < nativeRenderer.pageCount) {
+                val nativePage = nativeRenderer.openPage(i)
+                // Render both modes for absolute fidelity
+                nativePage.render(rgbBitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                nativePage.render(rgbBitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+                nativePage.close()
+            } else {
+                val renderedPage = pdfboxRenderer.renderImage(i, 2.0f, ImageType.RGB)
+                canvas.drawBitmap(renderedPage, 0f, 0f, null)
+                renderedPage.recycle()
+            }
+            
             val grayBitmap = toGrayscaleBitmap(rgbBitmap)
             rgbBitmap.recycle()
             
             // High quality compression (0.9f)
             val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.9f)
-            val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
-            targetDoc.addPage(page)
-            PDPageContentStream(targetDoc, page).use { it.drawImage(pdImage, 0f, 0f) }
+            val newPage = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
+            targetDoc.addPage(newPage)
+            PDPageContentStream(targetDoc, newPage).use { it.drawImage(pdImage, 0f, 0f) }
             grayBitmap.recycle()
         }
+        
         saveAndFlush(context, targetDoc, outputUri)
+        nativeRenderer?.close()
+        pfd?.close()
         sourceDoc.close()
     }
 }
