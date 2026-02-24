@@ -54,7 +54,8 @@ fun PageLightbox(
     onDismiss: () -> Unit,
     selectedPages: Set<Int>? = null,
     onToggleSelection: ((Int) -> Unit)? = null,
-    isGrayscale: Boolean = false
+    isGrayscale: Boolean = false,
+    itemOverlay: @Composable (BoxScope.(Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
@@ -161,9 +162,7 @@ fun PageLightbox(
                     ) {
                         val painter = rememberAsyncImagePainter(request, imageLoader)
                         
-                        Image(
-                            painter = painter,
-                            contentDescription = null,
+                        Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer(
@@ -172,9 +171,19 @@ fun PageLightbox(
                                     translationX = animatedOffset.x,
                                     translationY = animatedOffset.y
                                 ),
-                            contentScale = ContentScale.Fit,
-                            colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null
-                        )
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painter,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit,
+                                colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null
+                            )
+                            
+                            // PRO: Apply tool overlay (page numbers, etc) inside the zoomable layer
+                            itemOverlay?.invoke(this, pageIndex)
+                        }
 
                         if (painter.state is AsyncImagePainter.State.Loading) {
                             CircularProgressIndicator(color = Color.White, modifier = Modifier.size(48.dp))

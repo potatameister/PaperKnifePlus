@@ -123,7 +123,6 @@ fun CompressView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
-                        spaceSavedText = "REDUCED BY $spaceSaved% (${fileSize} → ${newDetails.size})"
                         SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Filled.FlashOn, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
@@ -268,7 +267,7 @@ fun CompressView(
                     ToolState.SUCCESS -> {
                         SuccessView(
                             message = "Compression Complete",
-                            subMessage = spaceSavedText,
+                            subMessage = "", // REMOVED 0B BUG
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
@@ -278,12 +277,7 @@ fun CompressView(
                                 currentState = ToolState.SELECTING 
                             },
                             onPreview = {
-                                outputUri?.let { uri ->
-                                    scope.launch {
-                                        val count = getPageCount(context, uri, null)
-                                        onOpenPreview(uri, fileName, count)
-                                    }
-                                }
+                                outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) }
                             },
                             accentColor = accentColor
                         )

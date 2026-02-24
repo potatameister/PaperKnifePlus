@@ -56,6 +56,7 @@ fun UnifiedPdfPreview(
     mode: PreviewMode = PreviewMode.GRID,
     password: String? = null,
     isGrayscale: Boolean = false,
+    showIndexNumbers: Boolean = true,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     selectedPages: Set<Int>? = null,
     onToggleSelection: ((Int) -> Unit)? = null,
@@ -122,6 +123,7 @@ fun UnifiedPdfPreview(
                         index = pageIdx,
                         password = password,
                         isGrayscale = isGrayscale,
+                        showIndexNumbers = showIndexNumbers,
                         imageLoader = imageLoader,
                         accentColor = accentColor,
                         onClick = { onToggleSelection?.invoke(index) },
@@ -171,7 +173,8 @@ fun UnifiedPdfPreview(
                 val isSelected = selectedPages?.contains(index) == true
                 val rotation = pageRotations?.get(index) ?: 0
                 PdfPageItem(
-                    uri = uri, index = index, password = password, isGrayscale = isGrayscale, imageLoader = imageLoader, accentColor = accentColor, rotation = rotation,
+                    uri = uri, index = index, password = password, isGrayscale = isGrayscale, 
+                    showIndexNumbers = showIndexNumbers, imageLoader = imageLoader, accentColor = accentColor, rotation = rotation,
                     onClick = { 
                         if (mode == PreviewMode.ROTATE && onRotatePage != null) onRotatePage(index)
                         else if (onToggleSelection != null) onToggleSelection(index)
@@ -207,7 +210,8 @@ fun UnifiedPdfPreview(
         PageLightbox(
             uri = uri, initialPage = lightboxPage!!, totalCount = pageCount, password = password,
             onDismiss = { lightboxPage = null }, selectedPages = selectedPages, onToggleSelection = onToggleSelection,
-            isGrayscale = isGrayscale
+            isGrayscale = isGrayscale,
+            itemOverlay = itemOverlay
         )
     }
 }
@@ -224,6 +228,7 @@ fun PdfPageItem(
     scale: Float = 0.6f,
     rotation: Int = 0,
     isGrayscale: Boolean = false,
+    showIndexNumbers: Boolean = true,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val request = remember(uri, index, password, scale, rotation) { PdfPageRequest(uri, index, password, scale, rotation) }
@@ -244,11 +249,14 @@ fun PdfPageItem(
         } else if (painter.state is AsyncImagePainter.State.Error && password != null) {
              Icon(Icons.Filled.Lock, null, tint = Color.Gray.copy(0.3f), modifier = Modifier.size(32.dp))
         }
-        Surface(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp).graphicsLayer { rotationZ = 0f },
-            color = Color.Black.copy(0.6f), shape = RoundedCornerShape(8.dp)
-        ) {
-            Text("${index + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+        
+        if (showIndexNumbers) {
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp).graphicsLayer { rotationZ = 0f },
+                color = Color.Black.copy(0.6f), shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("${index + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+            }
         }
         content()
     }

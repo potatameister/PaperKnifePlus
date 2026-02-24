@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -40,7 +43,7 @@ fun PageNumbersView(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.background == Color.Black
-    val accentColor = Color(0xFF8B5CF6)
+    val accentColor = PaperPink
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
@@ -56,6 +59,7 @@ fun PageNumbersView(
     var position by remember { mutableStateOf("Bottom Right") }
     var fontSize by remember { mutableFloatStateOf(12f) }
     var format by remember { mutableStateOf("Page {n}") }
+    var numberColor by remember { mutableStateOf(Color.Black) }
     
     var showPreviewOverlay by remember { mutableStateOf(true) }
 
@@ -117,7 +121,8 @@ fun PageNumbersView(
                                     
                                     cs.beginText()
                                     cs.setFont(font, fontSize)
-                                    cs.setNonStrokingColor(android.graphics.Color.BLACK)
+                                    // NITRO: Proper color conversion for PDFBox
+                                    cs.setNonStrokingColor(numberColor.red, numberColor.green, numberColor.blue)
                                     cs.newLineAtOffset(x, y)
                                     cs.showText(text)
                                     cs.endText()
@@ -195,6 +200,21 @@ fun PageNumbersView(
                         ) {
                             Spacer(Modifier.height(12.dp))
                             
+                            // Header Stats & Selection
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column {
+                                    Text("${selectedPages.size} / $pageCount PAGES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
+                                }
+                                Row {
+                                    TextButton(onClick = { selectedPages = (0 until pageCount).toSet() }) {
+                                        Text("SELECT ALL", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                    }
+                                    TextButton(onClick = { selectedPages = emptySet() }) {
+                                        Text("CLEAR", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                                    }
+                                }
+                            }
+
                             Box(modifier = Modifier.weight(1f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
@@ -202,6 +222,7 @@ fun PageNumbersView(
                                     mode = PreviewMode.GRID,
                                     password = unlockPassword.ifEmpty { null }, 
                                     accentColor = accentColor,
+                                    showIndexNumbers = false, // HIDE DEFAULT GRID NUMBERS
                                     selectedPages = selectedPages,
                                     onToggleSelection = { index ->
                                         selectedPages = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
@@ -218,14 +239,14 @@ fun PageNumbersView(
                                                 position.contains("Top") && position.contains("Right") -> Alignment.TopEnd
                                                 else -> Alignment.BottomEnd
                                             }) {
-                                                Surface(
-                                                    color = Color.White,
-                                                    shape = RoundedCornerShape(2.dp),
-                                                    border = BorderStroke(0.5.dp, Color.Black.copy(0.2f)),
-                                                    modifier = Modifier.padding(4.dp)
-                                                ) {
-                                                    Text(text, color = Color.Black, fontSize = 7.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
-                                                }
+                                                // OVERLAY PNG-STYLE TEXT (NO BOX)
+                                                Text(
+                                                    text = text, 
+                                                    color = numberColor, 
+                                                    fontSize = 8.sp, 
+                                                    fontWeight = FontWeight.Black, 
+                                                    modifier = Modifier.padding(6.dp)
+                                                )
                                             }
                                         }
                                     }
@@ -241,48 +262,82 @@ fun PageNumbersView(
                             ) {
                                 Column(Modifier.padding(12.dp)) {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("PREVIEW NUMBERS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, modifier = Modifier.weight(1f))
-                                        Switch(checked = showPreviewOverlay, onCheckedChange = { showPreviewOverlay = it }, colors = SwitchDefaults.colors(checkedThumbColor = accentColor))
+                                        Text("PREVIEW PLACEMENT", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, modifier = Modifier.weight(1f))
+                                        Switch(
+                                            checked = showPreviewOverlay, 
+                                            onCheckedChange = { showPreviewOverlay = it }, 
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = accentColor,
+                                                uncheckedThumbColor = Color.Gray,
+                                                uncheckedTrackColor = Color.Gray.copy(0.2f)
+                                            )
+                                        )
                                     }
-                                    Spacer(Modifier.height(8.dp))
+                                    
+                                    Spacer(Modifier.height(12.dp))
+                                    
+                                    // Formatting & Color
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedTextField(
+                                            value = format,
+                                            onValueChange = { format = it },
+                                            label = { Text("Format ({n})", fontSize = 10.sp) },
+                                            modifier = Modifier.weight(1.5f),
+                                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                                            shape = RoundedCornerShape(12.dp),
+                                            singleLine = true,
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = accentColor,
+                                                focusedLabelColor = accentColor
+                                            )
+                                        )
+                                        
+                                        // Color Picker (Presets)
                                         Surface(
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier.weight(1f).height(56.dp),
                                             shape = RoundedCornerShape(12.dp),
                                             color = MaterialTheme.colorScheme.surface,
-                                            onClick = { 
-                                                position = when(position) {
-                                                    "Bottom Right" -> "Bottom Left"
-                                                    "Bottom Left" -> "Bottom Center"
-                                                    "Bottom Center" -> "Top Right"
-                                                    "Top Right" -> "Top Left"
-                                                    "Top Left" -> "Top Center"
-                                                    else -> "Bottom Right"
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(0.3f)),
+                                            onClick = {
+                                                numberColor = when(numberColor) {
+                                                    Color.Black -> Color.White
+                                                    Color.White -> Color.Red
+                                                    Color.Red -> Color.Blue
+                                                    else -> Color.Black
                                                 }
                                             }
                                         ) {
-                                            Column(Modifier.padding(10.dp)) {
-                                                Text("POSITION", fontSize = 7.sp, color = Color.Gray, fontWeight = FontWeight.Black)
-                                                Text(position, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                            Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                                Box(Modifier.size(16.dp).clip(CircleShape).background(numberColor).border(1.dp, Color.Gray.copy(0.3f), CircleShape))
+                                                Spacer(Modifier.width(8.dp))
+                                                Text("COLOR", fontSize = 9.sp, fontWeight = FontWeight.Black)
                                             }
                                         }
-                                        Surface(
-                                            modifier = Modifier.weight(1f),
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = MaterialTheme.colorScheme.surface,
-                                            onClick = { 
-                                                format = when(format) {
-                                                    "Page {n}" -> "{n}"
-                                                    "{n}" -> "- {n} -"
-                                                    "- {n} -" -> "P. {n}"
-                                                    else -> "Page {n}"
-                                                }
+                                    }
+                                    
+                                    Spacer(Modifier.height(8.dp))
+                                    
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.surface,
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(0.3f)),
+                                        onClick = { 
+                                            position = when(position) {
+                                                "Bottom Right" -> "Bottom Left"
+                                                "Bottom Left" -> "Bottom Center"
+                                                "Bottom Center" -> "Top Right"
+                                                "Top Right" -> "Top Left"
+                                                "Top Left" -> "Top Center"
+                                                else -> "Bottom Right"
                                             }
-                                        ) {
-                                            Column(Modifier.padding(10.dp)) {
-                                                Text("FORMAT", fontSize = 7.sp, color = Color.Gray, fontWeight = FontWeight.Black)
-                                                Text(format.replace("{n}", "1"), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                            }
+                                        }
+                                    ) {
+                                        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text("POSITION:", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(position.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = accentColor)
                                         }
                                     }
                                 }
