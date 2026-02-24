@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -193,7 +194,7 @@ fun ProtectView(
                         ) {
                             Spacer(Modifier.height(12.dp))
                             
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.75f)) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.7f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -207,7 +208,7 @@ fun ProtectView(
                             Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(20.dp))
+                            Spacer(Modifier.height(24.dp))
                             Text("SET PROTECTION", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
                             Spacer(Modifier.height(8.dp))
                             
@@ -215,7 +216,7 @@ fun ProtectView(
                                 value = protectPassword,
                                 onValueChange = { protectPassword = it },
                                 label = { Text("New Password", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().height(56.dp),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = TextFieldDefaults.colors(
                                     focusedIndicatorColor = accentColor,
@@ -286,22 +287,19 @@ fun ProtectView(
                     fileName = fileToUnlock!!,
                     onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
                     onUnlocked = { pass ->
-                        unlockPassword = pass
                         isFileLoading = true
                         scope.launch(Dispatchers.IO) {
                             val count = getPageCount(context, selectedUri!!, pass)
-                            if (count > 0) {
-                                withContext(Dispatchers.Main) { 
+                            withContext(Dispatchers.Main) { 
+                                if (count > 0) {
+                                    unlockPassword = pass
                                     pageCount = count
                                     currentState = ToolState.CONFIGURING
-                                    isFileLoading = false 
                                     fileToUnlock = null
-                                }
-                            } else {
-                                withContext(Dispatchers.Main) { 
+                                } else {
                                     Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                    isFileLoading = false 
                                 }
+                                isFileLoading = false
                             }
                         }
                     },
