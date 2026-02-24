@@ -150,31 +150,46 @@ fun PdfToZipView(
                     )
                 }
                 ToolState.CONFIGURING -> {
-                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Spacer(Modifier.height(16.dp))
                         
-                        UnifiedPdfPreview(
-                            uri = selectedUri!!,
-                            pageCount = pageCount,
-                            mode = PreviewMode.COVER,
-                            accentColor = accentColor
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                            UnifiedPdfPreview(
+                                uri = selectedUri!!,
+                                pageCount = pageCount,
+                                mode = PreviewMode.COVER,
+                                accentColor = accentColor
+                            )
+                        }
+                        
+                        Spacer(Modifier.height(12.dp))
+                        Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                        Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+
+                        Spacer(Modifier.height(24.dp))
+                        Text("ARCHIVE INFO", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                        Text(
+                            "Split document into $pageCount separate PDF files inside one ZIP archive.", 
+                            fontSize = 12.sp, 
+                            color = Color.Gray, 
+                            modifier = Modifier.padding(top = 4.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                         
-                        Spacer(Modifier.height(32.dp))
-                        Text("ARCHIVE INFO", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                        Text("This tool will split '$fileName' into $pageCount separate PDF files (one for each page) and bundle them into a single ZIP archive for easier distribution.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
-                        
-                        Spacer(Modifier.weight(1f))
+                        Spacer(Modifier.height(24.dp))
                         
                         Button(
                             onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-pages.zip") }, 
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp), 
+                            modifier = Modifier.fillMaxWidth().height(60.dp), 
                             shape = RoundedCornerShape(20.dp), 
                             colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                         ) {
                             Text("CONVERT & SAVE ZIP", fontWeight = FontWeight.Black, color = Color.White)
                         }
-                        Spacer(Modifier.height(100.dp))
+                        Spacer(Modifier.height(32.dp))
                     }
                 }
                 ToolState.PROCESSING -> {

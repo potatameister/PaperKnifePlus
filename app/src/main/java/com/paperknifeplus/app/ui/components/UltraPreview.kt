@@ -264,9 +264,30 @@ fun UltraPreview(
             }
 
             if (!isInitializing && fileToUnlock == null) {
+                var isDragging by remember { mutableStateOf(false) }
+                var dragProgress by remember { mutableFloatStateOf(0f) }
+
+                val scrollPercentage by remember {
+                    derivedStateOf {
+                        if (isDragging) dragProgress
+                        else {
+                            val layoutInfo = listState.layoutInfo
+                            val visibleItems = layoutInfo.visibleItemsInfo
+                            if (visibleItems.isEmpty()) 0f
+                            else {
+                                val firstItem = visibleItems.first()
+                                val index = firstItem.index
+                                val offset = -firstItem.offset.toFloat()
+                                val size = firstItem.size.toFloat()
+                                val progress = (index + (offset / size)) / (activePageCount - 1).coerceAtLeast(1)
+                                progress.coerceIn(0f, 1f)
+                            }
+                        }
+                    }
+                }
+
                 val currentPage by remember { 
                     derivedStateOf { 
-                        // NITRO: Use first visible item as base, but force last page if scrolled to bottom
                         if (!listState.canScrollForward && activePageCount > 0) activePageCount
                         else listState.firstVisibleItemIndex + 1
                     } 
@@ -288,20 +309,20 @@ fun UltraPreview(
                             }
                         }
                 ) {
-                    val scrollPercentage = if (activePageCount > 1) listState.firstVisibleItemIndex.toFloat() / (activePageCount - 1) else 0f
                     Box(
                         modifier = Modifier.fillMaxHeight().width(6.dp).align(Alignment.Center).background(Color.Gray.copy(alpha = 0.15f), CircleShape)
                     )
                     val minThumbHeight = 48.dp
                     val thumbHeightFactor = 1f / activePageCount.coerceAtLeast(1)
+                    val thumbHeightPx = with(density) { 
+                        (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeight.toPx()) 
+                    }
+                    
                     Box(
                         modifier = Modifier
-                            .heightIn(min = minThumbHeight)
-                            .fillMaxHeight(thumbHeightFactor.coerceIn(0.08f, 0.25f))
+                            .height(with(density) { thumbHeightPx.toDp() })
                             .width(12.dp)
                             .graphicsLayer {
-                                val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
-                                val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeightPx)
                                 translationY = scrollPercentage * (trackHeight - thumbHeightPx)
                             }
                             .background(PaperPink, CircleShape)
@@ -309,14 +330,15 @@ fun UltraPreview(
                             .draggable(
                                 orientation = Orientation.Vertical,
                                 state = rememberDraggableState { delta ->
-                                    if (trackHeight > 0) {
-                                        val minThumbHeightPx = with(density) { minThumbHeight.toPx() }
-                                        val thumbHeightPx = (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeightPx)
+                                    if (trackHeight > thumbHeightPx) {
+                                        isDragging = true
                                         val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
+                                        dragProgress = newPercent
                                         val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
                                         scope.launch { listState.scrollToItem(targetPage) }
                                     }
-                                }
+                                },
+                                onDragStopped = { isDragging = false }
                             )
                     )
                 }

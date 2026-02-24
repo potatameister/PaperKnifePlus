@@ -114,20 +114,27 @@ fun ExtractImagesView(
                             context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                                 val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                                 var imageCount = 0
+                                val processedObjects = mutableSetOf<String>()
 
-                                fun extractFromResources(resources: PDResources, pIdx: Int) {
+                                fun extractFromResources(resources: PDResources?, pIdx: Int) {
+                                    if (resources == null) return
                                     for (name in resources.xObjectNames) {
                                         try {
                                             val xobject = resources.getXObject(name)
+                                            val cosObj = xobject.cosObject.toString()
+                                            if (cosObj in processedObjects) continue
+                                            processedObjects.add(cosObj)
+
                                             if (xobject is PDImageXObject) {
-                                                imageCount++
-                                                scope.launch(Dispatchers.Main) { extractedCount = imageCount }
                                                 val bitmap = xobject.image
-                                                val entry = ZipEntry("page_${pIdx + 1}_img_$imageCount.jpg")
-                                                zipOut.putNextEntry(entry)
-                                                // NITRO: Force flush and ensure data is written
-                                                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
-                                                zipOut.closeEntry()
+                                                if (bitmap != null) {
+                                                    imageCount++
+                                                    scope.launch(Dispatchers.Main) { extractedCount = imageCount }
+                                                    val entry = ZipEntry("img_${imageCount}_p${pIdx + 1}.jpg")
+                                                    zipOut.putNextEntry(entry)
+                                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
+                                                    zipOut.closeEntry()
+                                                }
                                             } else if (xobject is PDFormXObject) {
                                                 extractFromResources(xobject.resources, pIdx)
                                             }
@@ -142,9 +149,7 @@ fun ExtractImagesView(
                                 document.close()
                                 if (imageCount == 0) throw Exception("No images found in PDF")
                             }
-                            // NITRO: Finish and close the ZIP stream properly
                             zipOut.finish()
-                            zipOut.flush()
                         }
                         outputStream.flush()
                     }
@@ -214,30 +219,34 @@ fun ExtractImagesView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Spacer(Modifier.height(16.dp))
                             
-                            UnifiedPdfPreview(
-                                uri = selectedUri!!,
-                                pageCount = pageCount,
-                                mode = PreviewMode.COVER,
-                                password = unlockPassword.ifEmpty { null },
-                                accentColor = accentColor
-                            )
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.COVER,
+                                    password = unlockPassword.ifEmpty { null },
+                                    accentColor = accentColor
+                                )
+                            }
                             
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                            Text(fileSize, fontSize = 11.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(32.dp))
+                            Spacer(Modifier.height(24.dp))
                             Text("READY TO EXTRACT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Text("This will scan the PDF for all embedded images and save them as high-quality JPEGs in a ZIP archive.", fontSize = 12.sp, color = Color.Gray)
+                            Text("Extract all embedded images into a ZIP archive.", fontSize = 12.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(32.dp))
+                            Spacer(Modifier.height(24.dp))
                             
                             Button(
                                 onClick = { 
-                                    // Sanitize filename to avoid weird storage paths
                                     val safeName = fileName.replace(Regex("[^a-zA-Z0-9.-]"), "_").replace(".pdf", "", true) + "-assets.zip"
                                     saveLauncher.launch(safeName) 
                                 }, 
@@ -247,7 +256,7 @@ fun ExtractImagesView(
                             ) {
                                 Text("EXTRACT IMAGES (ZIP)", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            Spacer(Modifier.height(100.dp))
+                            Spacer(Modifier.height(32.dp))
                         }
                     }
                     ToolState.PROCESSING -> {
@@ -257,7 +266,7 @@ fun ExtractImagesView(
                             password = unlockPassword.ifEmpty { null },
                             text = "Extracting images...",
                             current = extractedCount,
-                            total = 0, // Unknown total images
+                            total = 0, 
                             showWarning = showLoadingWarning
                         )
                     }

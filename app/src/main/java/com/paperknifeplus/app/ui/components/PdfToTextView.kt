@@ -166,27 +166,37 @@ fun PdfToTextView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize()) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Spacer(Modifier.height(16.dp))
-                            UnifiedPdfPreview(
-                                uri = selectedUri!!,
-                                pageCount = pageCount,
-                                mode = PreviewMode.COVER,
-                                password = unlockPassword.ifEmpty { null },
-                                accentColor = accentColor
-                            )
-                            Spacer(Modifier.height(32.dp))
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.COVER,
+                                    password = unlockPassword.ifEmpty { null },
+                                    accentColor = accentColor
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                            
+                            Spacer(Modifier.height(24.dp))
                             Text("READY TO EXTRACT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Text("This will scan the PDF text layers and output a plain .txt file.", fontSize = 12.sp, color = Color.Gray)
-                            Spacer(Modifier.weight(1f))
+                            Text("Scan PDF text layers and output a plain .txt file.", fontSize = 12.sp, color = Color.Gray)
+                            
+                            Spacer(Modifier.height(24.dp))
                             Button(
                                 onClick = { startExtraction() },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
+                                modifier = Modifier.fillMaxWidth().height(60.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                                 shape = RoundedCornerShape(20.dp)
                             ) {
                                 Text("EXTRACT TEXT", fontWeight = FontWeight.Black)
                             }
+                            Spacer(Modifier.height(32.dp))
                         }
                     }
                     ToolState.PROCESSING -> {

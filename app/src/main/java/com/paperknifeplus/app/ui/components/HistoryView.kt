@@ -149,6 +149,7 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
                         onClick = { item.uri?.let { uri -> onItemClick(uri, item.name, item.pageCount) } },
                         onDownload = {
                             try {
+                                // For Platinum: Use sharing as a "Save to Files" mechanism which is most reliable on Android
                                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                     type = "application/pdf"
                                     putExtra(android.content.Intent.EXTRA_STREAM, item.uri)
@@ -215,19 +216,20 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Uni
             
             Spacer(Modifier.width(8.dp))
 
+            // REMADE OPEN BUTTON: Modern pill style
             Surface(
                 onClick = onClick,
-                modifier = Modifier.height(28.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = entryColor.copy(alpha = 0.1f),
-                border = BorderStroke(1.dp, entryColor.copy(alpha = 0.2f))
+                modifier = Modifier.height(32.dp),
+                shape = CircleShape,
+                color = entryColor,
+                shadowElevation = 2.dp
             ) {
-                Box(Modifier.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
                     Text(
                         "OPEN",
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Black,
-                        color = entryColor,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
                         letterSpacing = 0.5.sp
                     )
                 }

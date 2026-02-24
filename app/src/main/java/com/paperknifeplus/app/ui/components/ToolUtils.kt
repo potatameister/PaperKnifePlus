@@ -348,6 +348,8 @@ suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, pa
                         val canvas = Canvas(bitmap)
                         canvas.drawColor(android.graphics.Color.WHITE)
                         
+                        // NITRO: Render both print and display layers to ensure all artifacts are captured
+                        page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
                         
                         zipOut.putNextEntry(ZipEntry("page_${pageIdx + 1}.$ext"))
