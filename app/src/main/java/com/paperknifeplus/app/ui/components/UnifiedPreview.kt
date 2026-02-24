@@ -57,6 +57,7 @@ fun UnifiedPdfPreview(
     password: String? = null,
     isGrayscale: Boolean = false,
     showIndexNumbers: Boolean = true,
+    disableLightbox: Boolean = false,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     selectedPages: Set<Int>? = null,
     onToggleSelection: ((Int) -> Unit)? = null,
@@ -76,7 +77,7 @@ fun UnifiedPdfPreview(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(0.707f)
-                    .clickable { lightboxPage = 0 },
+                    .clickable(enabled = !disableLightbox) { lightboxPage = 0 },
                 shape = RoundedCornerShape(24.dp),
                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
                 colors = CardDefaults.cardColors(containerColor = if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF18181B) else Color(0xFFF5F5F5))
@@ -94,12 +95,14 @@ fun UnifiedPdfPreview(
                     if (painter.state is AsyncImagePainter.State.Loading) {
                         CircularProgressIndicator(color = accentColor, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
                     }
-                    Surface(
-                        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
-                        color = Color.Black.copy(0.3f),
-                        shape = CircleShape
-                    ) {
-                        Icon(Icons.Filled.ZoomIn, null, tint = Color.White, modifier = Modifier.padding(8.dp).size(20.dp))
+                    if (!disableLightbox) {
+                        Surface(
+                            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+                            color = Color.Black.copy(0.3f),
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Filled.ZoomIn, null, tint = Color.White, modifier = Modifier.padding(8.dp).size(20.dp))
+                        }
                     }
                 }
             }
@@ -178,7 +181,7 @@ fun UnifiedPdfPreview(
                     onClick = { 
                         if (mode == PreviewMode.ROTATE && onRotatePage != null) onRotatePage(index)
                         else if (onToggleSelection != null) onToggleSelection(index)
-                        else lightboxPage = index 
+                        else if (!disableLightbox) lightboxPage = index 
                     },
                     scale = 0.6f,
                     modifier = if (isSelected) Modifier.border(BorderStroke(3.dp, accentColor), RoundedCornerShape(12.dp)) else Modifier
@@ -194,11 +197,13 @@ fun UnifiedPdfPreview(
                             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp),
                             color = if (isSelected) accentColor else Color.Black.copy(0.3f), shape = CircleShape
                         ) { Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp)) }
-                        Surface(
-                            onClick = { lightboxPage = index },
-                            modifier = Modifier.align(Alignment.TopStart).padding(8.dp).size(24.dp),
-                            color = Color.Black.copy(0.3f), shape = CircleShape
-                        ) { Icon(Icons.Filled.Fullscreen, null, tint = Color.White, modifier = Modifier.padding(4.dp)) }
+                        if (!disableLightbox) {
+                            Surface(
+                                onClick = { lightboxPage = index },
+                                modifier = Modifier.align(Alignment.TopStart).padding(8.dp).size(24.dp),
+                                color = Color.Black.copy(0.3f), shape = CircleShape
+                            ) { Icon(Icons.Filled.Fullscreen, null, tint = Color.White, modifier = Modifier.padding(4.dp)) }
+                        }
                     }
                     itemOverlay?.invoke(this, index)
                 }

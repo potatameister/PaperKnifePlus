@@ -238,14 +238,12 @@ fun RotateView(
                                     password = null, 
                                     accentColor = accentColor,
                                     pageRotations = pageRotations,
+                                    disableLightbox = true, // DISABLE LIGHTBOX AS REQUESTED
                                     onRotatePage = { index ->
                                         val current = pageRotations[index] ?: 0
                                         pageRotations = pageRotations + (index to (current + 90) % 360)
                                     }
                                 )
-                                
-                                // PRO: Overlay to block lightbox access in Rotate tool
-                                Box(Modifier.fillMaxSize().clickable(enabled = false) {})
                             }
 
                             Button(

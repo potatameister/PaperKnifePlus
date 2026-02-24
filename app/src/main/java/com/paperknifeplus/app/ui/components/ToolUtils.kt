@@ -284,8 +284,8 @@ suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, passwor
         val total = sourceDoc.numberOfPages
         
         // AGGRESSIVE BALANCED TUNING
-        val quality = when(level) { "Extreme" -> 0.12f; "Recommended" -> 0.3f; else -> 0.5f }
-        val scale = when(level) { "Extreme" -> 0.25f; "Recommended" -> 0.45f; else -> 0.75f }
+        val quality = when(level) { "Extreme" -> 0.15f; "Recommended" -> 0.35f; else -> 0.6f }
+        val scale = when(level) { "Extreme" -> 0.3f; "Recommended" -> 0.5f; else -> 0.8f }
 
         for (i in 0 until total) {
             onProgress(i + 1, total)

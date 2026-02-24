@@ -62,7 +62,7 @@ fun PageNumbersView(
     
     var showPreviewOverlay by remember { mutableStateOf(true) }
     
-    // Selectors
+    // RISE-UP SELECTORS
     var showPositionSheet by remember { mutableStateOf(false) }
     var showColorSheet by remember { mutableStateOf(false) }
 
