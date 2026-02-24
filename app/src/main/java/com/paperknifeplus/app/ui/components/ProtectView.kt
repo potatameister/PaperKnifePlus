@@ -143,17 +143,28 @@ fun ProtectView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Protect", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("ENCRYPT YOUR DOCUMENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Protect", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("ENCRYPT YOUR DOCUMENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -176,21 +187,72 @@ fun ProtectView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        ProtectConfiguringView(
-                            uri = selectedUri!!,
-                            pageCount = pageCount,
-                            fileName = fileName,
-                            fileSize = fileSize,
-                            password = protectPassword,
-                            unlockPassword = unlockPassword,
-                            onPasswordChange = { protectPassword = it },
-                            onProtect = { 
-                                val defaultName = fileName.replace(".pdf", "", true) + "-protected.pdf"
-                                saveLauncher.launch(defaultName) 
-                            },
-                            onChangeFile = { selectedUri = null; currentState = ToolState.SELECTING },
-                            accentColor = accentColor
-                        )
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Spacer(Modifier.height(16.dp))
+                            
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.COVER,
+                                    password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                    accentColor = accentColor
+                                )
+                            }
+                            
+                            Spacer(Modifier.height(12.dp))
+                            Text(fileName, fontWeight = FontWeight.Black, fontSize = 16.sp, maxLines = 1)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+                                Spacer(Modifier.width(8.dp))
+                                Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
+                            }
+                            
+                            Spacer(Modifier.height(24.dp))
+                            Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Spacer(Modifier.height(12.dp))
+                            
+                            OutlinedTextField(
+                                value = protectPassword,
+                                onValueChange = { protectPassword = it },
+                                label = { Text("New Password", fontWeight = FontWeight.Bold) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = TextFieldDefaults.colors(
+                                    focusedIndicatorColor = accentColor,
+                                    cursorColor = accentColor,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent
+                                )
+                            )
+                            
+                            Spacer(Modifier.height(16.dp))
+                            Surface(color = Color(0xFFFFF1F2), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(12.dp))
+                                    Text("PaperKnife+ cannot recover lost passwords. Ensure you keep it safe.", fontSize = 11.sp, color = Color(0xFF9F1239), fontWeight = FontWeight.Bold, lineHeight = 16.sp)
+                                }
+                            }
+                            
+                            Spacer(Modifier.height(24.dp))
+                            Button(
+                                onClick = { 
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-protected.pdf"
+                                    saveLauncher.launch(defaultName) 
+                                }, 
+                                modifier = Modifier.fillMaxWidth().height(60.dp), 
+                                enabled = protectPassword.isNotBlank(), 
+                                shape = RoundedCornerShape(20.dp), 
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text("Protect & Save", fontWeight = FontWeight.Black, color = Color.White)
+                            }
+                            Spacer(Modifier.height(32.dp))
+                        }
                     }
                     ToolState.PROCESSING -> {
                         ProcessingStateView(

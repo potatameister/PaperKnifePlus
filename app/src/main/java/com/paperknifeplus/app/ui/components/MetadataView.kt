@@ -143,17 +143,28 @@ fun MetadataView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Metadata", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("EDIT DOCUMENT PROPERTIES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Metadata", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("EDIT DOCUMENT PROPERTIES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -176,55 +187,58 @@ fun MetadataView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Spacer(Modifier.height(16.dp))
                             
-                            UnifiedPdfPreview(
-                                uri = selectedUri!!,
-                                pageCount = pageCount,
-                                mode = PreviewMode.COVER,
-                                password = null, 
-                                accentColor = accentColor
-                            )
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.COVER,
+                                    password = unlockPassword.ifEmpty { null },
+                                    accentColor = accentColor
+                                )
+                            }
                             
-                            Spacer(Modifier.height(16.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Spacer(Modifier.height(12.dp))
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                            Text(fileSize, fontSize = 11.sp, color = Color.Gray)
                             
                             Spacer(Modifier.height(24.dp))
                             
-                            MetadataGroup("DOCUMENT CORE") {
-                                MetadataEditField("Title", title, accentColor) { title = it }
-                                MetadataEditField("Author", author, accentColor) { author = it }
-                                MetadataEditField("Subject", subject, accentColor) { subject = it }
+                            Column(Modifier.fillMaxWidth().weight(1.5f).verticalScroll(rememberScrollState())) {
+                                MetadataGroup("DOCUMENT CORE") {
+                                    MetadataEditField("Title", title, accentColor) { title = it }
+                                    MetadataEditField("Author", author, accentColor) { author = it }
+                                    MetadataEditField("Subject", subject, accentColor) { subject = it }
+                                }
+                                
+                                Spacer(Modifier.height(16.dp))
+                                
+                                MetadataGroup("ADDITIONAL INFO") {
+                                    MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
+                                    MetadataEditField("Creator", creator, accentColor) { creator = it }
+                                    MetadataEditField("Producer", producer, accentColor) { producer = it }
+                                }
+                                
+                                Spacer(Modifier.height(24.dp))
+                                
+                                Button(
+                                    onClick = { 
+                                        val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
+                                        saveLauncher.launch(defaultName) 
+                                    }, 
+                                    modifier = Modifier.fillMaxWidth().height(60.dp), 
+                                    shape = RoundedCornerShape(20.dp), 
+                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                ) {
+                                    Text("Save Metadata", fontWeight = FontWeight.Black, color = Color.White)
+                                }
+                                Spacer(Modifier.height(32.dp))
                             }
-                            
-                            Spacer(Modifier.height(16.dp))
-                            
-                            MetadataGroup("ADDITIONAL INFO") {
-                                MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
-                                MetadataEditField("Creator", creator, accentColor) { creator = it }
-                                MetadataEditField("Producer", producer, accentColor) { producer = it }
-                            }
-                            
-                            Spacer(Modifier.height(32.dp))
-                            
-                            Button(
-                                onClick = { 
-                                    val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
-                                    saveLauncher.launch(defaultName) 
-                                }, 
-                                modifier = Modifier.fillMaxWidth().height(60.dp), 
-                                shape = RoundedCornerShape(20.dp), 
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                            ) {
-                                Text("Save Metadata", fontWeight = FontWeight.Black, color = Color.White)
-                            }
-                            
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                                Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
-                            }
-                            Spacer(Modifier.height(100.dp))
                         }
                     }
                     ToolState.PROCESSING -> {
