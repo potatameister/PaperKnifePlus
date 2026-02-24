@@ -67,63 +67,78 @@ fun CompareView(
 
     Scaffold(
         topBar = {
-            if (!isComparing) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                tonalElevation = 2.dp
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
+                    IconButton(onClick = if (isComparing) { { isComparing = false } } else onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
                     }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Compare", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("VISUAL DIFFERENCE TOOL", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Compare", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                        Text(if (isComparing) "SYNCHRONIZED VIEW" else "VISUAL DIFFERENCE TOOL", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
         }
     ) { padding ->
         if (!isComparing) {
-            Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Select two files to compare side-by-side", fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp)) {
+                Spacer(Modifier.height(24.dp))
+                Text("SELECT DOCUMENTS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.5.sp)
+                Spacer(Modifier.height(16.dp))
                 
-                CompareFileCard("FILE A (ORIGINAL)", nameA, fileA != null, accentColor) { pickALauncher.launch("application/pdf") }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    CompareFileCard("ORIGINAL (A)", nameA, fileA != null, accentColor, Modifier.weight(1f)) { pickALauncher.launch("application/pdf") }
+                    CompareFileCard("REVISED (B)", nameB, fileB != null, accentColor, Modifier.weight(1f)) { pickBLauncher.launch("application/pdf") }
+                }
                 
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Filled.CompareArrows, null, modifier = Modifier.padding(6.dp), tint = Color.Gray)
+                Spacer(Modifier.height(32.dp))
+                
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+                        Icon(Icons.Filled.Compare, null, modifier = Modifier.size(48.dp).alpha(0.1f))
+                        Spacer(Modifier.height(16.dp))
+                        Text("Pick two files to begin comparison.", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
                     }
                 }
                 
-                CompareFileCard("FILE B (REVISED)", nameB, fileB != null, accentColor) { pickBLauncher.launch("application/pdf") }
-                
-                Spacer(Modifier.weight(1f))
-                
                 Button(
                     onClick = { isComparing = true },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp).height(60.dp),
                     enabled = fileA != null && fileB != null,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                 ) {
                     Text("START COMPARISON", fontWeight = FontWeight.Black)
                 }
             }
         } else {
-            ComparisonViewer(fileA!!, fileB!!, nameA, nameB, onBack = { isComparing = false })
+            Box(Modifier.padding(padding)) {
+                ComparisonViewer(fileA!!, fileB!!, nameA, nameB)
+            }
         }
     }
 }
 
 @Composable
-fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, onBack: () -> Unit) {
+fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String) {
     val context = LocalContext.current
     var pageCountA by remember { mutableIntStateOf(0) }
     var pageCountB by remember { mutableIntStateOf(0) }
     val imageLoader = coil.compose.LocalImageLoader.current
     
     val listState = rememberLazyListState()
+    var lightboxData by remember { mutableStateOf<Triple<Uri, Int, Int>?>(null) }
     
     LaunchedEffect(uriA, uriB) {
         pageCountA = getPageCount(context, uriA, null)
@@ -133,85 +148,87 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, onBack:
     val maxPages = remember(pageCountA, pageCountB) { max(pageCountA, pageCountB) }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxSize()) {
-            Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.Filled.Close, null) }
-                Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                    Text("Synchronized View", fontWeight = FontWeight.Black, fontSize = 14.sp)
-                    Text("SCROLLING BOTH FILES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFFF59E0B))
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
+            items(maxPages) { index ->
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                    // File A Column
+                    Box(Modifier.weight(1f).padding(8.dp)) {
+                        if (index < pageCountA) {
+                            PdfPageItem(
+                                uri = uriA,
+                                index = index,
+                                password = null,
+                                imageLoader = imageLoader,
+                                onClick = { lightboxData = Triple(uriA, index, pageCountA) },
+                                scale = 1.2f // INCREASED RESOLUTION
+                            )
+                        } else {
+                            Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(Color.Gray.copy(0.05f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                Text("END OF FILE A", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
+                            }
+                        }
+                    }
+
+                    // File B Column
+                    Box(Modifier.weight(1f).padding(8.dp)) {
+                        if (index < pageCountB) {
+                            PdfPageItem(
+                                uri = uriB,
+                                index = index,
+                                password = null,
+                                imageLoader = imageLoader,
+                                onClick = { lightboxData = Triple(uriB, index, pageCountB) },
+                                scale = 1.2f // INCREASED RESOLUTION
+                            )
+                        } else {
+                            Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(Color.Gray.copy(0.05f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                Text("END OF FILE B", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
+                            }
+                        }
+                    }
                 }
-            }
-            
-            Divider(color = Color.Gray.copy(alpha = 0.1f))
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
-                items(maxPages) { index ->
-                    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-                        // File A Column
-                        Box(Modifier.weight(1f).padding(8.dp)) {
-                            if (index < pageCountA) {
-                                PdfPageItem(
-                                    uri = uriA,
-                                    index = index,
-                                    password = null,
-                                    imageLoader = imageLoader,
-                                    onClick = { },
-                                    scale = 0.6f
-                                )
-                            } else {
-                                Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.05f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                    Text("END OF FILE A", fontSize = 8.sp, color = Color.Gray)
-                                }
-                            }
-                        }
-
-                        // Divider
-                        Box(Modifier.fillMaxHeight().width(1.dp).background(Color.Gray.copy(0.1f)))
-
-                        // File B Column
-                        Box(Modifier.weight(1f).padding(8.dp)) {
-                            if (index < pageCountB) {
-                                PdfPageItem(
-                                    uri = uriB,
-                                    index = index,
-                                    password = null,
-                                    imageLoader = imageLoader,
-                                    onClick = { },
-                                    scale = 0.6f
-                                )
-                            } else {
-                                Box(Modifier.fillMaxSize().background(Color.Gray.copy(0.05f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                    Text("END OF FILE B", fontSize = 8.sp, color = Color.Gray)
-                                }
-                            }
-                        }
-                    }
-                    if (index < maxPages - 1) {
-                        Divider(color = Color.Gray.copy(alpha = 0.05f), modifier = Modifier.padding(horizontal = 16.dp))
-                    }
+                if (index < maxPages - 1) {
+                    Divider(color = Color.Gray.copy(alpha = 0.05f), modifier = Modifier.padding(horizontal = 16.dp))
                 }
             }
         }
     }
+
+    lightboxData?.let { (uri, page, total) ->
+        PageLightbox(
+            uri = uri,
+            initialPage = page,
+            totalCount = total,
+            password = null,
+            onDismiss = { lightboxData = null }
+        )
+    }
 }
 
 @Composable
-fun CompareFileCard(label: String, name: String, isSelected: Boolean, color: Color, onClick: () -> Unit) {
+fun CompareFileCard(label: String, name: String, isSelected: Boolean, color: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(100.dp),
-        shape = RoundedCornerShape(20.dp),
+        modifier = modifier.aspectRatio(1f),
+        shape = RoundedCornerShape(24.dp),
         color = if (isSelected) color.copy(0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
         border = BorderStroke(1.dp, if (isSelected) color.copy(0.3f) else Color.Transparent)
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.Center) {
-            Text(label, fontSize = 9.sp, fontWeight = FontWeight.Black, color = if (isSelected) color else Color.Gray, letterSpacing = 1.sp)
+        Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(
+                if (isSelected) Icons.Filled.CheckCircle else Icons.Filled.AddCircle, 
+                null, 
+                tint = if (isSelected) color else Color.Gray.copy(0.5f),
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(label, fontSize = 8.sp, fontWeight = FontWeight.Black, color = if (isSelected) color else Color.Gray, letterSpacing = 1.sp)
             Spacer(Modifier.height(4.dp))
-            Text(if (isSelected) name else "Tap to select file", fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+            Text(if (isSelected) name else "Select File", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }

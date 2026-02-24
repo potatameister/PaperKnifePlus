@@ -88,6 +88,7 @@ fun PdfToZipView(
                 try {
                     context.contentResolver.openOutputStream(saveUri)?.use { os ->
                         ZipOutputStream(os).use { zipOut ->
+                            // NITRO: Load main document once outside the loop
                             context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
                                 val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                                 val total = document.numberOfPages
@@ -96,7 +97,7 @@ fun PdfToZipView(
                                     val singlePageDoc = PDDocument()
                                     singlePageDoc.importPage(document.getPage(i))
                                     
-                                    val entryName = fileName.replace(".pdf", "", true) + "_page_${i + 1}.pdf"
+                                    val entryName = fileName.replace(".pdf", "", true) + "_p${i + 1}.pdf"
                                     zipOut.putNextEntry(ZipEntry(entryName))
                                     singlePageDoc.save(zipOut)
                                     zipOut.closeEntry()
@@ -105,6 +106,7 @@ fun PdfToZipView(
                                 document.close()
                             }
                             zipOut.finish()
+                            zipOut.flush()
                         }
                     }
                     val endTime = System.currentTimeMillis()
@@ -175,9 +177,9 @@ fun PdfToZipView(
                             modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
                             
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.75f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -188,14 +190,14 @@ fun PdfToZipView(
                             }
                             
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
 
                             Spacer(Modifier.height(24.dp))
                             Text("ARCHIVE INFO", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Text(
-                                "Split document into $pageCount separate PDF files inside one ZIP archive.", 
-                                fontSize = 12.sp, 
+                                "Bundle all document pages as individual PDFs into a single ZIP archive.", 
+                                fontSize = 11.sp, 
                                 color = Color.Gray, 
                                 modifier = Modifier.padding(top = 4.dp),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center

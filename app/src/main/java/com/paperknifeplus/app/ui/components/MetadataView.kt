@@ -191,9 +191,9 @@ fun MetadataView(
                             modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
                             
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.65f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -204,22 +204,26 @@ fun MetadataView(
                             }
                             
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
                             
-                            Spacer(Modifier.height(24.dp))
+                            Spacer(Modifier.height(16.dp))
                             
-                            Column(Modifier.fillMaxWidth().weight(1.5f).verticalScroll(rememberScrollState())) {
-                                MetadataGroup("DOCUMENT CORE") {
+                            Column(Modifier.fillMaxWidth().weight(2f).verticalScroll(rememberScrollState())) {
+                                MetadataGroup("CORE METADATA") {
                                     MetadataEditField("Title", title, accentColor) { title = it }
                                     MetadataEditField("Author", author, accentColor) { author = it }
-                                    MetadataEditField("Subject", subject, accentColor) { subject = it }
                                 }
                                 
-                                Spacer(Modifier.height(16.dp))
+                                Spacer(Modifier.height(12.dp))
                                 
-                                MetadataGroup("ADDITIONAL INFO") {
+                                MetadataGroup("ADDITIONAL TAGS") {
+                                    MetadataEditField("Subject", subject, accentColor) { subject = it }
                                     MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                MetadataGroup("SOURCE ENGINE") {
                                     MetadataEditField("Creator", creator, accentColor) { creator = it }
                                     MetadataEditField("Producer", producer, accentColor) { producer = it }
                                 }
@@ -235,7 +239,7 @@ fun MetadataView(
                                     shape = RoundedCornerShape(20.dp), 
                                     colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                                 ) {
-                                    Text("Save Metadata", fontWeight = FontWeight.Black, color = Color.White)
+                                    Text("SAVE PROPERTIES", fontWeight = FontWeight.Black, color = Color.White)
                                 }
                                 Spacer(Modifier.height(32.dp))
                             }
@@ -313,17 +317,17 @@ fun MetadataGroup(title: String, content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            .padding(vertical = 12.dp)
+            .padding(vertical = 8.dp)
     ) {
         Text(
             text = title,
-            fontSize = 9.sp,
+            fontSize = 8.sp,
             fontWeight = FontWeight.Black,
             color = Color.Gray,
-            letterSpacing = 1.5.sp,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            letterSpacing = 1.2.sp,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
         content()
     }
@@ -331,18 +335,19 @@ fun MetadataGroup(title: String, content: @Composable () -> Unit) {
 
 @Composable
 fun MetadataEditField(label: String, value: String, accentColor: Color, onValueChange: (String) -> Unit) {
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor.copy(0.7f), letterSpacing = 0.5.sp)
         TextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(48.dp),
             colors = TextFieldDefaults.colors(
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
                 focusedIndicatorColor = accentColor,
                 cursorColor = accentColor
             ),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),
             singleLine = true
         )
     }

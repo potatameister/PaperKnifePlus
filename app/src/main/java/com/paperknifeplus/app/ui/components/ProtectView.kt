@@ -191,9 +191,9 @@ fun ProtectView(
                             modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
                             
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.75f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -204,21 +204,17 @@ fun ProtectView(
                             }
                             
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Black, fontSize = 16.sp, maxLines = 1)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(fileSize, fontSize = 11.sp, color = Color.Gray)
-                                Spacer(Modifier.width(8.dp))
-                                Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
-                            }
+                            Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
+                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(24.dp))
-                            Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(20.dp))
+                            Text("SET PROTECTION", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
+                            Spacer(Modifier.height(8.dp))
                             
                             OutlinedTextField(
                                 value = protectPassword,
                                 onValueChange = { protectPassword = it },
-                                label = { Text("New Password", fontWeight = FontWeight.Bold) },
+                                label = { Text("New Password", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = TextFieldDefaults.colors(
@@ -229,12 +225,12 @@ fun ProtectView(
                                 )
                             )
                             
-                            Spacer(Modifier.height(16.dp))
-                            Surface(color = Color(0xFFFFF1F2), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-                                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(20.dp))
-                                    Spacer(Modifier.width(12.dp))
-                                    Text("PaperKnife+ cannot recover lost passwords. Ensure you keep it safe.", fontSize = 11.sp, color = Color(0xFF9F1239), fontWeight = FontWeight.Bold, lineHeight = 16.sp)
+                            Spacer(Modifier.height(12.dp))
+                            Surface(color = Color(0xFFFFF1F2), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(10.dp))
+                                    Text("PaperKnife+ cannot recover lost passwords.", fontSize = 10.sp, color = Color(0xFF9F1239), fontWeight = FontWeight.Bold)
                                 }
                             }
                             
@@ -249,7 +245,7 @@ fun ProtectView(
                                 shape = RoundedCornerShape(20.dp), 
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {
-                                Text("Protect & Save", fontWeight = FontWeight.Black, color = Color.White)
+                                Text("PROTECT & SAVE", fontWeight = FontWeight.Black, color = Color.White)
                             }
                             Spacer(Modifier.height(32.dp))
                         }
@@ -314,76 +310,5 @@ fun ProtectView(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun ProtectConfiguringView(
-    uri: Uri,
-    pageCount: Int,
-    fileName: String,
-    fileSize: String,
-    password: String, 
-    unlockPassword: String,
-    onPasswordChange: (String) -> Unit, 
-    onProtect: () -> Unit, 
-    onChangeFile: () -> Unit, 
-    accentColor: Color
-) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Spacer(Modifier.height(16.dp))
-        
-        // UNIFIED PREVIEW: COVER MODE
-        UnifiedPdfPreview(
-            uri = uri,
-            pageCount = pageCount,
-            mode = PreviewMode.COVER,
-            password = if (unlockPassword.isEmpty()) null else unlockPassword,
-            accentColor = accentColor
-        )
-        
-        Spacer(Modifier.height(16.dp))
-        Text(fileName, fontWeight = FontWeight.Black, fontSize = 16.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-        Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-            Text(fileSize, fontSize = 11.sp, color = Color.Gray)
-            Spacer(Modifier.width(8.dp))
-            Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
-        }
-        
-        Spacer(Modifier.height(24.dp))
-        Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-        Spacer(Modifier.height(12.dp))
-        
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("New Password", fontWeight = FontWeight.Bold) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = accentColor,
-                cursorColor = accentColor,
-                unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Transparent
-            )
-        )
-        
-        Spacer(Modifier.height(16.dp))
-        Surface(color = Color(0xFFFFF1F2), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(12.dp))
-                Text("PaperKnife+ cannot recover lost passwords. Ensure you keep it safe.", fontSize = 11.sp, color = Color(0xFF9F1239), fontWeight = FontWeight.Bold, lineHeight = 16.sp)
-            }
-        }
-        
-        Spacer(Modifier.height(32.dp))
-        Button(onClick = onProtect, modifier = Modifier.fillMaxWidth().height(60.dp), enabled = password.isNotBlank(), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) {
-            Text("Protect & Save", fontWeight = FontWeight.Black, color = Color.White)
-        }
-        TextButton(onClick = onChangeFile, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.height(100.dp))
     }
 }

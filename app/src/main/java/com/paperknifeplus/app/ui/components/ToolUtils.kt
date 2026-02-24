@@ -374,10 +374,13 @@ suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, pa
 
 fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
     val info = document.documentInformation
-    info.creator = "PaperKnife+"
-    info.producer = "PaperKnife+ Native Engine"
+    
+    // NITRO: Only set defaults if not already set by user in Metadata tool
+    if (info.creator.isNullOrBlank()) info.creator = "PaperKnife+"
+    if (info.producer.isNullOrBlank()) info.producer = "PaperKnife+ Native Engine"
+    
     val autoAuthor = PreferencesManager.getDefaultAuthor(context)
-    if (autoAuthor.isNotEmpty()) info.author = autoAuthor
+    if (autoAuthor.isNotEmpty() && info.author.isNullOrBlank()) info.author = autoAuthor
     
     // Write content
     context.contentResolver.openOutputStream(outputUri, "rwt")?.use { os ->

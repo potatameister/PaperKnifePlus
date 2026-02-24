@@ -130,9 +130,11 @@ fun ExtractImagesView(
                                                 if (bitmap != null) {
                                                     imageCount++
                                                     scope.launch(Dispatchers.Main) { extractedCount = imageCount }
-                                                    val entry = ZipEntry("img_${imageCount}_p${pIdx + 1}.jpg")
+                                                    
+                                                    val entry = ZipEntry("asset_${imageCount}_p${pIdx + 1}.jpg")
                                                     zipOut.putNextEntry(entry)
                                                     bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
+                                                    zipOut.flush() // NITRO: Force flush per entry
                                                     zipOut.closeEntry()
                                                 }
                                             } else if (xobject is PDFormXObject) {
@@ -149,7 +151,9 @@ fun ExtractImagesView(
                                 document.close()
                                 if (imageCount == 0) throw Exception("No images found in PDF")
                             }
+                            // NITRO: Finish and close the ZIP stream properly
                             zipOut.finish()
+                            zipOut.flush()
                         }
                         outputStream.flush()
                     }
@@ -190,7 +194,7 @@ fun ExtractImagesView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Extract Image", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("EXTRACT IMAGES FROM PDFS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("EXTRACT ASSETS FROM PDFS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -223,9 +227,9 @@ fun ExtractImagesView(
                             modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
                             
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.7f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -236,12 +240,12 @@ fun ExtractImagesView(
                             }
                             
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                            Text(fileSize, fontSize = 11.sp, color = Color.Gray)
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(24.dp))
-                            Text("READY TO EXTRACT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Text("Extract all embedded images into a ZIP archive.", fontSize = 12.sp, color = Color.Gray)
+                            Spacer(Modifier.height(20.dp))
+                            Text("READY TO STRIP ASSETS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Text("Extract all raw images into a ZIP archive.", fontSize = 11.sp, color = Color.Gray)
                             
                             Spacer(Modifier.height(24.dp))
                             
@@ -264,7 +268,7 @@ fun ExtractImagesView(
                             accentColor = accentColor,
                             uri = selectedUri,
                             password = unlockPassword.ifEmpty { null },
-                            text = "Extracting images...",
+                            text = "Stripping image assets...",
                             current = extractedCount,
                             total = 0, 
                             showWarning = showLoadingWarning
@@ -273,7 +277,7 @@ fun ExtractImagesView(
                     ToolState.SUCCESS -> {
                         SuccessView(
                             message = "Extraction Complete",
-                            subMessage = "Found $extractedCount images in document",
+                            subMessage = "Found $extractedCount assets in document",
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 

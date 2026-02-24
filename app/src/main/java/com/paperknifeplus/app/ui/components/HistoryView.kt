@@ -214,7 +214,7 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Uni
                 Icon(Icons.Outlined.FileDownload, null, tint = entryColor.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
             }
             
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(12.dp))
 
             // REMADE OPEN BUTTON: Modern pill style
             Surface(
@@ -222,9 +222,9 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Uni
                 modifier = Modifier.height(32.dp),
                 shape = CircleShape,
                 color = entryColor,
-                shadowElevation = 2.dp
+                shadowElevation = 4.dp
             ) {
-                Box(Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
                     Text(
                         "OPEN",
                         fontSize = 9.sp,
