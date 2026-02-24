@@ -247,89 +247,100 @@ fun toGrayscaleBitmap(src: Bitmap): Bitmap {
 
 suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: Uri, password: String?, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        val targetDoc = PDDocument()
+        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        val total = document.numberOfPages
         
-        val pfd = context.contentResolver.openFileDescriptor(inputUri, "r")
-        val nativeRenderer = if (pfd != null && password == null) android.graphics.pdf.PdfRenderer(pfd) else null
-        val pdfboxRenderer = PDFRenderer(sourceDoc)
-        val total = sourceDoc.numberOfPages
-        
-        for (i in 0 until total) {
+        // NITRO: Resource-based manipulation (Keeps text/vectors intact)
+        val processedImages = mutableMapOf<String, PDImageXObject>()
+
+        fun processResources(resources: PDResources?) {
+            if (resources == null) return
+            for (name in resources.xObjectNames) {
+                try {
+                    val xobject = resources.getXObject(name)
+                    if (xobject is PDImageXObject) {
+                        val key = xobject.cosObject.toString()
+                        if (processedImages.containsKey(key)) {
+                            resources.put(name, processedImages[key])
+                            continue
+                        }
+                        
+                        val bitmap = xobject.image
+                        if (bitmap != null) {
+                            val grayBitmap = toGrayscaleBitmap(bitmap)
+                            val newImage = JPEGFactory.createFromImage(document, grayBitmap, 0.85f)
+                            resources.put(name, newImage)
+                            processedImages[key] = newImage
+                            grayBitmap.recycle()
+                            bitmap.recycle()
+                        }
+                    } else if (xobject is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                        processResources(xobject.resources)
+                    }
+                } catch (e: Exception) {}
+            }
+        }
+
+        document.pages.forEachIndexed { i, page ->
             onProgress(i + 1, total)
-            
-            val page = sourceDoc.getPage(i)
-            // NITRO: Boost to 3.0f for extreme fidelity (preserves tiny artifacts/lines)
-            val scale = 3.0f
-            val width = page.mediaBox.width * scale
-            val height = page.mediaBox.height * scale
-            
-            val rgbBitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(rgbBitmap)
-            canvas.drawColor(android.graphics.Color.WHITE)
-            
-            // Use anti-aliasing for smoother artifacts
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-            
-            if (nativeRenderer != null && i < nativeRenderer.pageCount) {
-                val nativePage = nativeRenderer.openPage(i)
-                // RENDER BOTH MODES for 100% fidelity (includes backgrounds and complex vectors)
-                nativePage.render(rgbBitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                nativePage.render(rgbBitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
-                nativePage.close()
-            } else {
-                val renderedPage = pdfboxRenderer.renderImage(i, scale, ImageType.RGB)
-                canvas.drawBitmap(renderedPage, 0f, 0f, paint)
-                renderedPage.recycle()
-            }
-            
-            val grayBitmap = toGrayscaleBitmap(rgbBitmap)
-            rgbBitmap.recycle()
-            
-            // High quality compression (0.95f) to prevent blur
-            val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.95f)
-            val newPage = PDPage(PDRectangle(page.mediaBox.width, page.mediaBox.height))
-            targetDoc.addPage(newPage)
-            PDPageContentStream(targetDoc, newPage).use { 
-                it.drawImage(pdImage, 0f, 0f, page.mediaBox.width, page.mediaBox.height) 
-            }
-            grayBitmap.recycle()
+            processResources(page.resources)
         }
         
-        saveAndFlush(context, targetDoc, outputUri)
-        nativeRenderer?.close()
-        pfd?.close()
-        sourceDoc.close()
+        saveAndFlush(context, document, outputUri)
+        document.close()
     }
 }
 
 suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?, level: String, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        val targetDoc = PDDocument()
-        val renderer = PDFRenderer(sourceDoc)
-        val total = sourceDoc.numberOfPages
+        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        val total = document.numberOfPages
         
-        // ANTI-BLUR QUALITY SETTINGS
-        val quality = when(level) { "Extreme" -> 0.5f; "Recommended" -> 0.75f; else -> 0.9f }
-        val scale = when(level) { "Extreme" -> 1.2f; "Recommended" -> 1.8f; else -> 2.5f }
+        val quality = when(level) { "Extreme" -> 0.45f; "Recommended" -> 0.65f; else -> 0.85f }
+        val downscale = when(level) { "Extreme" -> 0.5f; "Recommended" -> 0.75f; else -> 1.0f }
 
-        for (i in 0 until total) {
-            onProgress(i + 1, total)
-            val page = sourceDoc.getPage(i)
-            // Render page with high scale + filtering to prevent blockiness
-            val bitmap = renderer.renderImage(i, scale, ImageType.RGB)
-            val pdImage = JPEGFactory.createFromImage(targetDoc, bitmap, quality)
-            val newPage = PDPage(PDRectangle(page.mediaBox.width, page.mediaBox.height))
-            targetDoc.addPage(newPage)
-            PDPageContentStream(targetDoc, newPage).use { 
-                it.drawImage(pdImage, 0f, 0f, page.mediaBox.width, page.mediaBox.height) 
+        val processedImages = mutableMapOf<String, PDImageXObject>()
+
+        fun processResources(resources: PDResources?) {
+            if (resources == null) return
+            for (name in resources.xObjectNames) {
+                try {
+                    val xobject = resources.getXObject(name)
+                    if (xobject is PDImageXObject) {
+                        val key = xobject.cosObject.toString()
+                        if (processedImages.containsKey(key)) {
+                            resources.put(name, processedImages[key])
+                            continue
+                        }
+                        
+                        var bitmap = xobject.image
+                        if (bitmap != null) {
+                            if (downscale < 1.0f) {
+                                val w = (bitmap.width * downscale).toInt().coerceAtLeast(1)
+                                val h = (bitmap.height * downscale).toInt().coerceAtLeast(1)
+                                val scaled = Bitmap.createScaledBitmap(bitmap, w, h, true)
+                                bitmap.recycle()
+                                bitmap = scaled
+                            }
+                            val newImage = JPEGFactory.createFromImage(document, bitmap, quality)
+                            resources.put(name, newImage)
+                            processedImages[key] = newImage
+                            bitmap.recycle()
+                        }
+                    } else if (xobject is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                        processResources(xobject.resources)
+                    }
+                } catch (e: Exception) {}
             }
-            bitmap.recycle()
+        }
+
+        document.pages.forEachIndexed { i, page ->
+            onProgress(i + 1, total)
+            processResources(page.resources)
         }
         
-        saveAndFlush(context, targetDoc, outputUri)
-        sourceDoc.close()
+        saveAndFlush(context, document, outputUri)
+        document.close()
     }
 }
 

@@ -123,7 +123,7 @@ fun CompressView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
-                        spaceSavedText = "REDUCED BY $spaceSaved% (${newDetails.size})"
+                        spaceSavedText = "REDUCED BY $spaceSaved% (${fileSize} → ${newDetails.size})"
                         SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Filled.FlashOn, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }

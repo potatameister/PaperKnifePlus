@@ -206,7 +206,8 @@ fun UnifiedPdfPreview(
     if (lightboxPage != null) {
         PageLightbox(
             uri = uri, initialPage = lightboxPage!!, totalCount = pageCount, password = password,
-            onDismiss = { lightboxPage = null }, selectedPages = selectedPages, onToggleSelection = onToggleSelection
+            onDismiss = { lightboxPage = null }, selectedPages = selectedPages, onToggleSelection = onToggleSelection,
+            isGrayscale = isGrayscale
         )
     }
 }

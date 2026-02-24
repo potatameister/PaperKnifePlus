@@ -53,7 +53,8 @@ fun PageLightbox(
     password: String?,
     onDismiss: () -> Unit,
     selectedPages: Set<Int>? = null,
-    onToggleSelection: ((Int) -> Unit)? = null
+    onToggleSelection: ((Int) -> Unit)? = null,
+    isGrayscale: Boolean = false
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
@@ -171,7 +172,8 @@ fun PageLightbox(
                                     translationX = animatedOffset.x,
                                     translationY = animatedOffset.y
                                 ),
-                            contentScale = ContentScale.Fit
+                            contentScale = ContentScale.Fit,
+                            colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null
                         )
 
                         if (painter.state is AsyncImagePainter.State.Loading) {
