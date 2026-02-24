@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
+import com.paperknifeplus.app.data.image.PdDocumentPool
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem
@@ -192,6 +194,8 @@ fun BookmarksView(
         }
     }
 
+    LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
+
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
@@ -222,7 +226,7 @@ fun BookmarksView(
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (isFileLoading) {
                 LoadingStateView(accentColor, false, "Reading outlines...")
             } else {
@@ -235,11 +239,11 @@ fun BookmarksView(
                             title = "Tap to enter file",
                             subtitle = "MANAGE PDF BOOKMARKS",
                             accentColor = accentColor,
-                            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+                        Column(Modifier.fillMaxSize()) {
                             Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("${bookmarks.size} BOOKMARKS", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 Button(onClick = { showAddDialog = true }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) {
@@ -351,8 +355,6 @@ fun BookmarksView(
                     isLoading = isFileLoading
                 )
             }
-        }
-    }
         }
     }
 
