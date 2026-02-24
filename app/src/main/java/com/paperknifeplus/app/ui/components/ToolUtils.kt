@@ -318,9 +318,14 @@ suspend fun convertImagesToPdf(context: Context, imageUris: List<Uri>, outputUri
 suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, password: String?, selectedPages: List<Int>, format: String, quality: String, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openOutputStream(outputUri)?.use { outputStream ->
         ZipOutputStream(outputStream).use { zipOut ->
-            context.contentResolver.openInputStream(pdfUri)?.use { inputStream ->
-                val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-                val renderer = PDFRenderer(document)
+            // NITRO: Decrypt to cache if password is provided to use native renderer
+            var workingUri = pdfUri
+            if (password != null) {
+                decryptToCache(context, pdfUri, password)?.let { workingUri = it }
+            }
+
+            context.contentResolver.openFileDescriptor(workingUri, "r")?.use { pfd ->
+                val renderer = android.graphics.pdf.PdfRenderer(pfd)
                 val scale = when(quality) { "Ultra HD" -> 3.0f; "HD" -> 2.0f; "Standard" -> 1.5f; else -> 1.0f }
                 
                 val cf = when(format) {
@@ -331,26 +336,36 @@ suspend fun convertPdfToImages(context: Context, pdfUri: Uri, outputUri: Uri, pa
                 val ext = format.lowercase()
                 
                 selectedPages.forEachIndexed { index, pageIdx ->
-                    onProgress(index + 1, selectedPages.size)
-                    // Render to RGB (Standard PDFBox support)
-                    val sourceBitmap = renderer.renderImage(pageIdx, scale, ImageType.RGB)
-                    
-                    // Flatten onto white background to ensure no transparency issues in JPEG/WebP
-                    val finalBitmap = Bitmap.createBitmap(sourceBitmap.width, sourceBitmap.height, Bitmap.Config.ARGB_8888)
-                    val canvas = Canvas(finalBitmap)
-                    canvas.drawColor(android.graphics.Color.WHITE)
-                    canvas.drawBitmap(sourceBitmap, 0f, 0f, null)
-                    
-                    zipOut.putNextEntry(ZipEntry("page_${pageIdx + 1}.$ext"))
-                    finalBitmap.compress(cf, if (format == "PNG") 100 else 90, zipOut)
-                    zipOut.closeEntry()
-                    
-                    sourceBitmap.recycle()
-                    finalBitmap.recycle()
+                    if (pageIdx < renderer.pageCount) {
+                        onProgress(index + 1, selectedPages.size)
+                        val page = renderer.openPage(pageIdx)
+                        
+                        val width = (page.width * scale).toInt().coerceAtLeast(1)
+                        val height = (page.height * scale).toInt().coerceAtLeast(1)
+                        
+                        // Use native renderer for 100% visual fidelity
+                        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(bitmap)
+                        canvas.drawColor(android.graphics.Color.WHITE)
+                        
+                        page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+                        
+                        zipOut.putNextEntry(ZipEntry("page_${pageIdx + 1}.$ext"))
+                        bitmap.compress(cf, if (format == "PNG") 100 else 90, zipOut)
+                        zipOut.closeEntry()
+                        
+                        bitmap.recycle()
+                        page.close()
+                    }
                 }
-                document.close()
+                renderer.close()
             }
-            zipOut.flush()
+            
+            // Clean up cached decrypted file if it was created
+            if (workingUri != pdfUri) {
+                try { File(workingUri.path!!).delete() } catch (e: Exception) {}
+            }
+            zipOut.finish()
         }
     }
 }

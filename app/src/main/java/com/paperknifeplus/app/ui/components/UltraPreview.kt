@@ -236,7 +236,7 @@ fun UltraPreview(
                                 translationX = offset.x
                                 translationY = offset.y
                             },
-                        contentPadding = PaddingValues(bottom = 0.dp), // REMOVED PADDING TO FIX VOID
+                        contentPadding = PaddingValues(top = 80.dp, bottom = 100.dp), // Added top padding to avoid header overlap
                         verticalArrangement = Arrangement.spacedBy(0.dp), 
                         horizontalAlignment = Alignment.CenterHorizontally,
                         userScrollEnabled = scale == 1f 
@@ -266,15 +266,9 @@ fun UltraPreview(
             if (!isInitializing && fileToUnlock == null) {
                 val currentPage by remember { 
                     derivedStateOf { 
-                        // NITRO: Use last visible item to ensure we reach the end count
-                        val layoutInfo = listState.layoutInfo
-                        val visibleItemsInfo = layoutInfo.visibleItemsInfo
-                        if (visibleItemsInfo.isEmpty()) 1 
-                        else {
-                            val lastVisible = visibleItemsInfo.last().index + 1
-                            val firstVisible = listState.firstVisibleItemIndex + 1
-                            if (lastVisible == activePageCount) activePageCount else firstVisible
-                        }
+                        // NITRO: Use first visible item as base, but force last page if scrolled to bottom
+                        if (!listState.canScrollForward && activePageCount > 0) activePageCount
+                        else listState.firstVisibleItemIndex + 1
                     } 
                 }
                 var trackHeight by remember { mutableFloatStateOf(0f) }

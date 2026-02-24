@@ -125,6 +125,7 @@ fun ExtractImagesView(
                                                 val bitmap = xobject.image
                                                 val entry = ZipEntry("page_${pIdx + 1}_img_$imageCount.jpg")
                                                 zipOut.putNextEntry(entry)
+                                                // NITRO: Force flush and ensure data is written
                                                 bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
                                                 zipOut.closeEntry()
                                             } else if (xobject is PDFormXObject) {
@@ -141,8 +142,11 @@ fun ExtractImagesView(
                                 document.close()
                                 if (imageCount == 0) throw Exception("No images found in PDF")
                             }
+                            // NITRO: Finish and close the ZIP stream properly
                             zipOut.finish()
+                            zipOut.flush()
                         }
+                        outputStream.flush()
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
@@ -166,17 +170,28 @@ fun ExtractImagesView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Extract Image", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("EXTRACT IMAGES FROM PDFS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Extract Image", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("EXTRACT IMAGES FROM PDFS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -222,17 +237,15 @@ fun ExtractImagesView(
                             
                             Button(
                                 onClick = { 
-                                    val defaultName = fileName.replace(".pdf", "", true) + "-assets.zip"
-                                    saveLauncher.launch(defaultName) 
+                                    // Sanitize filename to avoid weird storage paths
+                                    val safeName = fileName.replace(Regex("[^a-zA-Z0-9.-]"), "_").replace(".pdf", "", true) + "-assets.zip"
+                                    saveLauncher.launch(safeName) 
                                 }, 
                                 modifier = Modifier.fillMaxWidth().height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {
                                 Text("EXTRACT IMAGES (ZIP)", fontWeight = FontWeight.Black, color = Color.White)
-                            }
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                                Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(100.dp))
                         }

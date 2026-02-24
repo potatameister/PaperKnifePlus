@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -146,16 +147,16 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
                 items(filteredItems, key = { it.id }) { item ->
                     HistoryItem(item, 
                         onClick = { item.uri?.let { uri -> onItemClick(uri, item.name, item.pageCount) } },
-                        onShare = {
+                        onDownload = {
                             try {
                                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                     type = "application/pdf"
                                     putExtra(android.content.Intent.EXTRA_STREAM, item.uri)
                                     addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
-                                context.startActivity(android.content.Intent.createChooser(intent, "Share PDF"))
+                                context.startActivity(android.content.Intent.createChooser(intent, "Save or Share PDF"))
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Cannot share file", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Cannot export file", Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -167,7 +168,7 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
 }
 
 @Composable
-fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onShare: () -> Unit) {
+fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     val entryColor = remember(entry.tool) { 
         when {
@@ -208,21 +209,29 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onShare: () -> Unit) 
                 Text("${entry.tool} • ${entry.size}", fontSize = 11.sp, color = Color.Gray)
             }
             
-            IconButton(onClick = onShare, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Filled.Share, null, tint = entryColor.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
+            IconButton(onClick = onDownload, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Outlined.FileDownload, null, tint = entryColor.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
             }
             
             Spacer(Modifier.width(8.dp))
 
-            Text(
-                "READY",
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Black,
-                color = entryColor,
-                modifier = Modifier
-                    .background(entryColor.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            )
+            Surface(
+                onClick = onClick,
+                modifier = Modifier.height(28.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = entryColor.copy(alpha = 0.1f),
+                border = BorderStroke(1.dp, entryColor.copy(alpha = 0.2f))
+            ) {
+                Box(Modifier.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        "OPEN",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Black,
+                        color = entryColor,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
         }
     }
 }

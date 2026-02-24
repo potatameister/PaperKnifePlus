@@ -109,17 +109,28 @@ fun PdfToZipView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("PDF to ZIP", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("PAGES TO ARCHIVE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("PDF to ZIP", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("PAGES TO ARCHIVE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -163,6 +174,7 @@ fun PdfToZipView(
                         ) {
                             Text("CONVERT & SAVE ZIP", fontWeight = FontWeight.Black, color = Color.White)
                         }
+                        Spacer(Modifier.height(100.dp))
                     }
                 }
                 ToolState.PROCESSING -> {

@@ -122,17 +122,28 @@ fun PdfToTextView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("PDF to Text", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("EXTRACT RAW CONTENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("PDF to Text", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("EXTRACT RAW CONTENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -191,7 +202,14 @@ fun PdfToTextView(
                     }
                     ToolState.SUCCESS -> {
                         Column(Modifier.fillMaxSize()) {
-                            Row(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .statusBarsPadding()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween, 
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Column {
                                     Text("EXTRACTED CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                                     Text("${extractedText.length} CHARACTERS FOUND", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
@@ -213,12 +231,12 @@ fun PdfToTextView(
                             }
                             
                             Surface(
-                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
                                 color = if (isDark) Color(0xFF09090B) else Color.White,
-                                shape = RoundedCornerShape(20.dp),
+                                shape = RoundedCornerShape(24.dp),
                                 border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
                             ) {
-                                Box(Modifier.padding(16.dp)) {
+                                Box(Modifier.padding(20.dp)) {
                                     if (extractedText.trim().isEmpty()) {
                                         Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                                             Icon(Icons.Filled.FindInPage, null, modifier = Modifier.size(48.dp).alpha(0.2f), tint = accentColor)
@@ -226,23 +244,29 @@ fun PdfToTextView(
                                         }
                                     } else {
                                         Column(Modifier.verticalScroll(rememberScrollState())) {
-                                            Text(text = extractedText, fontSize = 12.sp, fontFamily = FontFamily.Monospace, lineHeight = 18.sp)
+                                            Text(
+                                                text = extractedText, 
+                                                fontSize = 13.sp, 
+                                                fontFamily = FontFamily.Monospace, 
+                                                lineHeight = 20.sp,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
                                         }
                                     }
                                 }
                             }
                             
-                            Spacer(Modifier.height(16.dp))
-                            
-                            SuccessView(
-                                message = "Text Extracted",
-                                subMessage = "Successfully read document layers",
-                                processingTime = processingTime,
-                                onDone = onBack,
-                                onProcessMore = { selectedUri = null; extractedText = ""; currentState = ToolState.SELECTING },
-                                showPreviewButton = false,
-                                accentColor = accentColor
-                            )
+                            Button(
+                                onClick = onBack,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp)
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text("DONE", fontWeight = FontWeight.Black)
+                            }
                         }
                     }
                     else -> {}
