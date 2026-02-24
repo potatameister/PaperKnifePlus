@@ -205,8 +205,8 @@ fun GrayscaleView(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column(Modifier.weight(1f)) {
-                                        Text("LIVE PREVIEW", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                                        Text("Visualize colors removal instantly", fontSize = 11.sp, color = Color.Gray)
+                                        Text("PREVIEW", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                                        Text("Instant black and white preview", fontSize = 11.sp, color = Color.Gray)
                                     }
                                     Switch(
                                         checked = isLivePreview, 

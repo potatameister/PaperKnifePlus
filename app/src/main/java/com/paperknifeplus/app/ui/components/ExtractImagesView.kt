@@ -126,22 +126,31 @@ fun ExtractImagesView(
                                             processedObjects.add(cosObj)
 
                                             if (xobject is PDImageXObject) {
-                                                val bitmap = xobject.image
-                                                if (bitmap != null) {
-                                                    imageCount++
-                                                    scope.launch(Dispatchers.Main) { extractedCount = imageCount }
-                                                    
-                                                    val suffix = xobject.suffix ?: "jpg"
-                                                    val entry = ZipEntry("asset_${imageCount}_p${pIdx + 1}.$suffix")
-                                                    zipOut.putNextEntry(entry)
-                                                    
-                                                    // NITRO: Compress Bitmap to ensure compatibility across all viewers
-                                                    val format = if (suffix.lowercase() == "png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
-                                                    bitmap.compress(format, 90, zipOut)
-                                                    
-                                                    zipOut.closeEntry()
-                                                    bitmap.recycle() // Clean up
+                                                imageCount++
+                                                scope.launch(Dispatchers.Main) { extractedCount = imageCount }
+                                                
+                                                val suffix = xobject.suffix ?: "jpg"
+                                                val entry = ZipEntry("asset_${imageCount}_p${pIdx + 1}.$suffix")
+                                                zipOut.putNextEntry(entry)
+                                                
+                                                try {
+                                                    // Try Bitmap conversion for standard viewers compatibility
+                                                    val bitmap = xobject.image
+                                                    if (bitmap != null) {
+                                                        val format = if (suffix.lowercase() == "png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+                                                        bitmap.compress(format, 90, zipOut)
+                                                        bitmap.recycle()
+                                                    } else {
+                                                        throw Exception("Bitmap null")
+                                                    }
+                                                } catch (e: Exception) {
+                                                    // FALLBACK: Raw stream dump for JPX or complex encodings
+                                                    xobject.createInputStream().use { imageStream ->
+                                                        imageStream.copyTo(zipOut)
+                                                    }
                                                 }
+                                                
+                                                zipOut.closeEntry()
                                             } else if (xobject is PDFormXObject) {
                                                 extractFromResources(xobject.resources, pIdx)
                                             }

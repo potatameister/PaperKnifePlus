@@ -250,7 +250,6 @@ suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: 
         val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
         val targetDoc = PDDocument()
         
-        // NITRO: Use native renderer if possible for speed and 100% visual fidelity
         val pfd = context.contentResolver.openFileDescriptor(inputUri, "r")
         val nativeRenderer = if (pfd != null && password == null) android.graphics.pdf.PdfRenderer(pfd) else null
         val pdfboxRenderer = PDFRenderer(sourceDoc)
@@ -260,33 +259,40 @@ suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: 
             onProgress(i + 1, total)
             
             val page = sourceDoc.getPage(i)
-            val width = page.mediaBox.width * 2.0f
-            val height = page.mediaBox.height * 2.0f
+            // NITRO: Boost to 3.0f for extreme fidelity (preserves tiny artifacts/lines)
+            val scale = 3.0f
+            val width = page.mediaBox.width * scale
+            val height = page.mediaBox.height * scale
             
             val rgbBitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
             val canvas = Canvas(rgbBitmap)
             canvas.drawColor(android.graphics.Color.WHITE)
             
+            // Use anti-aliasing for smoother artifacts
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+            
             if (nativeRenderer != null && i < nativeRenderer.pageCount) {
                 val nativePage = nativeRenderer.openPage(i)
-                // Render both modes for absolute fidelity
+                // RENDER BOTH MODES for 100% fidelity (includes backgrounds and complex vectors)
                 nativePage.render(rgbBitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 nativePage.render(rgbBitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
                 nativePage.close()
             } else {
-                val renderedPage = pdfboxRenderer.renderImage(i, 2.0f, ImageType.RGB)
-                canvas.drawBitmap(renderedPage, 0f, 0f, null)
+                val renderedPage = pdfboxRenderer.renderImage(i, scale, ImageType.RGB)
+                canvas.drawBitmap(renderedPage, 0f, 0f, paint)
                 renderedPage.recycle()
             }
             
             val grayBitmap = toGrayscaleBitmap(rgbBitmap)
             rgbBitmap.recycle()
             
-            // High quality compression (0.9f)
-            val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.9f)
-            val newPage = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
+            // High quality compression (0.95f) to prevent blur
+            val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.95f)
+            val newPage = PDPage(PDRectangle(page.mediaBox.width, page.mediaBox.height))
             targetDoc.addPage(newPage)
-            PDPageContentStream(targetDoc, newPage).use { it.drawImage(pdImage, 0f, 0f) }
+            PDPageContentStream(targetDoc, newPage).use { 
+                it.drawImage(pdImage, 0f, 0f, page.mediaBox.width, page.mediaBox.height) 
+            }
             grayBitmap.recycle()
         }
         
@@ -304,18 +310,21 @@ suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, passwor
         val renderer = PDFRenderer(sourceDoc)
         val total = sourceDoc.numberOfPages
         
-        // Tuned Quality Settings
-        val quality = when(level) { "Extreme" -> 0.4f; "Recommended" -> 0.6f; else -> 0.8f }
-        val scale = when(level) { "Extreme" -> 0.5f; "Recommended" -> 0.75f; else -> 1.0f }
+        // ANTI-BLUR QUALITY SETTINGS
+        val quality = when(level) { "Extreme" -> 0.5f; "Recommended" -> 0.75f; else -> 0.9f }
+        val scale = when(level) { "Extreme" -> 1.2f; "Recommended" -> 1.8f; else -> 2.5f }
 
         for (i in 0 until total) {
             onProgress(i + 1, total)
-            // Render page to flattened bitmap to ensure max compression
+            val page = sourceDoc.getPage(i)
+            // Render page with high scale + filtering to prevent blockiness
             val bitmap = renderer.renderImage(i, scale, ImageType.RGB)
             val pdImage = JPEGFactory.createFromImage(targetDoc, bitmap, quality)
-            val page = PDPage(PDRectangle(pdImage.width.toFloat(), pdImage.height.toFloat()))
-            targetDoc.addPage(page)
-            PDPageContentStream(targetDoc, page).use { it.drawImage(pdImage, 0f, 0f) }
+            val newPage = PDPage(PDRectangle(page.mediaBox.width, page.mediaBox.height))
+            targetDoc.addPage(newPage)
+            PDPageContentStream(targetDoc, newPage).use { 
+                it.drawImage(pdImage, 0f, 0f, page.mediaBox.width, page.mediaBox.height) 
+            }
             bitmap.recycle()
         }
         
