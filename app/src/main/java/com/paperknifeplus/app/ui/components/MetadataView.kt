@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -187,13 +188,14 @@ fun MetadataView(
                         )
                     }
                     ToolState.CONFIGURING -> {
+                        // NITRO: Fully scrollable single-column overhaul
                         Column(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(16.dp))
                             
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.65f)) {
+                            Box(modifier = Modifier.fillMaxWidth(0.6f).aspectRatio(0.707f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -203,46 +205,45 @@ fun MetadataView(
                                 )
                             }
                             
-                            Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                            Spacer(Modifier.height(16.dp))
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
+                            
+                            Spacer(Modifier.height(24.dp))
+                            
+                            MetadataGroup("CORE METADATA") {
+                                MetadataEditField("Title", title, accentColor) { title = it }
+                                MetadataEditField("Author", author, accentColor) { author = it }
+                            }
                             
                             Spacer(Modifier.height(16.dp))
                             
-                            Column(Modifier.fillMaxWidth().weight(2f).verticalScroll(rememberScrollState())) {
-                                MetadataGroup("CORE METADATA") {
-                                    MetadataEditField("Title", title, accentColor) { title = it }
-                                    MetadataEditField("Author", author, accentColor) { author = it }
-                                }
-                                
-                                Spacer(Modifier.height(12.dp))
-                                
-                                MetadataGroup("ADDITIONAL TAGS") {
-                                    MetadataEditField("Subject", subject, accentColor) { subject = it }
-                                    MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
-                                }
-
-                                Spacer(Modifier.height(12.dp))
-
-                                MetadataGroup("SOURCE ENGINE") {
-                                    MetadataEditField("Creator", creator, accentColor) { creator = it }
-                                    MetadataEditField("Producer", producer, accentColor) { producer = it }
-                                }
-                                
-                                Spacer(Modifier.height(24.dp))
-                                
-                                Button(
-                                    onClick = { 
-                                        val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
-                                        saveLauncher.launch(defaultName) 
-                                    }, 
-                                    modifier = Modifier.fillMaxWidth().height(60.dp), 
-                                    shape = RoundedCornerShape(20.dp), 
-                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                                ) {
-                                    Text("SAVE PROPERTIES", fontWeight = FontWeight.Black, color = Color.White)
-                                }
-                                Spacer(Modifier.height(32.dp))
+                            MetadataGroup("ADDITIONAL TAGS") {
+                                MetadataEditField("Subject", subject, accentColor) { subject = it }
+                                MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
                             }
+
+                            Spacer(Modifier.height(16.dp))
+
+                            MetadataGroup("SOURCE ENGINE") {
+                                MetadataEditField("Creator", creator, accentColor) { creator = it }
+                                MetadataEditField("Producer", producer, accentColor) { producer = it }
+                            }
+                            
+                            Spacer(Modifier.height(32.dp))
+                            
+                            Button(
+                                onClick = { 
+                                    val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
+                                    saveLauncher.launch(defaultName) 
+                                }, 
+                                modifier = Modifier.fillMaxWidth().height(60.dp), 
+                                shape = RoundedCornerShape(20.dp), 
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text("SAVE PROPERTIES", fontWeight = FontWeight.Black, color = Color.White)
+                            }
+                            Spacer(Modifier.height(100.dp))
                         }
                     }
                     ToolState.PROCESSING -> {
@@ -280,26 +281,24 @@ fun MetadataView(
                     fileName = fileToUnlock!!,
                     onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
                     onUnlocked = { pass ->
-                        unlockPassword = pass
                         isFileLoading = true
                         scope.launch(Dispatchers.IO) {
-                            val decryptedUri = decryptToCache(context, selectedUri!!, pass)
-                            if (decryptedUri != null) {
-                                val count = getPageCount(context, decryptedUri, null)
-                                loadMetadata(context, decryptedUri, null) { t, a, s, k, c, p ->
-                                    title = t; author = a; subject = s; keywords = k; creator = c; producer = p
-                                    withContext(Dispatchers.Main) {
-                                        selectedUri = decryptedUri
-                                        pageCount = count
-                                        currentState = ToolState.CONFIGURING
-                                        isFileLoading = false
-                                        fileToUnlock = null
+                            val count = getPageCount(context, selectedUri!!, pass)
+                            withContext(Dispatchers.Main) { 
+                                if (count > 0) {
+                                    unlockPassword = pass
+                                    loadMetadata(context, selectedUri!!, pass) { t, a, s, k, c, p ->
+                                        title = t; author = a; subject = s; keywords = k; creator = c; producer = p
+                                        withContext(Dispatchers.Main) {
+                                            pageCount = count
+                                            currentState = ToolState.CONFIGURING
+                                            isFileLoading = false
+                                            fileToUnlock = null
+                                        }
                                     }
-                                }
-                            } else {
-                                withContext(Dispatchers.Main) { 
+                                } else {
                                     Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                    isFileLoading = false 
+                                    isFileLoading = false
                                 }
                             }
                         }

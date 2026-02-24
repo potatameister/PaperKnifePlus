@@ -202,7 +202,13 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
                     val width = (page.width * scale).toInt().coerceAtLeast(1)
                     val height = (page.height * scale).toInt().coerceAtLeast(1)
                     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                    val canvas = Canvas(bitmap)
+                    canvas.drawColor(android.graphics.Color.WHITE)
+                    
+                    // NITRO: Render both modes to ensure all artifacts/images are visible
                     page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                    page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+                    
                     page.close()
                     renderer.close()
                     BitmapCache.putBitmap(key, bitmap)
@@ -218,6 +224,7 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
         val document = PdDocumentPool.acquire(context, uri, password)
         if (document != null) {
             val renderer = PDFRenderer(document)
+            // Use ImageType.RGB to ensure color artifacts are preserved
             val bitmap = renderer.renderImage(pageIndex, scale, ImageType.RGB)
             BitmapCache.putBitmap(key, bitmap)
             return@withContext bitmap

@@ -126,17 +126,19 @@ fun ExtractImagesView(
                                             processedObjects.add(cosObj)
 
                                             if (xobject is PDImageXObject) {
-                                                val bitmap = xobject.image
-                                                if (bitmap != null) {
-                                                    imageCount++
-                                                    scope.launch(Dispatchers.Main) { extractedCount = imageCount }
-                                                    
-                                                    val entry = ZipEntry("asset_${imageCount}_p${pIdx + 1}.jpg")
-                                                    zipOut.putNextEntry(entry)
-                                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, zipOut)
-                                                    zipOut.flush() // NITRO: Force flush per entry
-                                                    zipOut.closeEntry()
+                                                imageCount++
+                                                scope.launch(Dispatchers.Main) { extractedCount = imageCount }
+                                                
+                                                val suffix = xobject.suffix ?: "jpg"
+                                                val entry = ZipEntry("asset_${imageCount}_p${pIdx + 1}.$suffix")
+                                                zipOut.putNextEntry(entry)
+                                                
+                                                // NITRO: Extract RAW bytes from stream for 100% fidelity and zero rendering overhead
+                                                xobject.createInputStream().use { imageStream ->
+                                                    imageStream.copyTo(zipOut)
                                                 }
+                                                
+                                                zipOut.closeEntry()
                                             } else if (xobject is PDFormXObject) {
                                                 extractFromResources(xobject.resources, pIdx)
                                             }
@@ -151,7 +153,6 @@ fun ExtractImagesView(
                                 document.close()
                                 if (imageCount == 0) throw Exception("No images found in PDF")
                             }
-                            // NITRO: Finish and close the ZIP stream properly
                             zipOut.finish()
                             zipOut.flush()
                         }
@@ -224,12 +225,12 @@ fun ExtractImagesView(
                     }
                     ToolState.CONFIGURING -> {
                         Column(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(16.dp))
                             
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.7f)) {
+                            Box(modifier = Modifier.fillMaxWidth(0.6f).aspectRatio(0.707f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -240,14 +241,14 @@ fun ExtractImagesView(
                             }
                             
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(20.dp))
-                            Text("READY TO STRIP ASSETS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Text("Extract all raw images into a ZIP archive.", fontSize = 11.sp, color = Color.Gray)
-                            
                             Spacer(Modifier.height(24.dp))
+                            Text("READY TO STRIP ASSETS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Text("Strip and save all raw image files from the document.", fontSize = 12.sp, color = Color.Gray)
+                            
+                            Spacer(Modifier.height(32.dp))
                             
                             Button(
                                 onClick = { 
@@ -260,7 +261,7 @@ fun ExtractImagesView(
                             ) {
                                 Text("EXTRACT IMAGES (ZIP)", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            Spacer(Modifier.height(32.dp))
+                            Spacer(Modifier.height(100.dp))
                         }
                     }
                     ToolState.PROCESSING -> {
@@ -299,20 +300,19 @@ fun ExtractImagesView(
                     fileName = fileToUnlock!!,
                     onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
                     onUnlocked = { pass ->
-                        unlockPassword = pass
                         isFileLoading = true
                         scope.launch(Dispatchers.IO) {
                             val count = getPageCount(context, selectedUri!!, pass)
                             withContext(Dispatchers.Main) { 
-                                fileToUnlock = null
                                 if (count > 0) {
+                                    unlockPassword = pass
                                     pageCount = count
                                     currentState = ToolState.CONFIGURING
-                                    isFileLoading = false
+                                    fileToUnlock = null
                                 } else {
                                     Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                    isFileLoading = false
                                 }
+                                isFileLoading = false
                             }
                         }
                     },

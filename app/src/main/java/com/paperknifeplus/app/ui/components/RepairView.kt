@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -120,17 +121,28 @@ fun RepairView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Repair", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("RECOVER CORRUPT DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Repair", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("RECOVER CORRUPT DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -153,30 +165,37 @@ fun RepairView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        // NITRO: Fully scrollable overhaul
+                        Column(
+                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Spacer(Modifier.height(16.dp))
                             
-                            // UNIFIED PREVIEW
-                            UnifiedPdfPreview(
-                                uri = selectedUri!!,
-                                pageCount = pageCount,
-                                mode = PreviewMode.COVER,
-                                password = if (unlockPassword.isEmpty()) null else unlockPassword,
-                                accentColor = accentColor
-                            )
-                            
-                            Spacer(Modifier.height(16.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                            Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-                                Text(fileSize, fontSize = 11.sp, color = Color.Gray)
-                                Spacer(Modifier.width(8.dp))
-                                Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
+                            Box(modifier = Modifier.fillMaxWidth(0.65f).aspectRatio(0.707f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.COVER,
+                                    password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                    accentColor = accentColor
+                                )
                             }
+                            
+                            Spacer(Modifier.height(16.dp))
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
                             Spacer(Modifier.height(32.dp))
                             
                             Text("READY TO REPAIR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                            Text("PaperKnife+ will rebuild the PDF index and cross-reference table to restore accessibility.", fontSize = 12.sp, color = Color.Gray)
+                            Text(
+                                "PaperKnife+ will rebuild the PDF index and cross-reference table to restore accessibility.", 
+                                fontSize = 12.sp, 
+                                color = Color.Gray,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
                             
                             Spacer(Modifier.height(32.dp))
                             
@@ -190,9 +209,6 @@ fun RepairView(
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {
                                 Text("REPAIR & SAVE PDF", fontWeight = FontWeight.Black, color = Color.White)
-                            }
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                                Text("CHANGE FILE", color = Color.Gray, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(100.dp))
                         }
@@ -232,22 +248,19 @@ fun RepairView(
                     fileName = fileToUnlock!!,
                     onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
                     onUnlocked = { pass ->
-                        unlockPassword = pass
                         isFileLoading = true
                         scope.launch(Dispatchers.IO) {
                             val count = getPageCount(context, selectedUri!!, pass)
-                            if (count > 0) {
-                                withContext(Dispatchers.Main) { 
+                            withContext(Dispatchers.Main) { 
+                                if (count > 0) {
+                                    unlockPassword = pass
                                     pageCount = count
                                     currentState = ToolState.CONFIGURING
-                                    isFileLoading = false 
                                     fileToUnlock = null
-                                }
-                            } else {
-                                withContext(Dispatchers.Main) { 
+                                } else {
                                     Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
-                                    isFileLoading = false 
                                 }
+                                isFileLoading = false 
                             }
                         }
                     },
