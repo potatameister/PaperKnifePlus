@@ -88,7 +88,7 @@ fun UnifiedPdfPreview(
                         contentDescription = "Document Cover",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit,
-                        colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setSaturation(0f) }) else null
+                        colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null
                     )
                     if (painter.state is AsyncImagePainter.State.Loading) {
                         CircularProgressIndicator(color = accentColor, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
@@ -236,7 +236,7 @@ fun PdfPageItem(
         Image(
             painter = painter, contentDescription = "Page ${index + 1}",
             modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit,
-            colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setSaturation(0f) }) else null
+            colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null
         )
         if (painter.state is AsyncImagePainter.State.Loading) {
             CircularProgressIndicator(color = accentColor, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
