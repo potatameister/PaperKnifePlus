@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.FolderZip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -86,25 +87,31 @@ fun PdfToZipView(
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
+                    // Load the document into memory completely to avoid stream closure issues
+                    val bytes = context.contentResolver.openInputStream(selectedUri!!)?.use { it.readBytes() } ?: throw Exception("Failed to read source file")
+                    
                     context.contentResolver.openOutputStream(saveUri)?.use { os ->
                         ZipOutputStream(os).use { zipOut ->
-                            // NITRO: Load main document once outside the loop
-                            context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                                val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
-                                val total = document.numberOfPages
-                                for (i in 0 until total) {
-                                    withContext(Dispatchers.Main) { progressCount = i + 1 }
-                                    val singlePageDoc = PDDocument()
-                                    singlePageDoc.importPage(document.getPage(i))
-                                    
-                                    val entryName = fileName.replace(".pdf", "", true) + "_p${i + 1}.pdf"
-                                    zipOut.putNextEntry(ZipEntry(entryName))
-                                    singlePageDoc.save(zipOut)
-                                    zipOut.closeEntry()
-                                    singlePageDoc.close()
-                                }
-                                document.close()
+                            val sourceDoc = if (unlockPassword.isNotEmpty()) PDDocument.load(bytes, unlockPassword) else PDDocument.load(bytes)
+                            val total = sourceDoc.numberOfPages
+                            
+                            for (i in 0 until total) {
+                                withContext(Dispatchers.Main) { progressCount = i + 1 }
+                                val singlePageDoc = PDDocument()
+                                singlePageDoc.importPage(sourceDoc.getPage(i))
+                                
+                                val entryName = fileName.replace(".pdf", "", true) + "_p${i + 1}.pdf"
+                                zipOut.putNextEntry(ZipEntry(entryName))
+                                
+                                // Save to BAOS first to avoid potential ZipOutputStream closure by PDDocument.save
+                                val baos = ByteArrayOutputStream()
+                                singlePageDoc.save(baos)
+                                zipOut.write(baos.toByteArray())
+                                zipOut.closeEntry()
+                                
+                                singlePageDoc.close()
                             }
+                            sourceDoc.close()
                             zipOut.finish()
                             zipOut.flush()
                         }
@@ -193,8 +200,8 @@ fun PdfToZipView(
                             Text(fileName, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
 
-                            Spacer(Modifier.height(24.dp))
-                            Text("ARCHIVE INFO", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Spacer(Modifier.height(20.dp))
+                            Text("ARCHIVE INFO", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Text(
                                 "Bundle all document pages as individual PDFs into a single ZIP archive.", 
                                 fontSize = 11.sp, 

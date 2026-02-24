@@ -5,7 +5,11 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -110,7 +114,6 @@ fun UnlockView(
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                        // Instead of going back to UNLOCKING (which is gone), we just stay in SELECTING or show error
                         currentState = ToolState.SELECTING
                     }
                 }
@@ -171,9 +174,9 @@ fun UnlockView(
                             modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
                             
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.85f)) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth(0.75f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -183,17 +186,14 @@ fun UnlockView(
                                 )
                             }
                             
-                            Spacer(Modifier.height(16.dp))
-                            Text(fileName, fontWeight = FontWeight.Black, fontSize = 16.sp, maxLines = 1)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(fileSize, fontSize = 11.sp, color = Color.Gray)
-                                Spacer(Modifier.width(8.dp))
-                                Text("• $pageCount PAGES", fontSize = 11.sp, color = Color.Gray)
-                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
+                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(24.dp))
-                            Text("File Unlocked", fontWeight = FontWeight.Black, fontSize = 20.sp)
-                            Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 14.sp)
+                            Spacer(Modifier.height(20.dp))
+                            Text("DOCUMENT UNLOCKED", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
+                            Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 11.sp)
+                            
                             Spacer(Modifier.height(32.dp))
                             Button(
                                 onClick = { 
