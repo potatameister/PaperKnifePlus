@@ -54,25 +54,34 @@ fun BookmarksView(
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
+    var unlockPassword by remember { mutableStateOf("") }
+    var fileToUnlock by remember { mutableStateOf<String?>(null) }
     
     var bookmarks by remember { mutableStateOf<List<Bookmark>>(emptyList()) }
     var showAddDialog by remember { mutableStateOf(false) }
 
-    fun extractBookmarks(uri: Uri) {
+    fun extractBookmarks(uri: Uri, pass: String?) {
         scope.launch(Dispatchers.IO) {
             try {
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val document = PDDocument.load(inputStream)
+                val document = PdDocumentPool.acquire(context, uri, pass)
+                if (document != null) {
                     val outline = document.documentCatalog.documentOutline
                     val list = mutableListOf<Bookmark>()
                     
+                    fun resolvePage(item: PDOutlineItem): Int {
+                        try {
+                            val dest = item.destination
+                            if (dest is com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination) {
+                                return document.pages.indexOf(dest.page)
+                            }
+                        } catch (e: Exception) {}
+                        return 0
+                    }
+
                     fun traverse(item: PDOutlineItem?) {
                         var current = item
                         while (current != null) {
-                            val title = current.title
-                            // Note: Finding page index from outline is complex in PDFBox-Android, 
-                            // we'll simplify for the gold standard UI.
-                            list.add(Bookmark(title, 0))
+                            list.add(Bookmark(current.title, resolvePage(current)))
                             traverse(current.firstChild)
                             current = current.nextSibling
                         }
@@ -85,8 +94,13 @@ fun BookmarksView(
                         pageCount = document.numberOfPages
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
+                        fileToUnlock = null
                     }
-                    document.close()
+                } else {
+                    withContext(Dispatchers.Main) { 
+                        fileToUnlock = getUriDetails(context, uri).name
+                        isFileLoading = false 
+                    }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { isFileLoading = false }
@@ -100,7 +114,43 @@ fun BookmarksView(
             val details = getUriDetails(context, it)
             fileName = details.name
             isFileLoading = true
-            extractBookmarks(it)
+            extractBookmarks(it, null)
+        }
+    }
+
+    val extractLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        uri?.let { saveUri ->
+            currentState = ToolState.PROCESSING
+            val startTime = System.currentTimeMillis()
+            scope.launch(Dispatchers.IO) {
+                try {
+                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
+                        val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
+                        val target = PDDocument()
+                        
+                        // Extract only pages that have bookmarks
+                        val bookmarkedIndices = bookmarks.map { it.pageIndex }.toSet().sorted()
+                        bookmarkedIndices.forEach { idx ->
+                            if (idx in 0 until document.numberOfPages) {
+                                target.addPage(document.getPage(idx))
+                            }
+                        }
+                        
+                        saveAndFlush(context, target, saveUri)
+                        document.close()
+                    }
+                    withContext(Dispatchers.Main) {
+                        processingTime = String.format("%.1fs", (System.currentTimeMillis() - startTime) / 1000.0)
+                        outputUri = saveUri
+                        currentState = ToolState.SUCCESS
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Extraction failed: ${e.message}", Toast.LENGTH_LONG).show()
+                        currentState = ToolState.CONFIGURING
+                    }
+                }
+            }
         }
     }
 
@@ -111,7 +161,7 @@ fun BookmarksView(
             scope.launch(Dispatchers.IO) {
                 try {
                     context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                        val document = PDDocument.load(inputStream)
+                        val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                         val outline = PDDocumentOutline()
                         document.documentCatalog.documentOutline = outline
                         
@@ -145,17 +195,28 @@ fun BookmarksView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Bookmarks", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("EDIT DOCUMENT NAVIGATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Bookmarks", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("EDIT DOCUMENT NAVIGATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -216,23 +277,33 @@ fun BookmarksView(
                                 }
                             }
                             
-                            Button(
-                                onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-nav.pdf") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                            ) {
-                                Text("SAVE BOOKMARKS", fontWeight = FontWeight.Black)
+                            Row(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Button(
+                                    onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-nav.pdf") },
+                                    modifier = Modifier.weight(1f).height(60.dp),
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                ) {
+                                    Text("SAVE PDF", fontWeight = FontWeight.Black)
+                                }
+                                OutlinedButton(
+                                    onClick = { extractLauncher.launch(fileName.replace(".pdf", "") + "-extract.pdf") },
+                                    modifier = Modifier.weight(1f).height(60.dp),
+                                    enabled = bookmarks.isNotEmpty(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
+                                ) {
+                                    Text("EXTRACT PAGES", fontWeight = FontWeight.Black, color = accentColor)
+                                }
                             }
                         }
                     }
                     ToolState.PROCESSING -> {
                         ProcessingStateView(
                             accentColor = accentColor,
-                            preview = null,
                             uri = selectedUri,
-                            password = null,
-                            text = "Updating navigation...",
+                            password = unlockPassword.ifEmpty { null },
+                            text = "Updating document...",
                             current = 0,
                             total = 0,
                             showWarning = false
@@ -240,11 +311,15 @@ fun BookmarksView(
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
-                            message = "Navigation Saved",
-                            subMessage = "Bookmarks updated successfully",
+                            message = "Task Complete",
+                            subMessage = "Document updated successfully",
                             processingTime = processingTime,
                             onDone = onBack,
-                            onProcessMore = { currentState = ToolState.SELECTING },
+                            onProcessMore = { 
+                                selectedUri = null
+                                bookmarks = emptyList()
+                                currentState = ToolState.SELECTING 
+                            },
                             onPreview = { outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
                             accentColor = accentColor
                         )
@@ -252,6 +327,32 @@ fun BookmarksView(
                     else -> {}
                 }
             }
+
+            if (fileToUnlock != null) {
+                LockedFilePrompt(
+                    fileName = fileToUnlock!!,
+                    onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
+                    onUnlocked = { pass ->
+                        isFileLoading = true
+                        scope.launch(Dispatchers.IO) {
+                            val count = getPageCount(context, selectedUri!!, pass)
+                            withContext(Dispatchers.Main) { 
+                                if (count > 0) {
+                                    unlockPassword = pass
+                                    extractBookmarks(selectedUri!!, pass)
+                                } else {
+                                    Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                    isFileLoading = false
+                                }
+                            }
+                        }
+                    },
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
+                )
+            }
+        }
+    }
         }
     }
 

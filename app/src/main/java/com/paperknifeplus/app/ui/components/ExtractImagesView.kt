@@ -145,7 +145,7 @@ fun ExtractImagesView(
                                                     }
                                                 } catch (e: Exception) {
                                                     // FALLBACK: Raw stream dump for JPX or complex encodings
-                                                    // Use createRawInputStream to get actual data bytes
+                                                    // Use createRawInputStream to get actual data bytes from the object stream
                                                     xobject.cosObject.createRawInputStream().use { imageStream ->
                                                         imageStream.copyTo(zipOut)
                                                     }
