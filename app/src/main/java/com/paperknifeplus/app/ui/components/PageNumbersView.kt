@@ -55,13 +55,16 @@ fun PageNumbersView(
     var processingTime by remember { mutableStateOf("") }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     
-    var selectedPages by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var position by remember { mutableStateOf("Bottom Right") }
-    var fontSize by remember { mutableFloatStateOf(12f) }
+    var fontSize by remember { mutableFloatStateOf(14f) }
     var format by remember { mutableStateOf("Page {n}") }
     var numberColor by remember { mutableStateOf(Color.Black) }
     
     var showPreviewOverlay by remember { mutableStateOf(true) }
+    
+    // Selectors
+    var showPositionSheet by remember { mutableStateOf(false) }
+    var showColorSheet by remember { mutableStateOf(false) }
 
     fun handleFileSelection(uri: Uri) {
         selectedUri = uri
@@ -77,7 +80,6 @@ fun PageNumbersView(
                 } else {
                     val count = getPageCount(context, uri, null)
                     pageCount = count
-                    selectedPages = (0 until count).toSet() 
                     currentState = ToolState.CONFIGURING
                     isFileLoading = false
                 }
@@ -99,34 +101,31 @@ fun PageNumbersView(
                         val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                         if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
                         
-                        selectedPages.forEach { pageIdx ->
-                            if (pageIdx < document.numberOfPages) {
-                                val page = document.getPage(pageIdx)
-                                PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
-                                    val rect = page.mediaBox
-                                    val text = format.replace("{n}", (pageIdx + 1).toString())
-                                    val font = PDType1Font.HELVETICA_BOLD
-                                    val textWidth = font.getStringWidth(text) / 1000 * fontSize
-                                    
-                                    val margin = 30f
-                                    val x = when {
-                                        position.contains("Left") -> margin
-                                        position.contains("Center") -> (rect.width - textWidth) / 2
-                                        else -> rect.width - textWidth - margin
-                                    }
-                                    val y = when {
-                                        position.contains("Top") -> rect.height - margin - fontSize
-                                        else -> margin
-                                    }
-                                    
-                                    cs.beginText()
-                                    cs.setFont(font, fontSize)
-                                    // NITRO: Proper color conversion for PDFBox
-                                    cs.setNonStrokingColor(numberColor.red, numberColor.green, numberColor.blue)
-                                    cs.newLineAtOffset(x, y)
-                                    cs.showText(text)
-                                    cs.endText()
+                        (0 until document.numberOfPages).forEach { pageIdx ->
+                            val page = document.getPage(pageIdx)
+                            PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
+                                val rect = page.mediaBox
+                                val text = format.replace("{n}", (pageIdx + 1).toString())
+                                val font = PDType1Font.HELVETICA_BOLD
+                                val textWidth = font.getStringWidth(text) / 1000 * fontSize
+                                
+                                val margin = 30f
+                                val x = when {
+                                    position.contains("Left") -> margin
+                                    position.contains("Center") -> (rect.width - textWidth) / 2
+                                    else -> rect.width - textWidth - margin
                                 }
+                                val y = when {
+                                    position.contains("Top") -> rect.height - margin - fontSize
+                                    else -> margin
+                                }
+                                
+                                cs.beginText()
+                                cs.setFont(font, fontSize)
+                                cs.setNonStrokingColor(numberColor.red, numberColor.green, numberColor.blue)
+                                cs.newLineAtOffset(x, y)
+                                cs.showText(text)
+                                cs.endText()
                             }
                         }
                         saveAndFlush(context, document, saveUri)
@@ -200,56 +199,38 @@ fun PageNumbersView(
                         ) {
                             Spacer(Modifier.height(12.dp))
                             
-                            // Header Stats & Selection
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Column {
-                                    Text("${selectedPages.size} / $pageCount PAGES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
-                                }
-                                Row {
-                                    TextButton(onClick = { selectedPages = (0 until pageCount).toSet() }) {
-                                        Text("SELECT ALL", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
-                                    }
-                                    TextButton(onClick = { selectedPages = emptySet() }) {
-                                        Text("CLEAR", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
-                                    }
-                                }
-                            }
-
                             Box(modifier = Modifier.weight(1f)) {
+                                val numberOverlay: @Composable (BoxScope.(Int) -> Unit) = { index ->
+                                    if (showPreviewOverlay) {
+                                        val text = format.replace("{n}", (index + 1).toString())
+                                        Box(Modifier.fillMaxSize(), contentAlignment = when {
+                                            position.contains("Bottom") && position.contains("Left") -> Alignment.BottomStart
+                                            position.contains("Bottom") && position.contains("Center") -> Alignment.BottomCenter
+                                            position.contains("Bottom") && position.contains("Right") -> Alignment.BottomEnd
+                                            position.contains("Top") && position.contains("Left") -> Alignment.TopStart
+                                            position.contains("Top") && position.contains("Center") -> Alignment.TopCenter
+                                            position.contains("Top") && position.contains("Right") -> Alignment.TopEnd
+                                            else -> Alignment.BottomEnd
+                                        }) {
+                                            Text(
+                                                text = text, 
+                                                color = numberColor, 
+                                                fontSize = (fontSize / 2).sp, // Scaled for grid
+                                                fontWeight = FontWeight.Black, 
+                                                modifier = Modifier.padding(6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
                                     mode = PreviewMode.GRID,
                                     password = unlockPassword.ifEmpty { null }, 
                                     accentColor = accentColor,
-                                    showIndexNumbers = false, // HIDE DEFAULT GRID NUMBERS
-                                    selectedPages = selectedPages,
-                                    onToggleSelection = { index ->
-                                        selectedPages = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
-                                    },
-                                    itemOverlay = { index ->
-                                        if (showPreviewOverlay && selectedPages.contains(index)) {
-                                            val text = format.replace("{n}", (index + 1).toString())
-                                            Box(Modifier.fillMaxSize(), contentAlignment = when {
-                                                position.contains("Bottom") && position.contains("Left") -> Alignment.BottomStart
-                                                position.contains("Bottom") && position.contains("Center") -> Alignment.BottomCenter
-                                                position.contains("Bottom") && position.contains("Right") -> Alignment.BottomEnd
-                                                position.contains("Top") && position.contains("Left") -> Alignment.TopStart
-                                                position.contains("Top") && position.contains("Center") -> Alignment.TopCenter
-                                                position.contains("Top") && position.contains("Right") -> Alignment.TopEnd
-                                                else -> Alignment.BottomEnd
-                                            }) {
-                                                // OVERLAY PNG-STYLE TEXT (NO BOX)
-                                                Text(
-                                                    text = text, 
-                                                    color = numberColor, 
-                                                    fontSize = 8.sp, 
-                                                    fontWeight = FontWeight.Black, 
-                                                    modifier = Modifier.padding(6.dp)
-                                                )
-                                            }
-                                        }
-                                    }
+                                    showIndexNumbers = false, 
+                                    itemOverlay = numberOverlay
                                 )
                             }
                             
@@ -268,45 +249,31 @@ fun PageNumbersView(
                                             onCheckedChange = { showPreviewOverlay = it }, 
                                             colors = SwitchDefaults.colors(
                                                 checkedThumbColor = Color.White,
-                                                checkedTrackColor = accentColor,
-                                                uncheckedThumbColor = Color.Gray,
-                                                uncheckedTrackColor = Color.Gray.copy(0.2f)
+                                                checkedTrackColor = accentColor
                                             )
                                         )
                                     }
                                     
                                     Spacer(Modifier.height(12.dp))
                                     
-                                    // Formatting & Color
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         OutlinedTextField(
                                             value = format,
                                             onValueChange = { format = it },
-                                            label = { Text("Format ({n})", fontSize = 10.sp) },
+                                            label = { Text("Format ({n})", fontSize = 9.sp) },
                                             modifier = Modifier.weight(1.5f),
                                             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                                             shape = RoundedCornerShape(12.dp),
                                             singleLine = true,
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = accentColor,
-                                                focusedLabelColor = accentColor
-                                            )
+                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor, focusedLabelColor = accentColor)
                                         )
                                         
-                                        // Color Picker (Presets)
                                         Surface(
                                             modifier = Modifier.weight(1f).height(56.dp),
                                             shape = RoundedCornerShape(12.dp),
                                             color = MaterialTheme.colorScheme.surface,
                                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(0.3f)),
-                                            onClick = {
-                                                numberColor = when(numberColor) {
-                                                    Color.Black -> Color.White
-                                                    Color.White -> Color.Red
-                                                    Color.Red -> Color.Blue
-                                                    else -> Color.Black
-                                                }
-                                            }
+                                            onClick = { showColorSheet = true }
                                         ) {
                                             Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                                                 Box(Modifier.size(16.dp).clip(CircleShape).background(numberColor).border(1.dp, Color.Gray.copy(0.3f), CircleShape))
@@ -316,28 +283,28 @@ fun PageNumbersView(
                                         }
                                     }
                                     
-                                    Spacer(Modifier.height(8.dp))
+                                    Spacer(Modifier.height(12.dp))
+                                    Text("FONT SIZE: ${fontSize.toInt()} PT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                                    Slider(
+                                        value = fontSize,
+                                        onValueChange = { fontSize = it },
+                                        valueRange = 8f..36f,
+                                        colors = SliderDefaults.colors(thumbColor = accentColor, activeTrackColor = accentColor)
+                                    )
                                     
                                     Surface(
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp),
                                         color = MaterialTheme.colorScheme.surface,
                                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(0.3f)),
-                                        onClick = { 
-                                            position = when(position) {
-                                                "Bottom Right" -> "Bottom Left"
-                                                "Bottom Left" -> "Bottom Center"
-                                                "Bottom Center" -> "Top Right"
-                                                "Top Right" -> "Top Left"
-                                                "Top Left" -> "Top Center"
-                                                else -> "Bottom Right"
-                                            }
-                                        }
+                                        onClick = { showPositionSheet = true }
                                     ) {
                                         Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                             Text("POSITION:", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
                                             Spacer(Modifier.width(8.dp))
                                             Text(position.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = accentColor)
+                                            Spacer(Modifier.weight(1f))
+                                            Icon(Icons.Filled.ArrowDropDown, null, tint = Color.Gray)
                                         }
                                     }
                                 }
@@ -346,11 +313,10 @@ fun PageNumbersView(
                             Button(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-numbered.pdf") },
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp).height(60.dp),
-                                enabled = selectedPages.isNotEmpty(),
                                 shape = RoundedCornerShape(20.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {
-                                Text("APPLY PAGE NUMBERS", fontWeight = FontWeight.Black)
+                                Text("APPLY TO ALL PAGES", fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -397,7 +363,6 @@ fun PageNumbersView(
                                 if (count > 0) {
                                     unlockPassword = pass
                                     pageCount = count
-                                    selectedPages = (0 until count).toSet()
                                     currentState = ToolState.CONFIGURING
                                     fileToUnlock = null
                                 } else {
@@ -410,6 +375,39 @@ fun PageNumbersView(
                     accentColor = accentColor,
                     isLoading = isFileLoading
                 )
+            }
+            
+            // RISE-UP SELECTORS
+            if (showPositionSheet) {
+                ModalBottomSheet(onDismissRequest = { showPositionSheet = false }) {
+                    Column(Modifier.fillMaxWidth().padding(bottom = 32.dp).navigationBarsPadding()) {
+                        Text("SELECT POSITION", modifier = Modifier.padding(16.dp), fontSize = 12.sp, fontWeight = FontWeight.Black, color = accentColor)
+                        listOf("Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right").forEach { pos ->
+                            ListItem(
+                                headlineContent = { Text(pos, fontWeight = if (position == pos) FontWeight.Bold else FontWeight.Normal) },
+                                leadingContent = { RadioButton(selected = position == pos, onClick = null) },
+                                modifier = Modifier.clickable { position = pos; showPositionSheet = false }
+                            )
+                        }
+                    }
+                }
+            }
+            
+            if (showColorSheet) {
+                ModalBottomSheet(onDismissRequest = { showColorSheet = false }) {
+                    Column(Modifier.fillMaxWidth().padding(bottom = 32.dp).navigationBarsPadding()) {
+                        Text("SELECT COLOR", modifier = Modifier.padding(16.dp), fontSize = 12.sp, fontWeight = FontWeight.Black, color = accentColor)
+                        val colors = listOf(Color.Black, Color.White, Color.Red, Color.Blue, Color(0xFF8B5CF6), Color(0xFF10B981))
+                        val colorNames = listOf("Black", "White", "Red", "Blue", "Indigo", "Emerald")
+                        colors.forEachIndexed { idx, col ->
+                            ListItem(
+                                headlineContent = { Text(colorNames[idx], fontWeight = if (numberColor == col) FontWeight.Bold else FontWeight.Normal) },
+                                leadingContent = { Box(Modifier.size(24.dp).clip(CircleShape).background(col).border(1.dp, Color.Gray.copy(0.3f), CircleShape)) },
+                                modifier = Modifier.clickable { numberColor = col; showColorSheet = false }
+                            )
+                        }
+                    }
+                }
             }
         }
     }

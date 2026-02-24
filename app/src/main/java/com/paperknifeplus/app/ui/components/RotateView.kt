@@ -141,17 +141,28 @@ fun RotateView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Rotate", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("FIX DOCUMENT ORIENTATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Rotate", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("FIX DOCUMENT ORIENTATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -187,7 +198,8 @@ fun RotateView(
                                 }
                                 
                                 TextButton(onClick = { 
-                                    pageRotations = pageRotations.mapValues { (it.value + 90) % 360 }
+                                    // NITRO: Update the entire map to ensure 'Rotate All' works for every page
+                                    pageRotations = (0 until pageCount).associateWith { idx -> ((pageRotations[idx] ?: 0) + 90) % 360 }
                                 }) {
                                     Icon(Icons.Filled.RotateRight, null, modifier = Modifier.size(16.dp), tint = accentColor)
                                     Spacer(Modifier.width(8.dp))
@@ -209,7 +221,7 @@ fun RotateView(
                                     Icon(Icons.Filled.Info, null, tint = accentColor, modifier = Modifier.size(14.dp))
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        "Tap page to rotate • Long-press to inspect",
+                                        "Tap page to rotate",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = accentColor
@@ -230,6 +242,9 @@ fun RotateView(
                                         pageRotations = pageRotations + (index to (current + 90) % 360)
                                     }
                                 )
+                                
+                                // PRO: Overlay to block lightbox access in Rotate tool
+                                Box(Modifier.fillMaxSize().clickable(enabled = false) {})
                             }
 
                             Button(

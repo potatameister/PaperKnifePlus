@@ -247,104 +247,62 @@ fun toGrayscaleBitmap(src: Bitmap): Bitmap {
 
 suspend fun performGrayscaleRewrite(context: Context, inputUri: Uri, outputUri: Uri, password: String?, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
-        val total = document.numberOfPages
+        val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        if (sourceDoc.isEncrypted) sourceDoc.isAllSecurityToBeRemoved = true
+        val targetDoc = PDDocument()
+        val renderer = PDFRenderer(sourceDoc)
+        val total = sourceDoc.numberOfPages
         
-        // NITRO: Resource-based manipulation (Keeps text/vectors intact but removes color)
-        // We iterate through all page resources and replace every image with a grayscaled one.
-        val processedImages = mutableMapOf<String, PDImageXObject>()
-
-        fun processResources(resources: PDResources?) {
-            if (resources == null) return
-            for (name in resources.xObjectNames) {
-                try {
-                    val xobject = resources.getXObject(name)
-                    if (xobject is PDImageXObject) {
-                        val key = xobject.cosObject.toString()
-                        if (processedImages.containsKey(key)) {
-                            resources.put(name, processedImages[key])
-                            continue
-                        }
-                        
-                        val bitmap = xobject.image
-                        if (bitmap != null) {
-                            val grayBitmap = toGrayscaleBitmap(bitmap)
-                            val newImage = JPEGFactory.createFromImage(document, grayBitmap, 0.85f)
-                            resources.put(name, newImage)
-                            processedImages[key] = newImage
-                            grayBitmap.recycle()
-                            bitmap.recycle()
-                        }
-                    } else if (xobject is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
-                        processResources(xobject.resources)
-                    }
-                } catch (e: Exception) {}
-            }
-        }
-
-        document.pages.forEachIndexed { i, page ->
+        for (i in 0 until total) {
             onProgress(i + 1, total)
-            processResources(page.resources)
+            // NITRO: Hybrid Flattening (1.2f) for 100% B&W elements
+            val scale = 1.2f
+            val bitmap = renderer.renderImage(i, scale, ImageType.RGB)
+            val grayBitmap = toGrayscaleBitmap(bitmap)
+            bitmap.recycle()
+            
+            // Re-compress as JPEG at high quality (0.7f) to maintain clarity while ensuring B&W
+            val pdImage = JPEGFactory.createFromImage(targetDoc, grayBitmap, 0.7f)
+            val page = PDPage(PDRectangle(pdImage.width.toFloat() / scale, pdImage.height.toFloat() / scale))
+            targetDoc.addPage(page)
+            PDPageContentStream(targetDoc, page).use { 
+                it.drawImage(pdImage, 0f, 0f, page.mediaBox.width, page.mediaBox.height) 
+            }
+            grayBitmap.recycle()
         }
-        
-        saveAndFlush(context, document, outputUri)
-        document.close()
+        saveAndFlush(context, targetDoc, outputUri)
+        sourceDoc.close()
     }
 }
 
 suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, password: String?, level: String, onProgress: (Int, Int) -> Unit) = withContext(Dispatchers.IO) {
     context.contentResolver.openInputStream(inputUri)?.use { inputStream ->
-        val document = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
-        if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
-        val total = document.numberOfPages
+        val sourceDoc = if (password != null) PDDocument.load(inputStream, password) else PDDocument.load(inputStream)
+        if (sourceDoc.isEncrypted) sourceDoc.isAllSecurityToBeRemoved = true
+        val targetDoc = PDDocument()
+        val renderer = PDFRenderer(sourceDoc)
+        val total = sourceDoc.numberOfPages
         
-        // BALANCED COMPRESSION TUNING: Lvl 1 (Safe), Lvl 2 (Target 15MB), Lvl 3 (Target 10MB)
-        val quality = when(level) { "Extreme" -> 0.4f; "Recommended" -> 0.6f; else -> 0.8f }
-        val downscale = when(level) { "Extreme" -> 0.6f; "Recommended" -> 0.8f; else -> 1.0f }
+        // AGGRESSIVE BALANCED TUNING
+        val quality = when(level) { "Extreme" -> 0.12f; "Recommended" -> 0.3f; else -> 0.5f }
+        val scale = when(level) { "Extreme" -> 0.25f; "Recommended" -> 0.45f; else -> 0.75f }
 
-        val processedImages = mutableMapOf<String, PDImageXObject>()
-
-        fun processResources(resources: PDResources?) {
-            if (resources == null) return
-            for (name in resources.xObjectNames) {
-                try {
-                    val xobject = resources.getXObject(name)
-                    if (xobject is PDImageXObject) {
-                        val key = xobject.cosObject.toString()
-                        if (processedImages.containsKey(key)) {
-                            resources.put(name, processedImages[key])
-                            continue
-                        }
-                        
-                        var bitmap = xobject.image
-                        if (bitmap != null) {
-                            if (downscale < 1.0f) {
-                                val w = (bitmap.width * downscale).toInt().coerceAtLeast(1)
-                                val h = (bitmap.height * downscale).toInt().coerceAtLeast(1)
-                                val scaled = Bitmap.createScaledBitmap(bitmap, w, h, true)
-                                bitmap.recycle()
-                                bitmap = scaled
-                            }
-                            val newImage = JPEGFactory.createFromImage(document, bitmap, quality)
-                            resources.put(name, newImage)
-                            processedImages[key] = newImage
-                            bitmap.recycle()
-                        }
-                    } else if (xobject is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
-                        processResources(xobject.resources)
-                    }
-                } catch (e: Exception) {}
-            }
-        }
-
-        document.pages.forEachIndexed { i, page ->
+        for (i in 0 until total) {
             onProgress(i + 1, total)
-            processResources(page.resources)
+            val page = sourceDoc.getPage(i)
+            // Render page to flattened bitmap for max compression
+            val bitmap = renderer.renderImage(i, scale, ImageType.RGB)
+            val pdImage = JPEGFactory.createFromImage(targetDoc, bitmap, quality)
+            val newPage = PDPage(PDRectangle(page.mediaBox.width, page.mediaBox.height))
+            targetDoc.addPage(newPage)
+            PDPageContentStream(targetDoc, newPage).use { 
+                it.drawImage(pdImage, 0f, 0f, page.mediaBox.width, page.mediaBox.height) 
+            }
+            bitmap.recycle()
         }
         
-        saveAndFlush(context, document, outputUri)
-        document.close()
+        saveAndFlush(context, targetDoc, outputUri)
+        sourceDoc.close()
     }
 }
 
