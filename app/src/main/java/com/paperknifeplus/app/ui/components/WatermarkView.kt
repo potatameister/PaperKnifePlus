@@ -556,7 +556,7 @@ fun WatermarkView(
                                 color = accentColor.copy(alpha = 0.05f),
                                 border = BorderStroke(1.dp, accentColor.copy(alpha = 0.1f))
                             ) {
-                                Text(template, fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, modifier = Modifier.padding(8.dp), textAlign = android.compose.ui.text.style.TextAlign.Center)
+                                Text(template, fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, modifier = Modifier.padding(8.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             }
                         }
                     }

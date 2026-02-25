@@ -61,7 +61,7 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 20.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
