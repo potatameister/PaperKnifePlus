@@ -92,13 +92,11 @@ fun SignView(
     var processingTime by remember { mutableStateOf("") }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     
-    // NITRO: Signature State Management
+    // Logic State
     var placedSignatures by remember { mutableStateOf<List<PlacedSignature>>(emptyList()) }
     var activeSignature by remember { mutableStateOf<PlacedSignature?>(null) }
     var isFocusMode by remember { mutableStateOf(false) }
-    
-    // Tracking current page in preview
-    var currentPageForSigning by remember { mutableIntStateOf(0) }
+    var lightboxPage by remember { mutableStateOf<Int?>(null) }
     
     var showSignOptions by remember { mutableStateOf(false) }
     var showSignaturePad by remember { mutableStateOf(false) }
@@ -160,7 +158,7 @@ fun SignView(
                         val bitmap = BitmapFactory.decodeStream(stream)
                         withContext(Dispatchers.Main) {
                             activeSignature = PlacedSignature(
-                                pageIndex = currentPageForSigning,
+                                pageIndex = lightboxPage ?: 0,
                                 bitmap = bitmap,
                                 offset = androidx.compose.ui.geometry.Offset.Zero,
                                 scale = 1f,
@@ -185,7 +183,6 @@ fun SignView(
                         val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                         if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
                         
-                        // NATIVE SYNTHESIS: Burn signatures into PDF layers
                         placedSignatures.groupBy { it.pageIndex }.forEach { (pageIdx, sigs) ->
                             if (pageIdx < document.numberOfPages) {
                                 val page = document.getPage(pageIdx)
@@ -194,26 +191,17 @@ fun SignView(
                                         val pdImage = LosslessFactory.createFromImage(document, sig.bitmap)
                                         val pdfWidth = page.mediaBox.width
                                         val pdfHeight = page.mediaBox.height
-                                        
-                                        // Precise PDF coordinate mapping (Top-Down to Bottom-Left)
                                         val drawWidth = 200f * sig.scale
                                         val drawHeight = (200f * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())) * sig.scale
-                                        
-                                        // UI center is at (pdfWidth/2, pdfHeight/2)
-                                        // We map the UI offset (px) to PDF points
                                         val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sig.offset.x * (pdfWidth / 360f))
                                         val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sig.offset.y * (pdfHeight / 510f))
-                                        
                                         cs.saveGraphicsState()
-                                        // Apply UI rotation centered on signature
-                                        // cs.transform(Matrix.getRotateInstance(Math.toRadians(sig.rotation.toDouble()), xPos + drawWidth/2, yPos + drawHeight/2))
                                         cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                         cs.restoreGraphicsState()
                                     }
                                 }
                             }
                         }
-                        
                         saveAndFlush(context, document, saveUri)
                     }
                     val endTime = System.currentTimeMillis()
@@ -232,15 +220,7 @@ fun SignView(
         }
     }
 
-    // SIGNATURE OVERLAY COMPOSABLE FOR PREVIEW
     val signatureOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
-        // Sync current page for adding new signatures
-        DisposableEffect(pageIndex) {
-            currentPageForSigning = pageIndex
-            onDispose {}
-        }
-
-        // Render existing confirmed signatures
         placedSignatures.filter { it.pageIndex == pageIndex }.forEach { sig ->
             ComposeImage(
                 bitmap = sig.bitmap.asImageBitmap(),
@@ -254,16 +234,9 @@ fun SignView(
                         scaleY = sig.scale
                         rotationZ = sig.rotation
                     }
-                    .clickable(enabled = !isFocusMode) {
-                        // Re-edit signature logic
-                        activeSignature = sig
-                        placedSignatures = placedSignatures - sig
-                        isFocusMode = true
-                    }
             )
         }
         
-        // Render active signature in Focus Mode
         if (isFocusMode && activeSignature != null && activeSignature!!.pageIndex == pageIndex) {
             val sig = activeSignature!!
             Box(
@@ -309,15 +282,15 @@ fun SignView(
                         modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = if (isFocusMode) { { isFocusMode = false; activeSignature = null } } else onBack) {
+                        IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
                         }
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Sign PDF", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text(if (isFocusMode) "ADJUST PLACEMENT" else "GOLD STANDARD SIGNING", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("GOLD STANDARD SIGNING", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
-                        if (selectedUri != null && !isFocusMode) {
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING; placedSignatures = emptyList() }) {
                                 Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
                             }
@@ -344,62 +317,35 @@ fun SignView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Box(Modifier.fillMaxSize()) {
-                            UnifiedPdfPreview(
-                                uri = selectedUri!!,
-                                pageCount = pageCount,
-                                mode = PreviewMode.GRID,
-                                password = unlockPassword.ifEmpty { null }, 
-                                accentColor = accentColor,
-                                disableLightbox = isFocusMode,
-                                itemOverlay = signatureOverlay
-                            )
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Spacer(Modifier.height(12.dp))
+                            Box(modifier = Modifier.weight(1f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.GRID,
+                                    password = unlockPassword.ifEmpty { null }, 
+                                    accentColor = accentColor,
+                                    itemOverlay = signatureOverlay,
+                                    onToggleSelection = { index -> lightboxPage = index }
+                                )
+                            }
                             
-                            // Bottom Action Bar
-                            Surface(
-                                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                                tonalElevation = 8.dp,
-                                border = BorderStroke(1.dp, Color.Gray.copy(0.1f))
+                            val hasSigned = placedSignatures.isNotEmpty()
+                            Button(
+                                onClick = { if (hasSigned) saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
+                                enabled = hasSigned,
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (hasSigned) accentColor else Color.Gray.copy(0.3f),
+                                    contentColor = if (hasSigned) Color.White else Color.Gray
+                                )
                             ) {
-                                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    if (isFocusMode) {
-                                        TextButton(onClick = { isFocusMode = false; activeSignature = null }, modifier = Modifier.weight(1f)) {
-                                            Text("CANCEL", color = Color.Gray, fontWeight = FontWeight.Black)
-                                        }
-                                        Button(
-                                            onClick = { 
-                                                activeSignature?.let { placedSignatures = placedSignatures + it }
-                                                isFocusMode = false
-                                                activeSignature = null
-                                            },
-                                            modifier = Modifier.weight(1.5f).height(50.dp),
-                                            shape = RoundedCornerShape(16.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                                        ) {
-                                            Text("CONFIRM", fontWeight = FontWeight.Black)
-                                        }
-                                    } else {
-                                        Button(
-                                            onClick = { showSignOptions = true },
-                                            modifier = Modifier.weight(1f).height(50.dp),
-                                            shape = RoundedCornerShape(16.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                                        ) {
-                                            Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
-                                            Spacer(Modifier.width(8.dp))
-                                            Text("ADD SIGNATURE", fontWeight = FontWeight.Black)
-                                        }
-                                        Spacer(Modifier.width(12.dp))
-                                        IconButton(
-                                            onClick = { saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) },
-                                            modifier = Modifier.size(50.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                                        ) {
-                                            Icon(Icons.Filled.Save, null, tint = accentColor)
-                                        }
-                                    }
-                                }
+                                Text(if (hasSigned) "SAVE SIGNED PDF" else "SELECT A PAGE TO SIGN", fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -425,9 +371,7 @@ fun SignView(
                                 placedSignatures = emptyList()
                                 currentState = ToolState.SELECTING 
                             },
-                            onPreview = {
-                                outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) }
-                            },
+                            onPreview = { outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
                             accentColor = accentColor
                         )
                     }
@@ -463,6 +407,75 @@ fun SignView(
         }
     }
 
+    if (lightboxPage != null) {
+        PageLightbox(
+            uri = selectedUri!!,
+            initialPage = lightboxPage!!,
+            totalCount = pageCount,
+            password = unlockPassword.ifEmpty { null },
+            onDismiss = { lightboxPage = null },
+            itemOverlay = signatureOverlay,
+            bottomBar = { pageIndex ->
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.Black.copy(0.8f),
+                    border = BorderStroke(1.dp, Color.White.copy(0.1f))
+                ) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (isFocusMode) {
+                            TextButton(onClick = { isFocusMode = false; activeSignature = null }, modifier = Modifier.weight(1f)) {
+                                Text("CANCEL", color = Color.LightGray, fontWeight = FontWeight.Bold)
+                            }
+                            Button(
+                                onClick = { 
+                                    activeSignature?.let { placedSignatures = placedSignatures + it }
+                                    isFocusMode = false
+                                    activeSignature = null
+                                },
+                                modifier = Modifier.weight(1.5f).height(50.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text("APPLY", fontWeight = FontWeight.Black)
+                            }
+                        } else {
+                            Button(
+                                onClick = { showSignOptions = true },
+                                modifier = Modifier.weight(1f).height(50.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("ADD SIGN", fontWeight = FontWeight.Black)
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Row(Modifier.weight(1.2f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    onClick = { lightboxPage = null },
+                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = BorderStroke(1.dp, Color.White.copy(0.3f))
+                                ) {
+                                    Text("SIGN MORE", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Black)
+                                }
+                                Button(
+                                    onClick = { saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) },
+                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                                ) {
+                                    Text("SAVE", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+
     if (showSignOptions) {
         ModalBottomSheet(
             onDismissRequest = { showSignOptions = false },
@@ -472,16 +485,10 @@ fun SignView(
             Column(Modifier.padding(24.dp).padding(bottom = 32.dp).navigationBarsPadding()) {
                 Text("Add Signature", fontWeight = FontWeight.Black, fontSize = 20.sp)
                 Spacer(Modifier.height(20.dp))
-                
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SignOptionCard("Draw", Icons.Filled.Gesture, accentColor, Modifier.weight(1f)) { 
-                        showSignaturePad = true
-                    }
-                    SignOptionCard("Upload", Icons.Filled.CloudUpload, Color.Gray, Modifier.weight(1f)) { 
-                        pngLauncher.launch("image/png")
-                    }
+                    SignOptionCard("Draw", Icons.Filled.Gesture, accentColor, Modifier.weight(1f)) { showSignaturePad = true }
+                    SignOptionCard("Upload", Icons.Filled.CloudUpload, Color.Gray, Modifier.weight(1f)) { pngLauncher.launch("image/png") }
                 }
-                
                 if (savedSignatures.isNotEmpty()) {
                     Spacer(Modifier.height(24.dp))
                     Text("SAVED SIGNATURES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
@@ -490,26 +497,12 @@ fun SignView(
                         items(savedSignatures) { file ->
                             Surface(
                                 modifier = Modifier.size(100.dp, 60.dp).clickable {
-                                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                                    activeSignature = PlacedSignature(
-                                        pageIndex = currentPageForSigning,
-                                        bitmap = bitmap,
-                                        offset = androidx.compose.ui.geometry.Offset.Zero,
-                                        scale = 1f,
-                                        rotation = 0f
-                                    )
+                                    activeSignature = PlacedSignature(pageIndex = lightboxPage ?: 0, bitmap = BitmapFactory.decodeFile(file.absolutePath), offset = androidx.compose.ui.geometry.Offset.Zero, scale = 1f, rotation = 0f)
                                     isFocusMode = true
                                     showSignOptions = false
                                 },
-                                shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
-                            ) {
-                                ComposeImage(
-                                    painter = rememberAsyncImagePainter(file),
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(8.dp)
-                                )
-                            }
+                                shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
+                            ) { ComposeImage(painter = rememberAsyncImagePainter(file), contentDescription = null, modifier = Modifier.padding(8.dp)) }
                         }
                     }
                 }
@@ -522,13 +515,7 @@ fun SignView(
             onDismiss = { showSignaturePad = false },
             onSave = { bitmap, shouldSave ->
                 if (shouldSave) saveSignature(bitmap)
-                activeSignature = PlacedSignature(
-                    pageIndex = currentPageForSigning,
-                    bitmap = bitmap,
-                    offset = androidx.compose.ui.geometry.Offset.Zero,
-                    scale = 1f,
-                    rotation = 0f
-                )
+                activeSignature = PlacedSignature(pageIndex = lightboxPage ?: 0, bitmap = bitmap, offset = androidx.compose.ui.geometry.Offset.Zero, scale = 1f, rotation = 0f)
                 isFocusMode = true
                 showSignaturePad = false
                 showSignOptions = false

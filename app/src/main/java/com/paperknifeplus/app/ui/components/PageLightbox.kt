@@ -55,7 +55,8 @@ fun PageLightbox(
     selectedPages: Set<Int>? = null,
     onToggleSelection: ((Int) -> Unit)? = null,
     isGrayscale: Boolean = false,
-    itemOverlay: @Composable (BoxScope.(Int) -> Unit)? = null
+    itemOverlay: @Composable (BoxScope.(Int) -> Unit)? = null,
+    bottomBar: @Composable (BoxScope.(Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
@@ -96,7 +97,7 @@ fun PageLightbox(
                 modifier = Modifier.fillMaxSize(),
                 pageSpacing = 16.dp,
                 beyondBoundsPageCount = 1,
-                userScrollEnabled = !isCurrentPageZoomed
+                userScrollEnabled = !isCurrentPageZoomed && (bottomBar == null)
             ) { pageIndex ->
                 val request = remember(uri, pageIndex, password) { 
                     PdfPageRequest(uri, pageIndex, password, 2.0f, priority = 1) 
@@ -286,7 +287,7 @@ fun PageLightbox(
                 )
             }
             
-            if (onToggleSelection != null && selectedPages != null) {
+            if (onToggleSelection != null && selectedPages != null && bottomBar == null) {
                 Box(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(top = 72.dp), contentAlignment = Alignment.TopCenter) {
                     val isSelected = selectedPages.contains(pagerState.currentPage)
                     Button(
@@ -307,32 +308,38 @@ fun PageLightbox(
                 }
             }
 
-            // Navigation
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 24.dp)
-                    .background(Color.Black.copy(0.5f), RoundedCornerShape(24.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
-                    enabled = pagerState.currentPage > 0
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = if (pagerState.currentPage > 0) Color.White else Color.White.copy(0.3f))
-                }
+            // Custom Tool Bottom Bar (e.g. Sign controls)
+            Box(Modifier.fillMaxSize()) {
+                bottomBar?.invoke(this, pagerState.currentPage)
+            }
 
-                IconButton(
-                    onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
-                    enabled = pagerState.currentPage < totalCount - 1
+            // Navigation
+            if (bottomBar == null) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 24.dp)
+                        .background(Color.Black.copy(0.5f), RoundedCornerShape(24.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = if (pagerState.currentPage < totalCount - 1) Color.White else Color.White.copy(0.3f))
+                    IconButton(
+                        onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
+                        enabled = pagerState.currentPage > 0
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = if (pagerState.currentPage > 0) Color.White else Color.White.copy(0.3f))
+                    }
+
+                    IconButton(
+                        onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
+                        enabled = pagerState.currentPage < totalCount - 1
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = if (pagerState.currentPage < totalCount - 1) Color.White else Color.White.copy(0.3f))
+                    }
                 }
             }
         }
-        }
     }
-    
+}
