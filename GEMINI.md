@@ -53,10 +53,11 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 
 ## 📜 Major Evolutions
 - **2026-02-25:** **V1.0 FINAL RELEASE**:
-    - **1:1 Sync Engine**: Absolute pixel-perfect coordinate mapping across all tools.
-    - **Professional Signing**: High-precision selection workflow with native PDF synthesis.
-    - **Privacy Suite**: History auto-delete, secure password handling, and zero data collection.
-    - **Refined UX**: Categorized tool picker, system-aware theme engine, and optimized merge list.
+    - **1:1 Sync Engine**: Absolute pixel-perfect coordinate mapping across all tools using image-relative normalization.
+    - **Merge Tool Overhaul**: Migrated to a high-fidelity single-column list with robust drag-and-drop reordering.
+    - **Privacy Suite**: Implemented history auto-delete, secure password handling, and instant theme switching.
+    - **About & Community Hub**: Redesigned as a multi-page center with Privacy stories, Hall of Fame, and Social connectivity.
+    - **Refined UX**: Sleek 2-mode tool picker (Essentials vs. All Engines) and standardized high-contrast buttons.
 - **2026-02-24 (Late):** **Fidelity & Professional UI**:
     - **Pure Asset Extraction**: Re-engineered Extract Image tool to strip raw bitstream assets (JPG/PNG) instead of rendering pages, ensuring 100% artifact capture.
     - **Independent Compare-Unlock**: Enhanced Compare tool to independently detect and unlock File A and File B with real-time password validation.
