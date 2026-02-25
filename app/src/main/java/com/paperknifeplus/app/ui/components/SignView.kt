@@ -55,6 +55,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.util.Matrix
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -66,9 +67,9 @@ data class PlacedSignature(
     val id: String = java.util.UUID.randomUUID().toString(),
     val pageIndex: Int,
     val bitmap: Bitmap,
-    var offset: androidx.compose.ui.geometry.Offset,
-    var scale: Float,
-    var rotation: Float
+    val normalizedOffset: androidx.compose.ui.geometry.Offset, // Relative to center (-0.5 to 0.5)
+    val normalizedScale: Float, // Relative to page width
+    val rotation: Float
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,7 +95,10 @@ fun SignView(
     
     // Logic State
     var placedSignatures by remember { mutableStateOf<List<PlacedSignature>>(emptyList()) }
-    var activeSignature by remember { mutableStateOf<PlacedSignature?>(null) }
+    var activeSignatureBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var activeOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var activeScale by remember { mutableFloatStateOf(1f) }
+    var activeRotation by remember { mutableFloatStateOf(0f) }
     var isFocusMode by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
     
@@ -157,13 +161,10 @@ fun SignView(
                     context.contentResolver.openInputStream(it)?.use { stream ->
                         val bitmap = BitmapFactory.decodeStream(stream)
                         withContext(Dispatchers.Main) {
-                            activeSignature = PlacedSignature(
-                                pageIndex = lightboxPage ?: 0,
-                                bitmap = bitmap,
-                                offset = androidx.compose.ui.geometry.Offset.Zero,
-                                scale = 1f,
-                                rotation = 0f
-                            )
+                            activeSignatureBitmap = bitmap
+                            activeOffset = androidx.compose.ui.geometry.Offset.Zero
+                            activeScale = 1f
+                            activeRotation = 0f
                             isFocusMode = true
                             showSignOptions = false
                         }
@@ -189,18 +190,24 @@ fun SignView(
                                 PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
                                     sigs.forEach { sig ->
                                         val pdImage = LosslessFactory.createFromImage(document, sig.bitmap)
-                                        val pdfWidth = page.mediaBox.getWidth()
-                                        val pdfHeight = page.mediaBox.getHeight()
+                                        val pdfWidth = page.mediaBox.width
+                                        val pdfHeight = page.mediaBox.height
                                         
-                                        // Coordinate mapping fix: Scale and Center
-                                        val drawWidth = 200f * sig.scale
-                                        val drawHeight = (200f * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())) * sig.scale
+                                        // NATIVE MAPPING: Translate normalized coordinates to PDF points
+                                        val drawWidth = (pdfWidth * 0.5f) * sig.normalizedScale
+                                        val drawHeight = (drawWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat()))
                                         
-                                        // UI offset is in PX, PDF is in PTS. Standard preview is around 360dp width.
-                                        val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sig.offset.x * (pdfWidth / 360f))
-                                        val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sig.offset.y * (pdfHeight / 510f))
+                                        val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sig.normalizedOffset.x * pdfWidth)
+                                        val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sig.normalizedOffset.y * pdfHeight)
                                         
                                         cs.saveGraphicsState()
+                                        // Apply rotation centered on signature
+                                        val matrix = Matrix()
+                                        matrix.translate(xPos + drawWidth/2, yPos + drawHeight/2)
+                                        matrix.rotate(Math.toRadians((-sig.rotation).toDouble()))
+                                        matrix.translate(-(xPos + drawWidth/2), -(yPos + drawHeight/2))
+                                        cs.transform(matrix)
+                                        
                                         cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                         cs.restoreGraphicsState()
                                     }
@@ -226,58 +233,52 @@ fun SignView(
     }
 
     val signatureOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
-        // Render confirmed signatures (Scaled for Grid if needed)
-        placedSignatures.filter { it.pageIndex == pageIndex }.forEach { sig ->
-            ComposeImage(
-                bitmap = sig.bitmap.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(200.dp)
-                    .align(Alignment.Center)
-                    .offset { IntOffset(sig.offset.x.roundToInt(), sig.offset.y.roundToInt()) }
-                    .graphicsLayer {
-                        scaleX = sig.scale
-                        scaleY = sig.scale
-                        rotationZ = sig.rotation
-                    }
-            )
-        }
-        
-        if (isFocusMode && activeSignature != null && activeSignature!!.pageIndex == pageIndex) {
-            val sig = activeSignature!!
-            var sigOffset by remember { mutableStateOf(sig.offset) }
-            var sigScale by remember { mutableFloatStateOf(sig.scale) }
-            var sigRotation by remember { mutableFloatStateOf(sig.rotation) }
-            
-            LaunchedEffect(sigOffset, sigScale, sigRotation) {
-                activeSignature = activeSignature?.copy(offset = sigOffset, scale = sigScale, rotation = sigRotation)
-            }
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val pageWidth = constraints.maxWidth.toFloat()
+            val pageHeight = constraints.maxHeight.toFloat()
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTransformGestures { _, pan, zoom, rot ->
-                            sigOffset += pan
-                            sigScale = (sigScale * zoom).coerceIn(0.2f, 10f)
-                            sigRotation += rot
-                        }
-                    }
-            ) {
+            // Render confirmed signatures
+            placedSignatures.filter { it.pageIndex == pageIndex }.forEach { sig ->
                 ComposeImage(
-                    bitmap = activeSignature!!.bitmap.asImageBitmap(),
+                    bitmap = sig.bitmap.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(200.dp)
+                        .size((pageWidth * 0.5f * sig.normalizedScale).dp / LocalDensity.current.density)
                         .align(Alignment.Center)
-                        .offset { IntOffset(sigOffset.x.roundToInt(), sigOffset.y.roundToInt()) }
-                        .graphicsLayer {
-                            scaleX = sigScale
-                            scaleY = sigScale
-                            rotationZ = sigRotation
+                        .offset { 
+                            IntOffset(
+                                (sig.normalizedOffset.x * pageWidth).roundToInt(), 
+                                (sig.normalizedOffset.y * pageHeight).roundToInt()
+                            ) 
                         }
-                        .border(1.dp, accentColor, RoundedCornerShape(2.dp))
+                        .graphicsLayer { rotationZ = sig.rotation }
                 )
+            }
+            
+            // Render active signature in Focus Mode
+            if (isFocusMode && activeSignatureBitmap != null && (lightboxPage == pageIndex || lightboxPage == null)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, rot ->
+                                activeOffset += pan
+                                activeScale = (activeScale * zoom).coerceIn(0.2f, 5f)
+                                activeRotation += rot
+                            }
+                        }
+                ) {
+                    ComposeImage(
+                        bitmap = activeSignatureBitmap!!.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size((pageWidth * 0.5f * activeScale).dp / LocalDensity.current.density)
+                            .align(Alignment.Center)
+                            .offset { IntOffset(activeOffset.x.roundToInt(), activeOffset.y.roundToInt()) }
+                            .graphicsLayer { rotationZ = activeRotation }
+                            .border(1.dp, accentColor, RoundedCornerShape(2.dp))
+                    )
+                }
             }
         }
     }
@@ -335,7 +336,6 @@ fun SignView(
                         ) {
                             Spacer(Modifier.height(12.dp))
                             Box(modifier = Modifier.weight(1f)) {
-                                // CLEAN PREVIEW: Disable selection and zoom icons
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -423,75 +423,93 @@ fun SignView(
     }
 
     if (lightboxPage != null) {
-        PageLightbox(
-            uri = selectedUri!!,
-            initialPage = lightboxPage!!,
-            totalCount = pageCount,
-            password = unlockPassword.ifEmpty { null },
-            onDismiss = { lightboxPage = null },
-            itemOverlay = signatureOverlay,
-            bottomBar = { pageIndex ->
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.Black.copy(0.8f),
-                    border = BorderStroke(1.dp, Color.White.copy(0.1f))
-                ) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (isFocusMode) {
-                            TextButton(onClick = { isFocusMode = false; activeSignature = null }, modifier = Modifier.weight(1f)) {
-                                Text("CANCEL", color = Color.LightGray, fontWeight = FontWeight.Bold)
-                            }
-                            Button(
-                                onClick = { 
-                                    activeSignature?.let { placedSignatures = placedSignatures + it }
-                                    isFocusMode = false
-                                    activeSignature = null
-                                },
-                                modifier = Modifier.weight(1.5f).height(50.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                            ) {
-                                Text("APPLY", fontWeight = FontWeight.Black)
-                            }
-                        } else {
-                            Button(
-                                onClick = { showSignOptions = true },
-                                modifier = Modifier.weight(1f).height(50.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                            ) {
-                                Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("ADD SIGN", fontWeight = FontWeight.Black)
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Row(Modifier.weight(1.2f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(
-                                    onClick = { lightboxPage = null },
-                                    modifier = Modifier.weight(1f).height(50.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    border = BorderStroke(1.dp, Color.White.copy(0.3f))
-                                ) {
-                                    Text("SIGN MORE", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Black)
+        val pageIdx = lightboxPage!!
+        BoxWithConstraints {
+            val screenWidth = constraints.maxWidth.toFloat()
+            val screenHeight = constraints.maxHeight.toFloat()
+            
+            PageLightbox(
+                uri = selectedUri!!,
+                initialPage = pageIdx,
+                totalCount = pageCount,
+                password = unlockPassword.ifEmpty { null },
+                onDismiss = { lightboxPage = null; isFocusMode = false; activeSignatureBitmap = null },
+                itemOverlay = signatureOverlay,
+                bottomBar = { currentPage ->
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.Black.copy(0.85f),
+                        border = BorderStroke(1.dp, Color.White.copy(0.1f))
+                    ) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            if (isFocusMode) {
+                                TextButton(onClick = { isFocusMode = false; activeSignatureBitmap = null }, modifier = Modifier.weight(1f)) {
+                                    Text("CANCEL", color = Color.LightGray, fontWeight = FontWeight.Bold)
                                 }
                                 Button(
                                     onClick = { 
-                                        lightboxPage = null // CLEAR BEFORE PROCESSING
-                                        saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) 
+                                        activeSignatureBitmap?.let {
+                                            placedSignatures = placedSignatures + PlacedSignature(
+                                                pageIndex = currentPage,
+                                                bitmap = it,
+                                                normalizedOffset = androidx.compose.ui.geometry.Offset(activeOffset.x / screenWidth, activeOffset.y / screenHeight),
+                                                normalizedScale = activeScale,
+                                                rotation = activeRotation
+                                            )
+                                        }
+                                        isFocusMode = false
+                                        activeSignatureBitmap = null
                                     },
-                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    modifier = Modifier.weight(1.5f).height(50.dp),
                                     shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                                 ) {
-                                    Text("SAVE", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                    Text("APPLY", fontWeight = FontWeight.Black)
+                                }
+                            } else {
+                                val hasAppliedOnThisPage = placedSignatures.any { it.pageIndex == currentPage }
+                                
+                                if (!hasAppliedOnThisPage) {
+                                    Button(
+                                        onClick = { showSignOptions = true },
+                                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                    ) {
+                                        Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("ADD SIGN", fontWeight = FontWeight.Black)
+                                    }
+                                } else {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        OutlinedButton(
+                                            onClick = { lightboxPage = null },
+                                            modifier = Modifier.weight(1f).height(50.dp),
+                                            shape = RoundedCornerShape(16.dp),
+                                            border = BorderStroke(1.dp, Color.White.copy(0.3f))
+                                        ) {
+                                            Text("SIGN MORE", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Black)
+                                        }
+                                        Button(
+                                            onClick = { 
+                                                lightboxPage = null 
+                                                saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) 
+                                            },
+                                            modifier = Modifier.weight(1f).height(50.dp),
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                                        ) {
+                                            Text("SAVE", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-        )
+            )
+        }
     }
 
     if (showSignOptions) {
@@ -513,7 +531,10 @@ fun SignView(
                             items(savedSignatures) { file ->
                                 Surface(
                                     modifier = Modifier.size(100.dp, 60.dp).clickable {
-                                        activeSignature = PlacedSignature(pageIndex = lightboxPage ?: 0, bitmap = BitmapFactory.decodeFile(file.absolutePath), offset = androidx.compose.ui.geometry.Offset.Zero, scale = 1f, rotation = 0f)
+                                        activeSignatureBitmap = BitmapFactory.decodeFile(file.absolutePath)
+                                        activeOffset = androidx.compose.ui.geometry.Offset.Zero
+                                        activeScale = 1f
+                                        activeRotation = 0f
                                         isFocusMode = true
                                         showSignOptions = false
                                     },
@@ -533,7 +554,10 @@ fun SignView(
             onDismiss = { showSignaturePad = false },
             onSave = { bitmap, shouldSave ->
                 if (shouldSave) saveSignature(bitmap)
-                activeSignature = PlacedSignature(pageIndex = lightboxPage ?: 0, bitmap = bitmap, offset = androidx.compose.ui.geometry.Offset.Zero, scale = 1f, rotation = 0f)
+                activeSignatureBitmap = bitmap
+                activeOffset = androidx.compose.ui.geometry.Offset.Zero
+                activeScale = 1f
+                activeRotation = 0f
                 isFocusMode = true
                 showSignaturePad = false
                 showSignOptions = false
