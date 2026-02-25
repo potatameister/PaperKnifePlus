@@ -52,7 +52,13 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
-- **2026-02-24:** **GOLD STANDARD FIDELITY & PURE ASSET EXTRACTION**:
+- **2026-02-24 (Late):** **PLATINUM ELITE FIDELITY & PROFESSIONAL UI**:
+    - **Nitro Merge 2.0**: Completely overhauled Merge tool with a high-performance grid-based drag-and-drop system.
+    - **Clean Workspace Architecture**: Migrated all tool settings (Page Numbers, etc.) to Rise-Up `ModalBottomSheet` panels, reclaiming 80% of preview screen real estate.
+    - **0-Byte Stability Fix**: Resolved a critical filesystem sync issue by switching to standard write modes, fixing the Grayscale export bug.
+    - **Balanced Compression Engine**: Re-tuned 'Extreme' and 'Recommended' modes to prioritize text legibility and artifact preservation while still achieving significant size reduction.
+    - **UX Standardization**: Added 'CHANGE' button headers to all configuration views for consistent navigation.
+- **2026-02-24 (Early):** **GOLD STANDARD FIDELITY & PURE ASSET EXTRACTION**:
     - **Pure Asset Extraction**: Re-engineered Extract Image tool to strip raw bitstream assets (JPG/PNG) instead of rendering pages, ensuring 100% artifact capture.
     - **Independent Compare-Unlock**: Enhanced Compare tool to independently detect and unlock File A and File B with real-time password validation.
     - **Ultra Fidelity Previews**: Enforced dual-mode rendering (Display + Print) in the native pipeline to fix "Missing Images" in tool previews.

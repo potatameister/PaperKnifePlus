@@ -283,9 +283,9 @@ suspend fun compressPdf(context: Context, inputUri: Uri, outputUri: Uri, passwor
         val renderer = PDFRenderer(sourceDoc)
         val total = sourceDoc.numberOfPages
         
-        // AGGRESSIVE BALANCED TUNING
-        val quality = when(level) { "Extreme" -> 0.15f; "Recommended" -> 0.35f; else -> 0.6f }
-        val scale = when(level) { "Extreme" -> 0.3f; "Recommended" -> 0.5f; else -> 0.8f }
+        // BALANCED QUALITY TUNING - MORE CONSERVATIVE
+        val quality = when(level) { "Extreme" -> 0.4f; "Recommended" -> 0.7f; else -> 0.9f }
+        val scale = when(level) { "Extreme" -> 0.6f; "Recommended" -> 0.8f; else -> 1.0f }
 
         for (i in 0 until total) {
             onProgress(i + 1, total)
@@ -397,8 +397,8 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
     val autoAuthor = PreferencesManager.getDefaultAuthor(context)
     if (autoAuthor.isNotEmpty() && info.author.isNullOrBlank()) info.author = autoAuthor
     
-    // Write content
-    context.contentResolver.openOutputStream(outputUri, "rwt")?.use { os ->
+    // Write content - FIX: Use "w" instead of "rwt" to prevent 0-byte truncation on some devices
+    context.contentResolver.openOutputStream(outputUri, "w")?.use { os ->
         document.save(os)
         os.flush()
         if (os is FileOutputStream) { try { os.fd.sync() } catch (e: Exception) { } }
@@ -409,9 +409,6 @@ fun saveAndFlush(context: Context, document: PDDocument, outputUri: Uri) {
     try {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.IS_PENDING, 0)
-            // Trigger a scan/update
-            val file = File(outputUri.path ?: "")
-            if (file.exists()) put(MediaStore.MediaColumns.SIZE, file.length())
         }
         context.contentResolver.update(outputUri, values, null, null)
     } catch (e: Exception) { }

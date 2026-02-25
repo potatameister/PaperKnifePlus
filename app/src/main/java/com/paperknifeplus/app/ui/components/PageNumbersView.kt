@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,14 +54,15 @@ fun PageNumbersView(
     var processingTime by remember { mutableStateOf("") }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     
+    // Settings
     var position by remember { mutableStateOf("Bottom Right") }
     var fontSize by remember { mutableFloatStateOf(14f) }
     var format by remember { mutableStateOf("Page {n}") }
     var numberColor by remember { mutableStateOf(Color.Black) }
-    
     var showPreviewOverlay by remember { mutableStateOf(true) }
     
-    // RISE-UP SELECTORS
+    // UI State
+    var showSettingsSheet by remember { mutableStateOf(false) }
     var showPositionSheet by remember { mutableStateOf(false) }
     var showColorSheet by remember { mutableStateOf(false) }
 
@@ -164,7 +164,7 @@ fun PageNumbersView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Page Numbers", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("ADD PAGINATION TO DOCUMENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("PIXEL-PERFECT PAGINATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -173,6 +173,18 @@ fun PageNumbersView(
                         }
                     }
                 }
+            }
+        },
+        floatingActionButton = {
+            if (currentState == ToolState.CONFIGURING) {
+                ExtendedFloatingActionButton(
+                    onClick = { showSettingsSheet = true },
+                    icon = { Icon(Icons.Filled.Settings, null) },
+                    text = { Text("SETTINGS", fontWeight = FontWeight.Black) },
+                    containerColor = accentColor,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(20.dp)
+                )
             }
         }
     ) { padding ->
@@ -215,7 +227,7 @@ fun PageNumbersView(
                                             Text(
                                                 text = text, 
                                                 color = numberColor, 
-                                                fontSize = (fontSize / 2).sp, // Scaled for grid
+                                                fontSize = (fontSize / 2).sp, 
                                                 fontWeight = FontWeight.Black, 
                                                 modifier = Modifier.padding(6.dp)
                                             )
@@ -234,89 +246,13 @@ fun PageNumbersView(
                                 )
                             }
                             
-                            Spacer(Modifier.height(12.dp))
-                            
-                            Surface(
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(20.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(Modifier.padding(12.dp)) {
-                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("PREVIEW PLACEMENT", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, modifier = Modifier.weight(1f))
-                                        Switch(
-                                            checked = showPreviewOverlay, 
-                                            onCheckedChange = { showPreviewOverlay = it }, 
-                                            colors = SwitchDefaults.colors(
-                                                checkedThumbColor = Color.White,
-                                                checkedTrackColor = accentColor
-                                            )
-                                        )
-                                    }
-                                    
-                                    Spacer(Modifier.height(12.dp))
-                                    
-                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedTextField(
-                                            value = format,
-                                            onValueChange = { format = it },
-                                            label = { Text("Format ({n})", fontSize = 9.sp) },
-                                            modifier = Modifier.weight(1.5f),
-                                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
-                                            shape = RoundedCornerShape(12.dp),
-                                            singleLine = true,
-                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor, focusedLabelColor = accentColor)
-                                        )
-                                        
-                                        Surface(
-                                            modifier = Modifier.weight(1f).height(56.dp),
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = MaterialTheme.colorScheme.surface,
-                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(0.3f)),
-                                            onClick = { showColorSheet = true }
-                                        ) {
-                                            Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                                                Box(Modifier.size(16.dp).clip(CircleShape).background(numberColor).border(1.dp, Color.Gray.copy(0.3f), CircleShape))
-                                                Spacer(Modifier.width(8.dp))
-                                                Text("COLOR", fontSize = 9.sp, fontWeight = FontWeight.Black)
-                                            }
-                                        }
-                                    }
-                                    
-                                    Spacer(Modifier.height(12.dp))
-                                    Text("FONT SIZE: ${fontSize.toInt()} PT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                                    Slider(
-                                        value = fontSize,
-                                        onValueChange = { fontSize = it },
-                                        valueRange = 8f..36f,
-                                        colors = SliderDefaults.colors(thumbColor = accentColor, activeTrackColor = accentColor)
-                                    )
-                                    
-                                    Surface(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = MaterialTheme.colorScheme.surface,
-                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(0.3f)),
-                                        onClick = { showPositionSheet = true }
-                                    ) {
-                                        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Text("POSITION:", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                                            Spacer(Modifier.width(8.dp))
-                                            Text(position.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = accentColor)
-                                            Spacer(Modifier.weight(1f))
-                                            Icon(Icons.Filled.ArrowDropDown, null, tint = Color.Gray)
-                                        }
-                                    }
-                                }
-                            }
-                            
                             Button(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-numbered.pdf") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp).height(60.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
                                 shape = RoundedCornerShape(20.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {
-                                Text("APPLY TO ALL PAGES", fontWeight = FontWeight.Black)
+                                Text("SAVE DOCUMENT", fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -377,7 +313,91 @@ fun PageNumbersView(
                 )
             }
             
-            // RISE-UP SELECTORS
+            // CONSOLIDATED SETTINGS SHEET (Rise-Up)
+            if (showSettingsSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showSettingsSheet = false },
+                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 48.dp)
+                            .navigationBarsPadding(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("PAGE NUMBER SETTINGS", fontSize = 12.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        Spacer(Modifier.height(24.dp))
+                        
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("LIVE PREVIEW", fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+                            Switch(checked = showPreviewOverlay, onCheckedChange = { showPreviewOverlay = it }, colors = SwitchDefaults.colors(checkedTrackColor = accentColor))
+                        }
+                        
+                        Spacer(Modifier.height(16.dp))
+                        
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = format,
+                                onValueChange = { format = it },
+                                label = { Text("Format ({n})", fontSize = 9.sp) },
+                                modifier = Modifier.weight(1.5f),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor, focusedLabelColor = accentColor)
+                            )
+                            
+                            Surface(
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
+                                onClick = { showColorSheet = true }
+                            ) {
+                                Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                    Box(Modifier.size(16.dp).clip(CircleShape).background(numberColor).border(1.dp, Color.Gray.copy(0.3f), CircleShape))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("COLOR", fontSize = 9.sp, fontWeight = FontWeight.Black)
+                                }
+                            }
+                        }
+                        
+                        Spacer(Modifier.height(24.dp))
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("FONT SIZE: ${fontSize.toInt()} PT", fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+                            Slider(
+                                value = fontSize,
+                                onValueChange = { fontSize = it },
+                                valueRange = 8f..36f,
+                                modifier = Modifier.weight(2f),
+                                colors = SliderDefaults.colors(thumbColor = accentColor, activeTrackColor = accentColor)
+                            )
+                        }
+                        
+                        Spacer(Modifier.height(16.dp))
+                        
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
+                            onClick = { showPositionSheet = true }
+                        ) {
+                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Place, null, tint = accentColor, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(16.dp))
+                                Column {
+                                    Text("POSITION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                                    Text(position.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                                }
+                                Spacer(Modifier.weight(1f))
+                                Icon(Icons.Filled.ArrowDropDown, null, tint = Color.Gray)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // NESTED SELECTORS
             if (showPositionSheet) {
                 ModalBottomSheet(onDismissRequest = { showPositionSheet = false }) {
                     Column(Modifier.fillMaxWidth().padding(bottom = 32.dp).navigationBarsPadding()) {
