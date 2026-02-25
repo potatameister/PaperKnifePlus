@@ -238,31 +238,38 @@ fun SignView(
         }
         
         if (isFocusMode && activeSignature != null && activeSignature!!.pageIndex == pageIndex) {
-            val sig = activeSignature!!
+            // FIX: Use individual mutable states for the active gesture to prevent "snap-back" glitch
+            var sigOffset by remember { mutableStateOf(activeSignature!!.offset) }
+            var sigScale by remember { mutableFloatStateOf(activeSignature!!.scale) }
+            var sigRotation by remember { mutableFloatStateOf(activeSignature!!.rotation) }
+            
+            // Sync local gesture state back to the hoisting state
+            LaunchedEffect(sigOffset, sigScale, sigRotation) {
+                activeSignature = activeSignature?.copy(offset = sigOffset, scale = sigScale, rotation = sigRotation)
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTransformGestures { _, pan, zoom, rot ->
-                            activeSignature = sig.copy(
-                                offset = sig.offset + pan,
-                                scale = (sig.scale * zoom).coerceIn(0.2f, 10f),
-                                rotation = sig.rotation + rot
-                            )
+                            sigOffset += pan
+                            sigScale = (sigScale * zoom).coerceIn(0.2f, 10f)
+                            sigRotation += rot
                         }
                     }
             ) {
                 ComposeImage(
-                    bitmap = sig.bitmap.asImageBitmap(),
+                    bitmap = activeSignature!!.bitmap.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier
                         .size(200.dp)
                         .align(Alignment.Center)
-                        .offset { IntOffset(sig.offset.x.roundToInt(), sig.offset.y.roundToInt()) }
+                        .offset { IntOffset(sigOffset.x.roundToInt(), sigOffset.y.roundToInt()) }
                         .graphicsLayer {
-                            scaleX = sig.scale
-                            scaleY = sig.scale
-                            rotationZ = sig.rotation
+                            scaleX = sigScale
+                            scaleY = sigScale
+                            rotationZ = sigRotation
                         }
                         .border(1.dp, accentColor, RoundedCornerShape(2.dp))
                 )
@@ -323,6 +330,7 @@ fun SignView(
                         ) {
                             Spacer(Modifier.height(12.dp))
                             Box(modifier = Modifier.weight(1f)) {
+                                // CLEAN PREVIEW: Disable selection and zoom icons
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -477,37 +485,38 @@ fun SignView(
     }
 
     if (showSignOptions) {
-        ModalBottomSheet(
+        // FIX: Use AlertDialog to ensure options appear ON TOP of the Lightbox Dialog
+        AlertDialog(
             onDismissRequest = { showSignOptions = false },
-            containerColor = if (isDark) Color(0xFF121214) else Color.White,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-        ) {
-            Column(Modifier.padding(24.dp).padding(bottom = 32.dp).navigationBarsPadding()) {
-                Text("Add Signature", fontWeight = FontWeight.Black, fontSize = 20.sp)
-                Spacer(Modifier.height(20.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SignOptionCard("Draw", Icons.Filled.Gesture, accentColor, Modifier.weight(1f)) { showSignaturePad = true }
-                    SignOptionCard("Upload", Icons.Filled.CloudUpload, Color.Gray, Modifier.weight(1f)) { pngLauncher.launch("image/png") }
-                }
-                if (savedSignatures.isNotEmpty()) {
-                    Spacer(Modifier.height(24.dp))
-                    Text("SAVED SIGNATURES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
-                    Spacer(Modifier.height(12.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(savedSignatures) { file ->
-                            Surface(
-                                modifier = Modifier.size(100.dp, 60.dp).clickable {
-                                    activeSignature = PlacedSignature(pageIndex = lightboxPage ?: 0, bitmap = BitmapFactory.decodeFile(file.absolutePath), offset = androidx.compose.ui.geometry.Offset.Zero, scale = 1f, rotation = 0f)
-                                    isFocusMode = true
-                                    showSignOptions = false
-                                },
-                                shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
-                            ) { ComposeImage(painter = rememberAsyncImagePainter(file), contentDescription = null, modifier = Modifier.padding(8.dp)) }
+            title = { Text("Add Signature", fontWeight = FontWeight.Black) },
+            text = {
+                Column {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SignOptionCard("Draw", Icons.Filled.Gesture, accentColor, Modifier.weight(1f)) { showSignaturePad = true; showSignOptions = false }
+                        SignOptionCard("Upload", Icons.Filled.CloudUpload, Color.Gray, Modifier.weight(1f)) { pngLauncher.launch("image/png"); showSignOptions = false }
+                    }
+                    
+                    if (savedSignatures.isNotEmpty()) {
+                        Spacer(Modifier.height(24.dp))
+                        Text("SAVED SIGNATURES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                        Spacer(Modifier.height(12.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(savedSignatures) { file ->
+                                Surface(
+                                    modifier = Modifier.size(100.dp, 60.dp).clickable {
+                                        activeSignature = PlacedSignature(pageIndex = lightboxPage ?: 0, bitmap = BitmapFactory.decodeFile(file.absolutePath), offset = androidx.compose.ui.geometry.Offset.Zero, scale = 1f, rotation = 0f)
+                                        isFocusMode = true
+                                        showSignOptions = false
+                                    },
+                                    shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
+                                ) { ComposeImage(painter = rememberAsyncImagePainter(file), contentDescription = null, modifier = Modifier.padding(8.dp)) }
+                            }
                         }
                     }
                 }
-            }
-        }
+            },
+            confirmButton = {}
+        )
     }
 
     if (showSignaturePad) {

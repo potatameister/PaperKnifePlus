@@ -67,6 +67,7 @@ fun WatermarkView(
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
+    var fileToUnlock by remember { mutableStateOf<String?>(null) }
     
     var watermarkBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showWatermarkOptions by remember { mutableStateOf(false) }
@@ -86,12 +87,20 @@ fun WatermarkView(
             fileName = details.name
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
-                val count = getPageCount(context, it, null)
-                withContext(Dispatchers.Main) {
-                    pageCount = count
-                    selectedPages = (0 until count).toSet() 
-                    currentState = ToolState.CONFIGURING
-                    isFileLoading = false
+                val isEnc = checkIsEncryptedLocal(context, it)
+                if (isEnc) {
+                    withContext(Dispatchers.Main) {
+                        fileToUnlock = fileName
+                        isFileLoading = false
+                    }
+                } else {
+                    val count = getPageCount(context, it, null)
+                    withContext(Dispatchers.Main) {
+                        pageCount = count
+                        selectedPages = (0 until count).toSet() 
+                        currentState = ToolState.CONFIGURING
+                        isFileLoading = false
+                    }
                 }
             }
         }
@@ -121,7 +130,7 @@ fun WatermarkView(
         withContext(Dispatchers.IO) {
             try {
                 context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                    val document = PDDocument.load(inputStream)
+                    val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
                     watermarkBitmap?.let { wm ->
                         val pdImage = JPEGFactory.createFromImage(document, wm, 0.9f)
                         selectedPages.forEach { pageIdx ->
@@ -185,17 +194,28 @@ fun WatermarkView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING && currentState != ToolState.PREVIEW_RESULT) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    tonalElevation = 2.dp
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Watermark", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("OVERLAY TEXT OR IMAGES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Watermark", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                            Text("OVERLAY TEXT OR IMAGES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        }
+                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                            }
+                        }
                     }
                 }
             }
@@ -203,7 +223,7 @@ fun WatermarkView(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (isFileLoading) {
-                LoadingStateView(accentColor, false, "Reading document structure...")
+                LoadingStateView(accentColor, false, "Reading document...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -231,7 +251,7 @@ fun WatermarkView(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
                                     mode = PreviewMode.GRID,
-                                    password = null, 
+                                    password = unlockPassword.ifEmpty { null }, 
                                     accentColor = accentColor,
                                     selectedPages = selectedPages,
                                     onToggleSelection = { index ->
@@ -309,6 +329,33 @@ fun WatermarkView(
                     else -> {}
                 }
             }
+
+            if (fileToUnlock != null) {
+                LockedFilePrompt(
+                    fileName = fileToUnlock!!,
+                    onDismiss = { fileToUnlock = null; selectedUri = null; currentState = ToolState.SELECTING },
+                    onUnlocked = { pass ->
+                        isFileLoading = true
+                        scope.launch(Dispatchers.IO) {
+                            val count = getPageCount(context, selectedUri!!, pass)
+                            withContext(Dispatchers.Main) { 
+                                if (count > 0) {
+                                    unlockPassword = pass
+                                    pageCount = count
+                                    selectedPages = (0 until count).toSet()
+                                    currentState = ToolState.CONFIGURING
+                                    fileToUnlock = null
+                                } else {
+                                    Toast.makeText(context, "Invalid Password", Toast.LENGTH_SHORT).show()
+                                }
+                                isFileLoading = false
+                            }
+                        }
+                    },
+                    accentColor = accentColor,
+                    isLoading = isFileLoading
+                )
+            }
         }
     }
 
@@ -318,7 +365,7 @@ fun WatermarkView(
             containerColor = if (isDark) Color(0xFF121214) else Color.White,
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
-            Column(Modifier.padding(24.dp).navigationBarsPadding()) {
+            Column(Modifier.padding(24.dp).padding(bottom = 32.dp).navigationBarsPadding()) {
                 Text("Select Watermark", fontWeight = FontWeight.Black, fontSize = 20.sp)
                 Spacer(Modifier.height(20.dp))
                 
