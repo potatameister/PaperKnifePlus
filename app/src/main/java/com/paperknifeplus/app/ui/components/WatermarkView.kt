@@ -162,7 +162,7 @@ fun WatermarkView(
                                         val pdfHeight = page.mediaBox.getHeight()
                                         
                                         val drawWidth = 250f * wm.scale
-                                        val drawHeight = (250f * (wm.bitmap.height.toFloat() / wm.width.toFloat())) * wm.scale
+                                        val drawHeight = (250f * (wm.bitmap.height.toFloat() / wm.bitmap.width.toFloat())) * wm.scale
                                         
                                         val xPos = (pdfWidth / 2) - (drawWidth / 2) + (wm.offset.x * (pdfWidth / 360f))
                                         val yPos = (pdfHeight / 2) - (drawHeight / 2) - (wm.offset.y * (pdfHeight / 510f))
