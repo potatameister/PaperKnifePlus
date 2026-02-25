@@ -62,7 +62,7 @@ fun SuccessView(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "PROCESSED IN $processingTime", 
+                        "DONE IN $processingTime", 
                         fontSize = 9.sp, 
                         fontWeight = FontWeight.Black, 
                         color = Color(0xFF06D6A0),

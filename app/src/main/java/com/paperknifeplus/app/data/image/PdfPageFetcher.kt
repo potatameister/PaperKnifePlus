@@ -119,7 +119,7 @@ object PdDocumentPool {
     }
 }
 
-// Global Concurrency Controller (Nitro Blitz Throttle)
+// Global Concurrency Controller (Native Engine Throttle)
 private val renderSemaphore = Semaphore(4)
 private val highPriorityDispatcher = Dispatchers.IO
 private val lowPriorityDispatcher = Dispatchers.Default

@@ -94,7 +94,7 @@ fun UltraPreview(
     var isDecrypting by remember { mutableStateOf(false) }
     var activePageCount by remember { mutableIntStateOf(pageCount) }
 
-    // NITRO 12.0: Platinum High-Res Reader ImageLoader (45% RAM usage)
+    // NATIVE ENGINE: High-Res Reader ImageLoader (45% RAM usage)
     val imageLoader = remember {
         ImageLoader.Builder(context)
             .components { add(PdfPageFetcher.Factory(context)) }
@@ -194,7 +194,7 @@ fun UltraPreview(
                 .padding(padding)
         ) {
             if (isInitializing) {
-                LoadingStateView(PaperPink, false, "Loading Platinum View...")
+                LoadingStateView(PaperPink, false, "Loading Document View...")
             } else if (fileToUnlock == null) {
                 Box(
                     modifier = Modifier
@@ -501,7 +501,7 @@ fun PdfPageReaderItem(
     links: List<PdfLink>,
     onLinkClick: (String) -> Unit
 ) {
-    // NITRO 15.0: Platinum Pro 12.0f Resolution (Crisp even at 1x)
+    // NATIVE ENGINE: 12.0f Resolution (Crisp even at 1x)
     val lowResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 1.8f, priority = 1) }
     val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 12.0f, priority = 0) }
     

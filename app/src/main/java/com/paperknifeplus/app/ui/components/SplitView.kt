@@ -259,7 +259,7 @@ fun SplitView(
                                 }
                             }
 
-                            // Batch Selection Row (Hides when manual range input is open to save space)
+                            // Batch Selection Row
                             AnimatedVisibility(visible = !showRangeInput) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -337,14 +337,18 @@ fun SplitView(
                                 )
                             }
                             
+                            // PRIMARY BUTTON: Fixed background and white text
                             Button(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-split.pdf") }, 
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp), 
                                 enabled = selectedPages.isNotEmpty(),
                                 shape = RoundedCornerShape(20.dp), 
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = accentColor,
+                                    contentColor = Color.White
+                                )
                             ) {
-                                Text("EXTRACT ${selectedPages.size} PAGES", fontWeight = FontWeight.Black, color = Color.White)
+                                Text("EXTRACT ${selectedPages.size} PAGES", fontWeight = FontWeight.Black)
                             }
                         }
                     }

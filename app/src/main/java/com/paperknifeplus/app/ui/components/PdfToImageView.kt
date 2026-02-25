@@ -148,7 +148,7 @@ fun PdfToImageView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("PDF to Image", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("PLATINUM EXPORT ENGINE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("NATIVE EXPORT ENGINE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {

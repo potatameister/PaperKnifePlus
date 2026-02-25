@@ -253,7 +253,7 @@ suspend fun renderPageToBitmap(context: Context, uri: Uri, pageIndex: Int, passw
         } catch (e: Exception) { }
     }
 
-    // Fallback to PDFBox (Using PdDocumentPool for Nitro 4.0 speed)
+    // Fallback to PDFBox (Using PdDocumentPool for high-speed processing)
     try {
         val document = PdDocumentPool.acquire(context, uri, password)
         if (document != null) {

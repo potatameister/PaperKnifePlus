@@ -52,7 +52,6 @@ class MainActivity : ComponentActivity() {
         com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
-        // --- NITRO ENGINE: GLOBAL IMAGE LOADER ---
         val nitroImageLoader = ImageLoader.Builder(applicationContext)
             .components { add(PdfPageFetcher.Factory(applicationContext)) }
             .memoryCache {
@@ -70,30 +69,22 @@ class MainActivity : ComponentActivity() {
             .build()
 
         setContent {
-            val themePreference = remember { PreferencesManager.getTheme(applicationContext) }
-            var isDarkMode by remember { 
-                mutableStateOf(
-                    when(themePreference) {
-                        1 -> false
-                        2 -> true
-                        else -> false // Initial system default, handled below
-                    }
-                )
-            }
-            
-            // Handle System Theme
-            if (themePreference == 0) {
-                isDarkMode = isSystemInDarkTheme()
+            // NITRO: Dynamic Theme Engine
+            var themePreference by remember { mutableIntStateOf(PreferencesManager.getTheme(applicationContext)) }
+            val systemDark = isSystemInDarkTheme()
+            val isDarkMode = remember(themePreference, systemDark) {
+                when(themePreference) {
+                    1 -> false
+                    2 -> true
+                    else -> systemDark
+                }
             }
 
             var isInitialized by remember { mutableStateOf(false) }
 
-            // NITRO: Background Initialization & History Purge
             LaunchedEffect(Unit) {
-                val retentionDays = PreferencesManager.getHistoryRetention(applicationContext)
-                if (retentionDays > 0) {
-                    SessionManager.purgeHistory(retentionDays)
-                }
+                val retention = PreferencesManager.getHistoryRetention(applicationContext)
+                SessionManager.purgeHistory(retention)
                 kotlinx.coroutines.delay(1200) 
                 isInitialized = true
             }
@@ -102,7 +93,6 @@ class MainActivity : ComponentActivity() {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
                     val sheetState = rememberModalBottomSheetState()
                     var showToolPicker by remember { mutableStateOf(false) }
-                    var toolPickerInitialExpanded by remember { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
 
                     Box(Modifier.fillMaxSize()) {
@@ -114,7 +104,6 @@ class MainActivity : ComponentActivity() {
                         val mainScreens = listOf("home", "tools", "history", "settings")
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
 
-                        // --- INTELLIGENT BACK NAVIGATION ---
                         BackHandler(enabled = currentTool != null || pagerState.currentPage != 0 || showToolPicker) {
                             if (showToolPicker) {
                                 scope.launch { sheetState.hide() }.invokeOnCompletion { showToolPicker = false }
@@ -125,22 +114,22 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        Box(modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                        ) {
+                        // ROOT CONTAINER: Removed duplicate navigation padding causing the black gap
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                             Column(modifier = Modifier.fillMaxSize()) {
-                                // Main Navigation Pager (Slidable & Lazy)
                                 androidx.compose.foundation.pager.HorizontalPager(
                                     state = pagerState,
                                     modifier = Modifier.weight(1f),
                                     userScrollEnabled = currentTool == null,
-                                    beyondBoundsPageCount = 0 // NITRO: Only render current page to save CPU/GPU
+                                    beyondBoundsPageCount = 0
                                 ) { page ->
                                     when (mainScreens[page]) {
                                         "home" -> HomeView(
                                             isDarkMode = isDarkMode,
-                                            onThemeToggle = { isDarkMode = !isDarkMode },
+                                            onThemeToggle = { 
+                                                themePreference = if (isDarkMode) 1 else 2
+                                                PreferencesManager.setTheme(applicationContext, themePreference)
+                                            },
                                             onToolClick = { 
                                                 toolInitialUri = null
                                                 if (it == "about") {
@@ -163,15 +152,21 @@ class MainActivity : ComponentActivity() {
                                             previewData = Triple(uri, name, count)
                                             currentTool = "ultra_preview"
                                         })
-                                        "settings" -> SettingsView(onNavigateToAbout = { 
-                                            aboutInitialPage = it
-                                            currentTool = "about" 
-                                        })
+                                        "settings" -> SettingsView(
+                                            isDarkMode = isDarkMode,
+                                            onThemeChange = { theme ->
+                                                themePreference = theme
+                                                PreferencesManager.setTheme(applicationContext, theme)
+                                            },
+                                            onNavigateToAbout = { 
+                                                aboutInitialPage = it
+                                                currentTool = "about" 
+                                            }
+                                        )
                                     }
                                 }
                             }
 
-                            // Bottom Bar
                             if (currentTool == null) {
                                 FixedTitanBottomBar(
                                     modifier = Modifier.align(Alignment.BottomCenter),
@@ -182,14 +177,10 @@ class MainActivity : ComponentActivity() {
                                             scope.launch { pagerState.scrollToPage(index) }
                                         }
                                     },
-                                    onPlusClick = { 
-                                        toolPickerInitialExpanded = false
-                                        showToolPicker = true 
-                                    }
+                                    onPlusClick = { showToolPicker = true }
                                 )
                             }
 
-                            // TOOL PICKER SHEET
                             if (showToolPicker) {
                                 ModalBottomSheet(
                                     onDismissRequest = { showToolPicker = false },
@@ -202,7 +193,6 @@ class MainActivity : ComponentActivity() {
                                         onToolClick = { tool ->
                                             scope.launch { sheetState.hide() }.invokeOnCompletion { 
                                                 showToolPicker = false
-                                                toolInitialUri = null
                                                 currentTool = tool 
                                             }
                                         }
@@ -210,7 +200,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            // NITRO TOOL OVERLAY
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = currentTool != null,
                                 enter = androidx.compose.animation.fadeIn(),
@@ -219,177 +208,44 @@ class MainActivity : ComponentActivity() {
                                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                                     when (currentTool) {
                                         "about" -> AboutView(initialPage = aboutInitialPage, onBack = { currentTool = null })
-                                        "merge" -> MergeView(
-                                            initialUri = toolInitialUri,
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "split" -> SplitView(
-                                            initialUri = toolInitialUri,
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "delete" -> DeleteView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "compress" -> CompressView(
-                                            initialUri = toolInitialUri,
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "repair" -> RepairView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "rotate" -> RotateView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "rearrange" -> RearrangeView(
-                                            initialUri = toolInitialUri,
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "protect" -> ProtectView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "unlock" -> UnlockView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "grayscale" -> GrayscaleView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "metadata" -> MetadataView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "img2pdf" -> ImageToPdfView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "pdf2img" -> PdfToImageView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "pdf2text" -> PdfToTextView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "pdf2zip" -> PdfToZipView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "sign" -> SignView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "watermark" -> WatermarkView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "page-numbers" -> PageNumbersView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "bookmarks" -> BookmarksView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
-                                        "extract-images" -> ExtractImagesView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
+                                        "merge" -> MergeView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "split" -> SplitView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "delete" -> DeleteView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "compress" -> CompressView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "repair" -> RepairView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "rotate" -> RotateView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "rearrange" -> RearrangeView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "protect" -> ProtectView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "unlock" -> UnlockView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "grayscale" -> GrayscaleView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "metadata" -> MetadataView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "img2pdf" -> ImageToPdfView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "pdf2img" -> PdfToImageView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "pdf2text" -> PdfToTextView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "pdf2zip" -> PdfToZipView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "sign" -> SignView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "watermark" -> WatermarkView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "page-numbers" -> PageNumbersView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "bookmarks" -> BookmarksView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "extract-images" -> ExtractImagesView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "compare" -> CompareView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "ultra_preview" -> {
                                             previewData?.let { (uri, name, count) ->
                                                 UltraPreview(
-                                                    uri = uri,
-                                                    fileName = name,
-                                                    pageCount = count,
-                                                    onDismiss = { currentTool = null },
-                                                    onOpenInTool = { tool ->
-                                                        toolInitialUri = uri
-                                                        currentTool = tool
+                                                    uri = uri, fileName = name, pageCount = count, 
+                                                    onDismiss = { currentTool = null }, 
+                                                    onOpenInTool = { tool -> 
+                                                        toolInitialUri = uri // PRESERVE CONTEXT
+                                                        currentTool = tool 
                                                     }
                                                 )
                                             }
                                         }
-                                        "compare" -> CompareView(
-                                            onBack = { currentTool = null },
-                                            onOpenPreview = { uri, name, count ->
-                                                previewData = Triple(uri, name, count)
-                                                currentTool = "ultra_preview"
-                                            }
-                                        )
                                     }
                                 }
                             }
                         }
 
-                        // BLITZ SPLASH OVERLAY
                         androidx.compose.animation.AnimatedVisibility(
                             visible = !isInitialized,
                             exit = androidx.compose.animation.fadeOut(animationSpec = tween(500))
@@ -403,6 +259,8 @@ class MainActivity : ComponentActivity() {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Logo(modifier = Modifier.size(64.dp), partColor = if (isDarkMode) Color.White else Color.Black)
                                     Spacer(Modifier.height(24.dp))
+                                    Text("v1.0", fontSize = 12.sp, color = PaperPink, fontWeight = FontWeight.Black)
+                                    Spacer(Modifier.height(12.dp))
                                     CircularProgressIndicator(color = PaperPink, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                                 }
                             }
@@ -421,15 +279,14 @@ fun FixedTitanBottomBar(
     onNavigate: (String) -> Unit,
     onPlusClick: () -> Unit
 ) {
+    // FIXED: Navigation bar layout adjusted to be flush with bottom
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface) // Solid background for nav bar area
             .navigationBarsPadding()
-            .height(90.dp),
+            .height(84.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Red Glow under FAB
         Box(
             modifier = Modifier
                 .offset(y = (-32).dp)
@@ -472,7 +329,6 @@ fun FixedTitanBottomBar(
             }
         }
 
-        // Standardized + Button with White Border
         Surface(
             modifier = Modifier
                 .offset(y = (-34).dp)
@@ -492,7 +348,6 @@ fun FixedTitanBottomBar(
 
 @Composable
 fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
-    @Suppress("DEPRECATION")
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))

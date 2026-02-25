@@ -1,5 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +26,8 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
 fun ToolPickerContent(onToolClick: (String) -> Unit) {
+    var isExpanded by remember { mutableStateOf(false) }
+    
     val allTools = remember {
         listOf(
             Tool("merge", "Merge", "Join PDFs", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
@@ -52,6 +55,7 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
         )
     }
 
+    val essentialIds = listOf("merge", "split", "compress", "sign", "protect", "pdf2img")
     val categories = listOf("Edit", "Optimize", "Secure", "Convert")
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
@@ -59,57 +63,88 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
+            .animateContentSize()
     ) {
-        // Handle
-        Box(
-            modifier = Modifier
-                .padding(vertical = 12.dp)
-                .width(40.dp)
-                .height(4.dp)
-                .background(Color.Gray.copy(0.3f), CircleShape)
-                .align(Alignment.CenterHorizontally)
-        )
-
-        Text(
-            "CHOOSE ENGINE",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.Gray,
-            letterSpacing = 1.2.sp,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-        )
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(bottom = 48.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+        // Mode Title & Toggle
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            categories.forEach { category ->
-                item {
-                    val catTools = allTools.filter { it.category == category }
-                    val catColor = catTools.firstOrNull()?.color ?: PaperPink
-                    
-                    Column {
-                        Text(
-                            category.uppercase(),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Black,
-                            color = catColor,
-                            letterSpacing = 1.5.sp,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
-                        )
-                        
-                        // Tools Grid inside Category
-                        catTools.chunked(2).forEach { rowTools ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                rowTools.forEach { tool ->
-                                    ModernToolItem(tool, isDark, Modifier.weight(1f), onToolClick)
-                                }
-                                if (rowTools.size == 1) Spacer(Modifier.weight(1f))
+            Text(
+                if (isExpanded) "ALL ENGINES" else "ESSENTIALS",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.Gray,
+                letterSpacing = 1.2.sp
+            )
+            
+            TextButton(onClick = { isExpanded = !isExpanded }) {
+                Text(
+                    if (isExpanded) "SHOW LESS" else "MORE TOOLS",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = PaperPink
+                )
+                Icon(
+                    if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    null,
+                    modifier = Modifier.size(16.dp),
+                    tint = PaperPink
+                )
+            }
+        }
+
+        if (!isExpanded) {
+            // Mode 1: Compact Essentials (Grid of 6)
+            Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                essentialIds.chunked(3).forEach { rowIds ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        rowIds.forEach { id ->
+                            val tool = allTools.find { it.id == id }
+                            if (tool != null) {
+                                ModernToolItem(tool, isDark, Modifier.weight(1f), onToolClick)
                             }
-                            Spacer(Modifier.height(12.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+        } else {
+            // Mode 2: Full Categorized List
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 500.dp)
+                    .padding(horizontal = 20.dp),
+                contentPadding = PaddingValues(bottom = 48.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                categories.forEach { category ->
+                    item {
+                        val catTools = allTools.filter { it.category == category }
+                        val catColor = catTools.firstOrNull()?.color ?: PaperPink
+                        
+                        Column {
+                            Text(
+                                category.uppercase(),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                color = catColor,
+                                letterSpacing = 1.5.sp,
+                                modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+                            )
+                            
+                            catTools.chunked(2).forEach { rowTools ->
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    rowTools.forEach { tool ->
+                                        ModernToolItem(tool, isDark, Modifier.weight(1f), onToolClick)
+                                    }
+                                    if (rowTools.size == 1) Spacer(Modifier.weight(1f))
+                                }
+                                Spacer(Modifier.height(12.dp))
+                            }
                         }
                     }
                 }
@@ -128,21 +163,21 @@ fun ModernToolItem(tool: Tool, isDark: Boolean, modifier: Modifier = Modifier, o
         border = BorderStroke(1.dp, tool.color.copy(alpha = 0.15f))
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(32.dp)
                     .background(tool.color.copy(alpha = 0.15f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(tool.icon ?: Icons.Filled.Build, null, modifier = Modifier.size(20.dp), tint = tool.color)
+                Icon(tool.icon ?: Icons.Filled.Build, null, modifier = Modifier.size(18.dp), tint = tool.color)
             }
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(12.dp))
             Column {
-                Text(tool.name, fontSize = 13.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
-                Text(tool.description.uppercase(), fontSize = 7.sp, fontWeight = FontWeight.Bold, color = Color.Gray, letterSpacing = 0.5.sp)
+                Text(tool.name, fontSize = 12.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+                Text(tool.category.uppercase(), fontSize = 6.sp, fontWeight = FontWeight.Bold, color = Color.Gray, letterSpacing = 0.5.sp)
             }
         }
     }

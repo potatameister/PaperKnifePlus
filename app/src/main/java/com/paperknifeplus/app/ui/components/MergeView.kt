@@ -4,8 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -13,10 +12,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,18 +25,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -56,7 +50,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.Collections
-import kotlin.math.roundToInt
 
 data class MergeFile(
     val uri: Uri,
@@ -197,7 +190,7 @@ fun MergeView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Merge", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("COMBINE MULTIPLE PDFS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("JOIN MULTIPLE DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedFiles.isNotEmpty() && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedFiles = emptyList(); currentState = ToolState.SELECTING }) {
@@ -211,7 +204,7 @@ fun MergeView(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (isFileLoading) {
-                LoadingStateView(accentColor, false, "Processing files...")
+                LoadingStateView(accentColor, false, "Reading files...")
             } else {
                 when (currentState) {
                     ToolState.SELECTING -> {
@@ -227,9 +220,9 @@ fun MergeView(
                     }
                     
                     ToolState.CONFIGURING -> {
-                        val gridState = rememberLazyGridState()
+                        val listState = rememberLazyListState()
                         var draggedIndex by remember { mutableStateOf<Int?>(null) }
-                        var dragOffset by remember { mutableStateOf(Offset.Zero) }
+                        var dragOffsetY by remember { mutableFloatStateOf(0f) }
 
                         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                             Row(
@@ -237,53 +230,50 @@ fun MergeView(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Filled.Info, null, tint = accentColor.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
+                                Icon(Icons.Filled.SwapVert, null, tint = accentColor.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Long-press to drag & reorder", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                                Text("Hold & Drag to reorder", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                             }
 
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
-                                state = gridState,
+                            // OVERHAULED: Single column list for stability
+                            LazyColumn(
+                                state = listState,
                                 modifier = Modifier.weight(1f),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
                             ) {
                                 itemsIndexed(selectedFiles, key = { _, file -> file.uri.toString() }) { index, file ->
                                     val isDragging = draggedIndex == index
+                                    val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
                                     
                                     Box(
                                         modifier = Modifier
                                             .zIndex(if (isDragging) 10f else 1f)
                                             .graphicsLayer {
                                                 if (isDragging) {
-                                                    translationX = dragOffset.x
-                                                    translationY = dragOffset.y
-                                                    scaleX = 1.05f
-                                                    scaleY = 1.05f
+                                                    translationY = dragOffsetY
+                                                    scaleX = 1.02f
+                                                    scaleY = 1.02f
                                                 }
                                             }
-                                            .animateItemPlacement(spring(stiffness = Spring.StiffnessMediumLow))
-                                            .shadow(if (isDragging) 16.dp else 0.dp, RoundedCornerShape(16.dp))
-                                            .pointerInput(Unit) {
+                                            .animateItemPlacement()
+                                            .shadow(elevation, RoundedCornerShape(16.dp))
+                                            .pointerInput(index) {
                                                 detectDragGesturesAfterLongPress(
                                                     onDragStart = { draggedIndex = index },
                                                     onDrag = { change, dragAmount ->
                                                         change.consume()
-                                                        dragOffset += dragAmount
+                                                        dragOffsetY += dragAmount.y
                                                         
                                                         val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
-                                                        val gridLayout = gridState.layoutInfo
-                                                        val itemInfo = gridLayout.visibleItemsInfo.find { it.key == file.uri.toString() } ?: return@detectDragGesturesAfterLongPress
+                                                        val layoutInfo = listState.layoutInfo
+                                                        val itemInfo = layoutInfo.visibleItemsInfo.find { it.key == file.uri.toString() } ?: return@detectDragGesturesAfterLongPress
                                                         
-                                                        val itemCenterX = itemInfo.offset.x + itemInfo.size.width / 2 + dragOffset.x
-                                                        val itemCenterY = itemInfo.offset.y + itemInfo.size.height / 2 + dragOffset.y
+                                                        val itemCenterY = itemInfo.offset + itemInfo.size / 2 + dragOffsetY
                                                         
-                                                        val targetItem = gridLayout.visibleItemsInfo.find { info ->
+                                                        val targetItem = layoutInfo.visibleItemsInfo.find { info ->
                                                             index != info.index &&
-                                                            itemCenterX.roundToInt() in info.offset.x..(info.offset.x + info.size.width) &&
-                                                            itemCenterY.roundToInt() in info.offset.y..(info.offset.y + info.size.height)
+                                                            itemCenterY.toInt() in info.offset..(info.offset + info.size)
                                                         }
                                                         
                                                         if (targetItem != null) {
@@ -292,19 +282,16 @@ fun MergeView(
                                                             newList.add(targetItem.index, item)
                                                             selectedFiles = newList
                                                             
-                                                            dragOffset -= Offset(
-                                                                (targetItem.offset.x - itemInfo.offset.x).toFloat(),
-                                                                (targetItem.offset.y - itemInfo.offset.y).toFloat()
-                                                            )
+                                                            dragOffsetY -= (targetItem.offset - itemInfo.offset).toFloat()
                                                             draggedIndex = targetItem.index
                                                         }
                                                     },
-                                                    onDragEnd = { draggedIndex = null; dragOffset = Offset.Zero },
-                                                    onDragCancel = { draggedIndex = null; dragOffset = Offset.Zero }
+                                                    onDragEnd = { draggedIndex = null; dragOffsetY = 0f },
+                                                    onDragCancel = { draggedIndex = null; dragOffsetY = 0f }
                                                 )
                                             }
                                     ) {
-                                        MergeFileGridItem(
+                                        MergeFileListItem(
                                             file = file,
                                             index = index,
                                             accentColor = accentColor,
@@ -319,14 +306,15 @@ fun MergeView(
                                 item {
                                     Surface(
                                         onClick = { pickLauncher.launch("application/pdf") },
-                                        modifier = Modifier.fillMaxWidth().aspectRatio(0.75f),
+                                        modifier = Modifier.fillMaxWidth().height(80.dp),
                                         shape = RoundedCornerShape(16.dp),
                                         color = accentColor.copy(0.05f),
                                         border = BorderStroke(1.dp, accentColor.copy(0.2f))
                                     ) {
-                                        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Filled.Add, null, tint = accentColor)
-                                            Text("ADD FILE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("ADD MORE FILES", fontSize = 11.sp, fontWeight = FontWeight.Black, color = accentColor)
                                         }
                                     }
                                 }
@@ -338,7 +326,11 @@ fun MergeView(
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
                                 enabled = allReady,
                                 shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, disabledContainerColor = accentColor.copy(alpha = 0.3f))
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = accentColor, 
+                                    contentColor = Color.White,
+                                    disabledContainerColor = accentColor.copy(alpha = 0.3f)
+                                )
                             ) {
                                 Text(if (allReady) "MERGE ${selectedFiles.size} FILES" else "UNLOCK ALL FILES FIRST", fontWeight = FontWeight.Black)
                             }
@@ -415,7 +407,7 @@ fun MergeView(
 }
 
 @Composable
-fun MergeFileGridItem(
+fun MergeFileListItem(
     file: MergeFile,
     index: Int,
     accentColor: Color,
@@ -425,54 +417,57 @@ fun MergeFileGridItem(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().aspectRatio(0.75f),
+        modifier = Modifier.fillMaxWidth().height(100.dp),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Box(Modifier.fillMaxSize()) {
-            if (file.isLocked && !file.isUnlocked) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Outlined.Lock, null, tint = accentColor, modifier = Modifier.size(32.dp))
-                        Spacer(Modifier.height(8.dp))
-                        TextButton(onClick = onUnlock) { Text("UNLOCK", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor) }
+        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            // Thumbnail
+            Box(Modifier.width(80.dp).fillMaxHeight().background(Color.Gray.copy(0.05f))) {
+                if (file.isLocked && !file.isUnlocked) {
+                    Icon(Icons.Outlined.Lock, null, tint = accentColor.copy(0.3f), modifier = Modifier.align(Alignment.Center).size(24.dp))
+                } else {
+                    val request = remember(file.uri, file.decryptedUri, file.password) { 
+                        PdfPageRequest(file.decryptedUri ?: file.uri, 0, if (file.decryptedUri != null) null else file.password, 0.4f) 
                     }
+                    Image(
+                        painter = rememberAsyncImagePainter(request, imageLoader),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().clickable { onClick() },
+                        contentScale = ContentScale.Crop
+                    )
                 }
-            } else {
-                val request = remember(file.uri, file.decryptedUri, file.password) { 
-                    PdfPageRequest(file.decryptedUri ?: file.uri, 0, if (file.decryptedUri != null) null else file.password, 0.4f) 
+                Surface(
+                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                    color = Color.Black.copy(0.6f),
+                    shape = CircleShape
+                ) {
+                    Text("${index + 1}", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
                 }
-                Image(
-                    painter = rememberAsyncImagePainter(request, imageLoader),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize().clickable { onClick() },
-                    contentScale = ContentScale.Crop
-                )
             }
             
-            // Badge & Actions
-            Surface(
-                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
-                color = Color.Black.copy(0.6f),
-                shape = CircleShape
-            ) {
-                Text("${index + 1}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+            // Info
+            Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
+                Text(file.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                Text(file.size, fontSize = 11.sp, color = Color.Gray)
+                if (file.isLocked && !file.isUnlocked) {
+                    Text("LOCKED", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor)
+                }
             }
             
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).background(Color.Black.copy(0.4f), CircleShape).size(28.dp)
-            ) {
-                Icon(Icons.Filled.Close, null, tint = Color.White, modifier = Modifier.size(16.dp))
+            // Actions
+            if (file.isLocked && !file.isUnlocked) {
+                IconButton(onClick = onUnlock) {
+                    Icon(Icons.Filled.LockOpen, null, tint = accentColor)
+                }
             }
             
-            Surface(
-                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
-                color = Color.Black.copy(0.5f)
-            ) {
-                Text(file.name, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.padding(6.dp))
+            IconButton(onClick = onDelete, modifier = Modifier.padding(end = 8.dp)) {
+                Icon(Icons.Filled.DeleteOutline, null, tint = Color.Gray)
             }
+            
+            Icon(Icons.Filled.DragHandle, null, tint = Color.Gray.copy(0.3f), modifier = Modifier.padding(end = 12.dp))
         }
     }
 }

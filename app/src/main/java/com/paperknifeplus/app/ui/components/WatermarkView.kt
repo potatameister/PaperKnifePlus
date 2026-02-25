@@ -293,7 +293,7 @@ fun WatermarkView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Watermark", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("PRECISION OVERLAY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("CUSTOM OVERLAY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING; placedWatermarks = emptyList() }) {

@@ -149,7 +149,7 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
                         onClick = { item.uri?.let { uri -> onItemClick(uri, item.name, item.pageCount) } },
                         onDownload = {
                             try {
-                                // For Platinum: Use sharing as a "Save to Files" mechanism which is most reliable on Android
+                                // Use sharing as a "Save to Files" mechanism which is most reliable on Android
                                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                     type = "application/pdf"
                                     putExtra(android.content.Intent.EXTRA_STREAM, item.uri)

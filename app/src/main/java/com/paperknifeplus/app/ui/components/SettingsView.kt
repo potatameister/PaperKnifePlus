@@ -23,19 +23,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
-fun SettingsView(onNavigateToAbout: (String) -> Unit) {
+fun SettingsView(
+    isDarkMode: Boolean,
+    onThemeChange: (Int) -> Unit,
+    onNavigateToAbout: (String) -> Unit
+) {
     val context = LocalContext.current
-    val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val isDarkBg = MaterialTheme.colorScheme.background == Color.Black
     
     var autoAuthor by remember { mutableStateOf(PreferencesManager.getDefaultAuthor(context)) }
     var currentTheme by remember { mutableIntStateOf(PreferencesManager.getTheme(context)) }
     var historyRetention by remember { mutableIntStateOf(PreferencesManager.getHistoryRetention(context)) }
+    
+    var showRetentionDialog by remember { mutableStateOf(false) }
+    var showClearConfirm by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         // Standardized Header
@@ -55,7 +63,7 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
                     color = MaterialTheme.colorScheme.onBackground,
                     letterSpacing = (-1).sp
                 )
-                Logo(modifier = Modifier.size(24.dp), partColor = if (isDark) Color.White else Color.Black)
+                Logo(modifier = Modifier.size(24.dp), partColor = if (isDarkBg) Color.White else Color.Black)
             }
         }
 
@@ -72,15 +80,15 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
                     ) {
                         ThemeOption("System", Icons.Outlined.SettingsSuggest, currentTheme == 0, Modifier.weight(1f)) {
                             currentTheme = 0
-                            PreferencesManager.setTheme(context, 0)
+                            onThemeChange(0)
                         }
                         ThemeOption("Light", Icons.Outlined.LightMode, currentTheme == 1, Modifier.weight(1f)) {
                             currentTheme = 1
-                            PreferencesManager.setTheme(context, 1)
+                            onThemeChange(1)
                         }
                         ThemeOption("Dark", Icons.Outlined.DarkMode, currentTheme == 2, Modifier.weight(1f)) {
                             currentTheme = 2
-                            PreferencesManager.setTheme(context, 2)
+                            onThemeChange(2)
                         }
                     }
                 }
@@ -90,7 +98,9 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
                 SettingsGroup("USER PROFILE") {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                         Text("DEFAULT AUTHOR", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(4.dp))
+                        Text("This name is automatically added to the 'Author' field in the metadata of every PDF you save.", fontSize = 10.sp, color = Color.Gray)
+                        Spacer(Modifier.height(12.dp))
                         TextField(
                             value = autoAuthor,
                             onValueChange = { 
@@ -113,32 +123,19 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
             }
 
             item {
-                SettingsGroup("HISTORY & PRIVACY") {
+                SettingsGroup("PRIVACY & STORAGE") {
                     SettingsItem(Icons.Outlined.AutoDelete, "Auto-Delete History", when(historyRetention) {
-                        0 -> "Unlimited (Keep all)"
+                        0 -> "Unlimited (Never delete)"
                         1 -> "Delete after 24 hours"
                         7 -> "Delete after 7 days"
                         else -> "Delete after 30 days"
                     }) {
-                        // Cycle through options for v1.0
-                        historyRetention = when(historyRetention) {
-                            0 -> 1
-                            1 -> 7
-                            7 -> 30
-                            else -> 0
-                        }
-                        PreferencesManager.setHistoryRetention(context, historyRetention)
+                        showRetentionDialog = true
                     }
-                    SettingsItem(Icons.Outlined.DeleteSweep, "Clear All History", "Wipe session history immediately", accentColor = Color.Red) {
-                        SessionManager.clearHistory()
-                        Toast.makeText(context, "History cleared", Toast.LENGTH_SHORT).show()
+                    SettingsItem(Icons.Outlined.DeleteSweep, "Clear History", "Wipe all session history now") {
+                        showClearConfirm = true
                     }
-                }
-            }
-
-            item {
-                SettingsGroup("STORAGE") {
-                    SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Purge all temporary PDF fragments") {
+                    SettingsItem(Icons.Outlined.DeleteForever, "Clear Image Cache", "Purge temporary high-res previews") {
                         val cacheDir = context.cacheDir.resolve("pdf_previews")
                         if (cacheDir.exists()) cacheDir.deleteRecursively()
                         Toast.makeText(context, "Cache cleared", Toast.LENGTH_SHORT).show()
@@ -148,17 +145,66 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
 
             item {
                 SettingsGroup("ABOUT") {
-                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Credits, License, and Privacy Policy") { onNavigateToAbout("main") }
+                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Credits, License, and Privacy") { onNavigateToAbout("main") }
                     SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help reach the Play Store", accentColor = Color(0xFFF43F5E)) { onNavigateToAbout("support") }
                 }
             }
 
             item {
                 Column(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("VERSION 1.0.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Text("EDITION v1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                 }
             }
         }
+    }
+
+    // DIALOGS
+    if (showRetentionDialog) {
+        AlertDialog(
+            onDismissRequest = { showRetentionDialog = false },
+            title = { Text("Auto-Delete History", fontWeight = FontWeight.Black) },
+            text = {
+                Column {
+                    val options = listOf(0 to "Unlimited", 1 to "24 Hours", 7 to "7 Days", 30 to "30 Days")
+                    options.forEach { (days, label) ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable {
+                                historyRetention = days
+                                PreferencesManager.setHistoryRetention(context, days)
+                                showRetentionDialog = false
+                            }.padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = historyRetention == days, onClick = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(label, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    if (showClearConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirm = false },
+            title = { Text("Clear History?", fontWeight = FontWeight.Black) },
+            text = { Text("This will permanently remove all entries from your history tab. This cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        SessionManager.clearHistory()
+                        showClearConfirm = false
+                        Toast.makeText(context, "History wiped", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) { Text("WIPE EVERYTHING", fontWeight = FontWeight.Black) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirm = false }) { Text("CANCEL", color = Color.Gray) }
+            }
+        )
     }
 }
 

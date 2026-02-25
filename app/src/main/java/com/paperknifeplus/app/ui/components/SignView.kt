@@ -316,7 +316,7 @@ fun SignView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Sign PDF", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("GOLD STANDARD SIGNING", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("SECURE SIGNATURE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING; placedSignatures = emptyList() }) {
