@@ -158,12 +158,15 @@ fun WatermarkView(
                                     val page = document.getPage(pageIdx)
                                     PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
                                         val pdImage = LosslessFactory.createFromImage(document, wm.bitmap)
-                                        val pdfWidth = page.mediaBox.width
-                                        val pdfHeight = page.mediaBox.height
+                                        val pdfWidth = page.mediaBox.getWidth()
+                                        val pdfHeight = page.mediaBox.getHeight()
+                                        
                                         val drawWidth = 250f * wm.scale
                                         val drawHeight = (250f * (wm.bitmap.height.toFloat() / wm.width.toFloat())) * wm.scale
+                                        
                                         val xPos = (pdfWidth / 2) - (drawWidth / 2) + (wm.offset.x * (pdfWidth / 360f))
                                         val yPos = (pdfHeight / 2) - (drawHeight / 2) - (wm.offset.y * (pdfHeight / 510f))
+                                        
                                         cs.saveGraphicsState()
                                         cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                         cs.restoreGraphicsState()
@@ -284,7 +287,7 @@ fun WatermarkView(
                     ToolState.SELECTING -> {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
-                            isDark = iDark,
+                            isDark = isDark,
                             icon = Icons.Filled.TextFields,
                             title = "Tap to enter file",
                             subtitle = "WATERMARK PAGES",
@@ -508,10 +511,10 @@ fun WatermarkView(
             confirmButton = {
                 Button(onClick = {
                     if (text.isNotBlank()) {
-                        watermarkBitmap = createTextBitmap(text, selectedColor)
+                        val bitmap = createTextBitmap(text, selectedColor)
                         activeWatermark = PlacedWatermark(
                             pageIndex = lightboxPage ?: 0,
-                            bitmap = watermarkBitmap!!,
+                            bitmap = bitmap,
                             offset = androidx.compose.ui.geometry.Offset.Zero,
                             scale = 1f,
                             rotation = 0f
@@ -523,4 +526,19 @@ fun WatermarkView(
             }
         )
     }
+}
+
+fun createTextBitmap(text: String, color: Color): Bitmap {
+    val bitmap = Bitmap.createBitmap(1000, 400, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val paint = Paint().apply {
+        this.color = color.toArgb()
+        alpha = 140
+        textSize = 120f
+        isAntiAlias = true
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    canvas.drawText(text, 500f, 220f, paint)
+    return bitmap
 }

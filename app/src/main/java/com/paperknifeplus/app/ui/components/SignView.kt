@@ -189,21 +189,18 @@ fun SignView(
                                 PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
                                     sigs.forEach { sig ->
                                         val pdImage = LosslessFactory.createFromImage(document, sig.bitmap)
-                                        val pdfWidth = page.mediaBox.width
-                                        val pdfHeight = page.mediaBox.height
+                                        val pdfWidth = page.mediaBox.getWidth()
+                                        val pdfHeight = page.mediaBox.getHeight()
                                         
-                                        // Precise mapping: UI center offset -> PDF Bottom-Left coordinate
+                                        // Coordinate mapping fix: Scale and Center
                                         val drawWidth = 200f * sig.scale
                                         val drawHeight = (200f * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())) * sig.scale
                                         
-                                        // UI center is at (pdfWidth/2, pdfHeight/2)
-                                        // Offset mapping (Assuming 360x510 logic for preview scaling)
+                                        // UI offset is in PX, PDF is in PTS. Standard preview is around 360dp width.
                                         val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sig.offset.x * (pdfWidth / 360f))
                                         val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sig.offset.y * (pdfHeight / 510f))
                                         
                                         cs.saveGraphicsState()
-                                        // Apply rotation
-                                        // cs.transform(Matrix.getRotateInstance(Math.toRadians(sig.rotation.toDouble()), xPos + drawWidth/2, yPos + drawHeight/2))
                                         cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                         cs.restoreGraphicsState()
                                     }
@@ -229,6 +226,7 @@ fun SignView(
     }
 
     val signatureOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
+        // Render confirmed signatures (Scaled for Grid if needed)
         placedSignatures.filter { it.pageIndex == pageIndex }.forEach { sig ->
             ComposeImage(
                 bitmap = sig.bitmap.asImageBitmap(),
@@ -337,14 +335,15 @@ fun SignView(
                         ) {
                             Spacer(Modifier.height(12.dp))
                             Box(modifier = Modifier.weight(1f)) {
+                                // CLEAN PREVIEW: Disable selection and zoom icons
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
                                     mode = PreviewMode.GRID,
                                     password = unlockPassword.ifEmpty { null }, 
                                     accentColor = accentColor,
-                                    showSelectionIcon = false, // CLEAN GRID
-                                    showZoomIcon = false, // CLEAN GRID
+                                    showSelectionIcon = false, 
+                                    showZoomIcon = false, 
                                     itemOverlay = signatureOverlay,
                                     onToggleSelection = { index -> lightboxPage = index }
                                 )
