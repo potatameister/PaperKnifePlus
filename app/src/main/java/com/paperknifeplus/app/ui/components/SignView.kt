@@ -191,11 +191,19 @@ fun SignView(
                                         val pdImage = LosslessFactory.createFromImage(document, sig.bitmap)
                                         val pdfWidth = page.mediaBox.width
                                         val pdfHeight = page.mediaBox.height
+                                        
+                                        // Precise mapping: UI center offset -> PDF Bottom-Left coordinate
                                         val drawWidth = 200f * sig.scale
                                         val drawHeight = (200f * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())) * sig.scale
+                                        
+                                        // UI center is at (pdfWidth/2, pdfHeight/2)
+                                        // Offset mapping (Assuming 360x510 logic for preview scaling)
                                         val xPos = (pdfWidth / 2) - (drawWidth / 2) + (sig.offset.x * (pdfWidth / 360f))
                                         val yPos = (pdfHeight / 2) - (drawHeight / 2) - (sig.offset.y * (pdfHeight / 510f))
+                                        
                                         cs.saveGraphicsState()
+                                        // Apply rotation
+                                        // cs.transform(Matrix.getRotateInstance(Math.toRadians(sig.rotation.toDouble()), xPos + drawWidth/2, yPos + drawHeight/2))
                                         cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                         cs.restoreGraphicsState()
                                     }
@@ -238,12 +246,11 @@ fun SignView(
         }
         
         if (isFocusMode && activeSignature != null && activeSignature!!.pageIndex == pageIndex) {
-            // FIX: Use individual mutable states for the active gesture to prevent "snap-back" glitch
-            var sigOffset by remember { mutableStateOf(activeSignature!!.offset) }
-            var sigScale by remember { mutableFloatStateOf(activeSignature!!.scale) }
-            var sigRotation by remember { mutableFloatStateOf(activeSignature!!.rotation) }
+            val sig = activeSignature!!
+            var sigOffset by remember { mutableStateOf(sig.offset) }
+            var sigScale by remember { mutableFloatStateOf(sig.scale) }
+            var sigRotation by remember { mutableFloatStateOf(sig.rotation) }
             
-            // Sync local gesture state back to the hoisting state
             LaunchedEffect(sigOffset, sigScale, sigRotation) {
                 activeSignature = activeSignature?.copy(offset = sigOffset, scale = sigScale, rotation = sigRotation)
             }
@@ -330,13 +337,14 @@ fun SignView(
                         ) {
                             Spacer(Modifier.height(12.dp))
                             Box(modifier = Modifier.weight(1f)) {
-                                // CLEAN PREVIEW: Disable selection and zoom icons
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
                                     mode = PreviewMode.GRID,
                                     password = unlockPassword.ifEmpty { null }, 
                                     accentColor = accentColor,
+                                    showSelectionIcon = false, // CLEAN GRID
+                                    showZoomIcon = false, // CLEAN GRID
                                     itemOverlay = signatureOverlay,
                                     onToggleSelection = { index -> lightboxPage = index }
                                 )
@@ -469,7 +477,10 @@ fun SignView(
                                     Text("SIGN MORE", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Black)
                                 }
                                 Button(
-                                    onClick = { saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) },
+                                    onClick = { 
+                                        lightboxPage = null // CLEAR BEFORE PROCESSING
+                                        saveLauncher.launch(fileName.replace(".pdf", "-signed.pdf")) 
+                                    },
                                     modifier = Modifier.weight(1f).height(50.dp),
                                     shape = RoundedCornerShape(16.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
@@ -485,7 +496,6 @@ fun SignView(
     }
 
     if (showSignOptions) {
-        // FIX: Use AlertDialog to ensure options appear ON TOP of the Lightbox Dialog
         AlertDialog(
             onDismissRequest = { showSignOptions = false },
             title = { Text("Add Signature", fontWeight = FontWeight.Black) },

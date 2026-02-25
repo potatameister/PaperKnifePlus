@@ -11,6 +11,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,6 +41,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
+import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,6 +49,15 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import androidx.compose.foundation.Image as ComposeImage
 import kotlin.math.roundToInt
+
+data class PlacedWatermark(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val pageIndex: Int, // -1 means all pages
+    val bitmap: Bitmap,
+    var offset: androidx.compose.ui.geometry.Offset,
+    var scale: Float,
+    var rotation: Float
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +73,6 @@ fun WatermarkView(
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
-    var previewUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
@@ -69,14 +80,16 @@ fun WatermarkView(
     var processingTime by remember { mutableStateOf("") }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     
-    var watermarkBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    // Logic State
+    var placedWatermarks by remember { mutableStateOf<List<PlacedWatermark>>(emptyList()) }
+    var activeWatermark by remember { mutableStateOf<PlacedWatermark?>(null) }
+    var isFocusMode by remember { mutableStateOf(false) }
+    var lightboxPage by remember { mutableStateOf<Int?>(null) }
+    
     var showWatermarkOptions by remember { mutableStateOf(false) }
     var showTextInput by remember { mutableStateOf(false) }
-    var selectedPages by remember { mutableStateOf<Set<Int>>(emptySet()) }
 
-    var wmOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-    var wmScale by remember { mutableFloatStateOf(1f) }
-    var wmRotation by remember { mutableFloatStateOf(0f) }
+    val imageLoader = coil.compose.LocalImageLoader.current
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
 
@@ -97,7 +110,6 @@ fun WatermarkView(
                     val count = getPageCount(context, it, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
-                        selectedPages = (0 until count).toSet() 
                         currentState = ToolState.CONFIGURING
                         isFileLoading = false
                     }
@@ -113,54 +125,18 @@ fun WatermarkView(
                     context.contentResolver.openInputStream(it)?.use { stream ->
                         val bitmap = BitmapFactory.decodeStream(stream)
                         withContext(Dispatchers.Main) {
-                            watermarkBitmap = bitmap
-                            wmOffset = androidx.compose.ui.geometry.Offset.Zero
-                            wmScale = 1f
-                            wmRotation = 0f
+                            activeWatermark = PlacedWatermark(
+                                pageIndex = lightboxPage ?: 0,
+                                bitmap = bitmap,
+                                offset = androidx.compose.ui.geometry.Offset.Zero,
+                                scale = 1f,
+                                rotation = 0f
+                            )
+                            isFocusMode = true
                             showWatermarkOptions = false
-                            currentState = ToolState.PROCESSING 
                         }
                     }
                 } catch (e: Exception) {}
-            }
-        }
-    }
-
-    suspend fun generatePreview() {
-        withContext(Dispatchers.IO) {
-            try {
-                context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
-                    val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
-                    watermarkBitmap?.let { wm ->
-                        val pdImage = JPEGFactory.createFromImage(document, wm, 0.9f)
-                        selectedPages.forEach { pageIdx ->
-                            if (pageIdx < document.numberOfPages) {
-                                val page = document.getPage(pageIdx)
-                                PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
-                                    val pdfWidth = page.mediaBox.width
-                                    val pdfHeight = page.mediaBox.height
-                                    val drawWidth = 250f * wmScale
-                                    val drawHeight = (250f * (wm.height.toFloat() / wm.width.toFloat())) * wmScale
-                                    val xPos = (pdfWidth / 2) - (drawWidth / 2) + (wmOffset.x * (pdfWidth / 360f))
-                                    val yPos = (pdfHeight / 2) - (drawHeight / 2) - (wmOffset.y * (pdfHeight / 510f))
-                                    cs.saveGraphicsState()
-                                    cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
-                                    cs.restoreGraphicsState()
-                                }
-                            }
-                        }
-                    }
-                    val tempUri = saveToTemp(context, document)
-                    withContext(Dispatchers.Main) {
-                        previewUri = tempUri
-                        currentState = ToolState.PREVIEW_RESULT
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Preview failed", Toast.LENGTH_SHORT).show()
-                    currentState = ToolState.CONFIGURING
-                }
             }
         }
     }
@@ -171,8 +147,30 @@ fun WatermarkView(
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    context.contentResolver.openInputStream(previewUri!!)?.use { inputStream ->
-                        val document = PDDocument.load(inputStream)
+                    context.contentResolver.openInputStream(selectedUri!!)?.use { inputStream ->
+                        val document = if (unlockPassword.isNotEmpty()) PDDocument.load(inputStream, unlockPassword) else PDDocument.load(inputStream)
+                        if (document.isEncrypted) document.isAllSecurityToBeRemoved = true
+                        
+                        placedWatermarks.forEach { wm ->
+                            val targetIndices = if (wm.pageIndex == -1) (0 until document.numberOfPages) else listOf(wm.pageIndex)
+                            targetIndices.forEach { pageIdx ->
+                                if (pageIdx < document.numberOfPages) {
+                                    val page = document.getPage(pageIdx)
+                                    PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
+                                        val pdImage = LosslessFactory.createFromImage(document, wm.bitmap)
+                                        val pdfWidth = page.mediaBox.width
+                                        val pdfHeight = page.mediaBox.height
+                                        val drawWidth = 250f * wm.scale
+                                        val drawHeight = (250f * (wm.bitmap.height.toFloat() / wm.width.toFloat())) * wm.scale
+                                        val xPos = (pdfWidth / 2) - (drawWidth / 2) + (wm.offset.x * (pdfWidth / 360f))
+                                        val yPos = (pdfHeight / 2) - (drawHeight / 2) - (wm.offset.y * (pdfHeight / 510f))
+                                        cs.saveGraphicsState()
+                                        cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
+                                        cs.restoreGraphicsState()
+                                    }
+                                }
+                            }
+                        }
                         saveAndFlush(context, document, saveUri)
                     }
                     val endTime = System.currentTimeMillis()
@@ -184,16 +182,73 @@ fun WatermarkView(
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                        currentState = ToolState.PREVIEW_RESULT
+                        currentState = ToolState.CONFIGURING
                     }
                 }
             }
         }
     }
 
+    val watermarkOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
+        // Render confirmed watermarks
+        placedWatermarks.filter { it.pageIndex == pageIndex || it.pageIndex == -1 }.forEach { wm ->
+            ComposeImage(
+                bitmap = wm.bitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(250.dp)
+                    .align(Alignment.Center)
+                    .offset { IntOffset(wm.offset.x.roundToInt(), wm.offset.y.roundToInt()) }
+                    .graphicsLayer {
+                        scaleX = wm.scale
+                        scaleY = wm.scale
+                        rotationZ = wm.rotation
+                    }
+            )
+        }
+        
+        if (isFocusMode && activeWatermark != null && activeWatermark!!.pageIndex == pageIndex) {
+            val wm = activeWatermark!!
+            var wmOffset by remember { mutableStateOf(wm.offset) }
+            var wmScale by remember { mutableFloatStateOf(wm.scale) }
+            var wmRotation by remember { mutableFloatStateOf(wm.rotation) }
+            
+            LaunchedEffect(wmOffset, wmScale, wmRotation) {
+                activeWatermark = activeWatermark?.copy(offset = wmOffset, scale = wmScale, rotation = wmRotation)
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, zoom, rot ->
+                            wmOffset += pan
+                            wmScale = (wmScale * zoom).coerceIn(0.1f, 15f)
+                            wmRotation += rot
+                        }
+                    }
+            ) {
+                ComposeImage(
+                    bitmap = activeWatermark!!.bitmap.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(250.dp)
+                        .align(Alignment.Center)
+                        .offset { IntOffset(wmOffset.x.roundToInt(), wmOffset.y.roundToInt()) }
+                        .graphicsLayer {
+                            scaleX = wmScale
+                            scaleY = wmScale
+                            rotationZ = wmRotation
+                        }
+                        .border(1.dp, accentColor.copy(0.3f), RoundedCornerShape(2.dp))
+                )
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
-            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING && currentState != ToolState.PREVIEW_RESULT) {
+            if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
@@ -209,10 +264,10 @@ fun WatermarkView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Watermark", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("OVERLAY TEXT OR IMAGES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("PRECISION OVERLAY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
+                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING; placedWatermarks = emptyList() }) {
                                 Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
                             }
                         }
@@ -229,7 +284,7 @@ fun WatermarkView(
                     ToolState.SELECTING -> {
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
-                            isDark = isDark,
+                            isDark = iDark,
                             icon = Icons.Filled.TextFields,
                             title = "Tap to enter file",
                             subtitle = "WATERMARK PAGES",
@@ -238,14 +293,11 @@ fun WatermarkView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                            Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Column {
-                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                                    Text("${selectedPages.size} / $pageCount PAGES SELECTED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
-                                }
-                            }
-
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Spacer(Modifier.height(12.dp))
                             Box(modifier = Modifier.weight(1f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
@@ -253,76 +305,48 @@ fun WatermarkView(
                                     mode = PreviewMode.GRID,
                                     password = unlockPassword.ifEmpty { null }, 
                                     accentColor = accentColor,
-                                    selectedPages = selectedPages,
-                                    onToggleSelection = { index ->
-                                        selectedPages = if (selectedPages.contains(index)) selectedPages - index else selectedPages + index
-                                    }
+                                    showSelectionIcon = false,
+                                    showZoomIcon = false,
+                                    itemOverlay = watermarkOverlay,
+                                    onToggleSelection = { index -> lightboxPage = index }
                                 )
                             }
                             
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Button(
-                                    onClick = { showWatermarkOptions = true },
-                                    modifier = Modifier.weight(1f).height(60.dp),
-                                    enabled = selectedPages.isNotEmpty(),
-                                    shape = RoundedCornerShape(20.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor.copy(0.1f), contentColor = accentColor)
-                                ) { Text("PICK WATERMARK", fontWeight = FontWeight.Black) }
-                                
-                                if (watermarkBitmap != null) {
-                                    Button(
-                                        onClick = { currentState = ToolState.PROCESSING },
-                                        modifier = Modifier.weight(1f).height(60.dp),
-                                        shape = RoundedCornerShape(20.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                                    ) { Text("ADJUST PLACEMENT", fontWeight = FontWeight.Black) }
-                                }
+                            val hasWatermark = placedWatermarks.isNotEmpty()
+                            Button(
+                                onClick = { if (hasWatermark) saveLauncher.launch(fileName.replace(".pdf", "-watermarked.pdf")) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
+                                enabled = hasWatermark,
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Text(if (hasWatermark) "SAVE WATERMARKED PDF" else "SELECT A PAGE TO WATERMARK", fontWeight = FontWeight.Black)
                             }
                         }
                     }
                     ToolState.PROCESSING -> {
-                        if (watermarkBitmap != null) {
-                            WatermarkPlacementOverlay(
-                                uri = selectedUri!!,
-                                pageIndex = selectedPages.firstOrNull() ?: 0,
-                                watermark = watermarkBitmap!!,
-                                offset = wmOffset,
-                                scale = wmScale,
-                                rotation = wmRotation,
-                                onTransform = { o: androidx.compose.ui.geometry.Offset, s: Float, r: Float -> wmOffset = o; wmScale = s; wmRotation = r },
-                                onCancel = { currentState = ToolState.CONFIGURING },
-                                onConfirm = { 
-                                    scope.launch { generatePreview() }
-                                },
-                                accentColor = accentColor
-                            )
-                        } else {
-                            LoadingStateView(accentColor, false, "Generating comparison...")
-                        }
-                    }
-                    ToolState.PREVIEW_RESULT -> {
-                        SynchronizedComparison(
-                            originalUri = selectedUri!!,
-                            modifiedUri = previewUri!!,
-                            onBack = { currentState = ToolState.PROCESSING },
-                            onConfirm = { saveLauncher.launch(fileName.replace(".pdf", "-watermarked.pdf")) },
-                            accentColor = accentColor
+                        ProcessingStateView(
+                            accentColor = accentColor,
+                            uri = selectedUri,
+                            password = unlockPassword.ifEmpty { null },
+                            text = "Applying watermarks...",
+                            current = 0,
+                            total = 0,
+                            showWarning = false
                         )
                     }
                     ToolState.SUCCESS -> {
                         SuccessView(
                             message = "Watermark Complete",
-                            subMessage = "Document watermarked successfully",
+                            subMessage = "Watermarks applied successfully",
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
                                 selectedUri = null
-                                watermarkBitmap = null
+                                placedWatermarks = emptyList()
                                 currentState = ToolState.SELECTING 
                             },
-                            onPreview = {
-                                outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) }
-                            },
+                            onPreview = { outputUri?.let { uri -> onOpenPreview(uri, fileName, pageCount) } },
                             accentColor = accentColor
                         )
                     }
@@ -342,7 +366,6 @@ fun WatermarkView(
                                 if (count > 0) {
                                     unlockPassword = pass
                                     pageCount = count
-                                    selectedPages = (0 until count).toSet()
                                     currentState = ToolState.CONFIGURING
                                     fileToUnlock = null
                                 } else {
@@ -359,27 +382,100 @@ fun WatermarkView(
         }
     }
 
-    if (showWatermarkOptions) {
-        ModalBottomSheet(
-            onDismissRequest = { showWatermarkOptions = false },
-            containerColor = if (isDark) Color(0xFF121214) else Color.White,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-        ) {
-            Column(Modifier.padding(24.dp).padding(bottom = 32.dp).navigationBarsPadding()) {
-                Text("Select Watermark", fontWeight = FontWeight.Black, fontSize = 20.sp)
-                Spacer(Modifier.height(20.dp))
-                
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SignOptionCard("Text Watermark", Icons.Filled.Title, accentColor, Modifier.fillMaxWidth()) { 
-                        showTextInput = true
-                    }
-                    SignOptionCard("Upload Image", Icons.Filled.CloudUpload, Color.Gray, Modifier.fillMaxWidth()) { 
-                        imgLauncher.launch("image/*")
+    if (lightboxPage != null) {
+        PageLightbox(
+            uri = selectedUri!!,
+            initialPage = lightboxPage!!,
+            totalCount = pageCount,
+            password = unlockPassword.ifEmpty { null },
+            onDismiss = { lightboxPage = null },
+            itemOverlay = watermarkOverlay,
+            bottomBar = { pageIndex ->
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.Black.copy(0.8f),
+                    border = BorderStroke(1.dp, Color.White.copy(0.1f))
+                ) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (isFocusMode) {
+                            TextButton(onClick = { isFocusMode = false; activeWatermark = null }, modifier = Modifier.weight(0.8f)) {
+                                Text("CANCEL", color = Color.LightGray, fontWeight = FontWeight.Bold)
+                            }
+                            Row(Modifier.weight(2f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = { 
+                                        activeWatermark?.let { placedWatermarks = placedWatermarks + it.copy(pageIndex = -1) }
+                                        isFocusMode = false
+                                        activeWatermark = null
+                                    },
+                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                                ) { Text("APPLY TO ALL", fontSize = 10.sp, fontWeight = FontWeight.Black) }
+                                Button(
+                                    onClick = { 
+                                        activeWatermark?.let { placedWatermarks = placedWatermarks + it.copy(pageIndex = pageIndex) }
+                                        isFocusMode = false
+                                        activeWatermark = null
+                                    },
+                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                ) { Text("APPLY", fontSize = 10.sp, fontWeight = FontWeight.Black) }
+                            }
+                        } else {
+                            Button(
+                                onClick = { showWatermarkOptions = true },
+                                modifier = Modifier.weight(1f).height(50.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                            ) {
+                                Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("ADD WATERMARK", fontWeight = FontWeight.Black)
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Row(Modifier.weight(1.2f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    onClick = { lightboxPage = null },
+                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = BorderStroke(1.dp, Color.White.copy(0.3f))
+                                ) { Text("MORE", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Black) }
+                                Button(
+                                    onClick = { 
+                                        lightboxPage = null
+                                        saveLauncher.launch(fileName.replace(".pdf", "-watermarked.pdf")) 
+                                    },
+                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                                ) { Text("SAVE", fontSize = 10.sp, fontWeight = FontWeight.Black) }
+                            }
+                        }
                     }
                 }
-                Spacer(Modifier.height(40.dp))
             }
-        }
+        )
+    }
+
+    if (showWatermarkOptions) {
+        AlertDialog(
+            onDismissRequest = { showWatermarkOptions = false },
+            title = { Text("Select Watermark", fontWeight = FontWeight.Black) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SignOptionCard("Text Watermark", Icons.Filled.Title, accentColor, Modifier.fillMaxWidth()) { 
+                        showTextInput = true; showWatermarkOptions = false 
+                    }
+                    SignOptionCard("Upload Image", Icons.Filled.CloudUpload, Color.Gray, Modifier.fillMaxWidth()) { 
+                        imgLauncher.launch("image/*"); showWatermarkOptions = false 
+                    }
+                }
+            },
+            confirmButton = {}
+        )
     }
 
     if (showTextInput) {
@@ -413,93 +509,18 @@ fun WatermarkView(
                 Button(onClick = {
                     if (text.isNotBlank()) {
                         watermarkBitmap = createTextBitmap(text, selectedColor)
-                        wmOffset = androidx.compose.ui.geometry.Offset.Zero
-                        wmScale = 1f
-                        wmRotation = 0f
+                        activeWatermark = PlacedWatermark(
+                            pageIndex = lightboxPage ?: 0,
+                            bitmap = watermarkBitmap!!,
+                            offset = androidx.compose.ui.geometry.Offset.Zero,
+                            scale = 1f,
+                            rotation = 0f
+                        )
+                        isFocusMode = true
                         showTextInput = false
-                        showWatermarkOptions = false
-                        currentState = ToolState.PROCESSING
                     }
                 }, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("CONTINUE") }
             }
         )
-    }
-}
-
-fun createTextBitmap(text: String, color: Color): Bitmap {
-    val bitmap = Bitmap.createBitmap(1000, 400, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val paint = Paint().apply {
-        this.color = color.toArgb()
-        alpha = 140
-        textSize = 120f
-        isAntiAlias = true
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    }
-    canvas.drawText(text, 500f, 220f, paint)
-    return bitmap
-}
-
-@Composable
-fun WatermarkPlacementOverlay(
-    uri: Uri,
-    pageIndex: Int,
-    watermark: Bitmap,
-    offset: androidx.compose.ui.geometry.Offset,
-    scale: Float,
-    rotation: Float,
-    onTransform: (androidx.compose.ui.geometry.Offset, Float, Float) -> Unit,
-    onCancel: () -> Unit,
-    onConfirm: () -> Unit,
-    accentColor: Color
-) {
-    val imageLoader = coil.compose.LocalImageLoader.current
-    val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
-    
-    val currentOffset by rememberUpdatedState(offset)
-    val currentScale by rememberUpdatedState(scale)
-    val currentRotation by rememberUpdatedState(rotation)
-
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-        ComposeImage(
-            painter = rememberAsyncImagePainter(request, imageLoader),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, rot ->
-                        onTransform(currentOffset + pan, (currentScale * zoom).coerceIn(0.1f, 15f), currentRotation + rot)
-                    }
-                }
-        ) {
-            ComposeImage(
-                bitmap = watermark.asImageBitmap(),
-                contentDescription = "Watermark",
-                modifier = Modifier
-                    .size(250.dp)
-                    .align(Alignment.Center)
-                    .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        rotationZ = rotation
-                    }
-                    .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
-            )
-        }
-
-        Row(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp).padding(horizontal = 24.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Button(onClick = onCancel, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray), shape = RoundedCornerShape(16.dp)) { Text("CANCEL") }
-            Button(onClick = onConfirm, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor), shape = RoundedCornerShape(16.dp)) { Text("APPLY PREVIEW", fontWeight = FontWeight.Black) }
-        }
     }
 }

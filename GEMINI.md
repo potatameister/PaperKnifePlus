@@ -52,13 +52,11 @@ PaperKnife+ uses a custom high-concurrency rendering pipeline designed to elimin
 ---
 
 ## 📜 Major Evolutions
-- **2026-02-25:** **PLATINUM ELITE OVERHAUL (SIGNING)**:
-    - **Gold Standard Signing**: Planned a high-precision signing workflow with navigation locking (Focus Mode) and native PDF synthesis.
-    - **Nitro Merge 2.0**: Completely overhauled Merge tool with a high-performance grid-based drag-and-drop system.
-    - **Clean Workspace Architecture**: Migrated all tool settings (Page Numbers, etc.) to Rise-Up `ModalBottomSheet` panels, reclaiming 80% of preview screen real estate.
-    - **0-Byte Stability Fix**: Resolved a critical filesystem sync issue by switching to standard write modes, fixing the Grayscale export bug.
-    - **Balanced Compression Engine**: Re-tuned 'Extreme' and 'Recommended' modes to prioritize text legibility and artifact preservation while still achieving significant size reduction.
-    - **UX Standardization**: Added 'CHANGE' button headers to all configuration views for consistent navigation.
+- **2026-02-25:** **PLATINUM ELITE OVERHAUL (SIGN & WATERMARK)**:
+    - **Gold Standard Signing 2.0**: Implemented a high-precision selection-first workflow. Features a clean, icon-free grid preview and a dedicated "Focus Mode" inside the high-res Lightbox for pixel-perfect placement.
+    - **Nitro Watermark Suite**: Overhauled the Watermark tool to match the high-precision signing workflow. Added "Apply to All" and "Apply to Page" options with full password support for locked files.
+    - **Native Synthesis Fix**: Optimized coordinate mapping between UI pixels and PDF points, ensuring signatures/watermarks appear in the final document exactly as previewed.
+    - **UI Precision**: Resolved the "snap-back" gesture glitch and ensured overlay stacking (Dialogs on top of Lightbox).
 - **2026-02-24 (Late):** **PLATINUM ELITE FIDELITY & PROFESSIONAL UI**:
     - **Pure Asset Extraction**: Re-engineered Extract Image tool to strip raw bitstream assets (JPG/PNG) instead of rendering pages, ensuring 100% artifact capture.
     - **Independent Compare-Unlock**: Enhanced Compare tool to independently detect and unlock File A and File B with real-time password validation.

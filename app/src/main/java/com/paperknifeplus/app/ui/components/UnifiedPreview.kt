@@ -3,7 +3,6 @@ package com.paperknifeplus.app.ui.components
 import android.net.Uri
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,7 +47,7 @@ enum class PreviewMode {
     ROTATE  // Tap to rotate (Rotate)
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun UnifiedPdfPreview(
     uri: Uri,
@@ -57,6 +56,8 @@ fun UnifiedPdfPreview(
     password: String? = null,
     isGrayscale: Boolean = false,
     showIndexNumbers: Boolean = true,
+    showSelectionIcon: Boolean = true,
+    showZoomIcon: Boolean = true,
     disableLightbox: Boolean = false,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     selectedPages: Set<Int>? = null,
@@ -95,7 +96,7 @@ fun UnifiedPdfPreview(
                     if (painter.state is AsyncImagePainter.State.Loading) {
                         CircularProgressIndicator(color = accentColor, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
                     }
-                    if (!disableLightbox) {
+                    if (!disableLightbox && showZoomIcon) {
                         Surface(
                             modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                             color = Color.Black.copy(0.3f),
@@ -135,12 +136,14 @@ fun UnifiedPdfPreview(
                     ) {
                         if (isSelected) {
                             Box(modifier = Modifier.fillMaxSize().background(accentColor.copy(alpha = 0.15f)))
-                            Surface(
-                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp),
-                                color = accentColor,
-                                shape = CircleShape
-                            ) {
-                                Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                            if (showSelectionIcon) {
+                                Surface(
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp),
+                                    color = accentColor,
+                                    shape = CircleShape
+                                ) {
+                                    Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp))
+                                }
                             }
                         }
                         itemOverlay?.invoke(this, index)
@@ -193,11 +196,13 @@ fun UnifiedPdfPreview(
                         ) { Icon(Icons.Filled.RotateRight, null, tint = Color.White, modifier = Modifier.padding(6.dp)) }
                     } else if (onToggleSelection != null) {
                         Box(modifier = Modifier.fillMaxSize().background(if (isSelected) accentColor.copy(alpha = 0.15f) else Color.Transparent))
-                        Surface(
-                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp),
-                            color = if (isSelected) accentColor else Color.Black.copy(0.3f), shape = CircleShape
-                        ) { Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp)) }
-                        if (!disableLightbox) {
+                        if (showSelectionIcon) {
+                            Surface(
+                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp),
+                                color = if (isSelected) accentColor else Color.Black.copy(0.3f), shape = CircleShape
+                            ) { Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp)) }
+                        }
+                        if (!disableLightbox && showZoomIcon) {
                             Surface(
                                 onClick = { lightboxPage = index },
                                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp).size(24.dp),
@@ -244,7 +249,7 @@ fun PdfPageItem(
         contentAlignment = Alignment.Center
     ) {
         val painter = rememberAsyncImagePainter(model = request, imageLoader = imageLoader)
-        Image(
+        androidx.compose.foundation.Image(
             painter = painter, contentDescription = "Page ${index + 1}",
             modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit,
             colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null
