@@ -230,17 +230,26 @@ fun PageNumbersView(
                                     password = unlockPassword.ifEmpty { null }, 
                                     accentColor = accentColor,
                                     showIndexNumbers = false, 
+                                    disableLightbox = true, // DISABLE LIGHTBOX AS REQUESTED
                                     itemOverlay = numberOverlay
                                 )
                             }
                             
-                            // SLIM SETTINGS TOGGLE (UP ARROW)
-                            IconButton(
+                            Spacer(Modifier.height(8.dp))
+
+                            // SLIM WIDE SETTINGS HANDLE (PULL-UP STYLE)
+                            Surface(
                                 onClick = { showSettingsSheet = true },
-                                modifier = Modifier.size(32.dp).padding(top = 4.dp)
+                                color = accentColor.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.width(80.dp).height(24.dp)
                             ) {
-                                Icon(Icons.Filled.KeyboardArrowUp, "Settings", tint = accentColor)
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Filled.KeyboardArrowUp, null, tint = accentColor, modifier = Modifier.size(20.dp))
+                                }
                             }
+
+                            Spacer(Modifier.height(8.dp))
 
                             Button(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-numbered.pdf") },
