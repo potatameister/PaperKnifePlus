@@ -66,8 +66,8 @@ fun HomeView(
         listOf(
             Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("split", "Split", "EXTRACT", Icons.Filled.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rearrange", "Rearrange", "ORGANIZE", Icons.Filled.SwapVert, "Edit", Color(0xFF10B981), Color(0xFFECFDF5))
+            Tool("unlock", "Unlock", "REOVE LOCK", Icons.Filled.LockOpen, "Security", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
+            Tool("pdf_text", "PDF to Text", "EXTRACT", Icons.AutoMirrored.Filled.Notes, "Convert", Color(0xFF10B981), Color(0xFFECFDF5))
         )
     }
 
@@ -119,36 +119,39 @@ fun HomeView(
             item(span = { GridItemSpan(2) }, key = "footer") {
                 Spacer(modifier = Modifier.height(12.dp))
                 
-                // Support PaperKnife+ Card
+                // Support Buy Me a Coffee style Card
                 Surface(
-                    onClick = { onToolClick("about") },
+                    onClick = { 
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://buymeacoffee.com/potata"))
+                        context.startActivity(intent)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 20.dp),
                     shape = RoundedCornerShape(20.dp),
-                    color = PaperPink.copy(alpha = 0.06f),
-                    border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.1f))
+                    color = Color(0xFFFFDD00).copy(alpha = 0.1f),
+                    border = BorderStroke(1.dp, Color(0xFFFFDD00).copy(alpha = 0.3f))
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier = Modifier.size(36.dp).background(PaperPink, CircleShape),
+                            modifier = Modifier.size(36.dp).background(Color(0xFFFFDD00), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Filled.Favorite, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.Coffee, null, tint = Color.Black, modifier = Modifier.size(18.dp))
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
                             Text(
-                                "Fund PaperKnife+",
+                                "Buy me a coffee",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Black,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Help us reach the Play Store!",
+                                "Help PaperKnife be released on Play Store!",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Gray
