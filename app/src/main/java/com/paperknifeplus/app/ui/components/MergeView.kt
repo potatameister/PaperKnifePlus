@@ -58,6 +58,17 @@ import java.io.InputStream
 import java.util.Collections
 import kotlin.math.roundToInt
 
+data class MergeFile(
+    val uri: Uri,
+    val name: String,
+    val size: String,
+    val isLocked: Boolean,
+    var password: String? = null,
+    var isUnlocked: Boolean = false,
+    val decryptedUri: Uri? = null,
+    val pageCount: Int = 0
+)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MergeView(
@@ -219,7 +230,6 @@ fun MergeView(
                         val gridState = rememberLazyGridState()
                         var draggedIndex by remember { mutableStateOf<Int?>(null) }
                         var dragOffset by remember { mutableStateOf(Offset.Zero) }
-                        var gridWidthPx by remember { mutableFloatStateOf(0f) }
 
                         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                             Row(
@@ -235,7 +245,7 @@ fun MergeView(
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(2),
                                 state = gridState,
-                                modifier = Modifier.weight(1f).onGloballyPositioned { gridWidthPx = it.size.width.toFloat() },
+                                modifier = Modifier.weight(1f),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                                 contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
@@ -263,10 +273,9 @@ fun MergeView(
                                                         change.consume()
                                                         dragOffset += dragAmount
                                                         
-                                                        // Nitro Grid Reordering Logic
                                                         val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
                                                         val gridLayout = gridState.layoutInfo
-                                                        val itemInfo = gridLayout.visibleItemsInfo.find { it.index == currentIndex } ?: return@detectDragGesturesAfterLongPress
+                                                        val itemInfo = gridLayout.visibleItemsInfo.find { it.key == file.uri.toString() } ?: return@detectDragGesturesAfterLongPress
                                                         
                                                         val itemCenterX = itemInfo.offset.x + itemInfo.size.width / 2 + dragOffset.x
                                                         val itemCenterY = itemInfo.offset.y + itemInfo.size.height / 2 + dragOffset.y
@@ -283,7 +292,6 @@ fun MergeView(
                                                             newList.add(targetItem.index, item)
                                                             selectedFiles = newList
                                                             
-                                                            // Offset compensation to keep item under thumb
                                                             dragOffset -= Offset(
                                                                 (targetItem.offset.x - itemInfo.offset.x).toFloat(),
                                                                 (targetItem.offset.y - itemInfo.offset.y).toFloat()
@@ -364,18 +372,18 @@ fun MergeView(
             }
             
             if (fileToUnlock != null) {
+                val currentFileToUnlock = fileToUnlock!!
                 LockedFilePrompt(
-                    fileName = fileToUnlock!!.name,
+                    fileName = currentFileToUnlock.name,
                     onDismiss = { fileToUnlock = null },
                     onUnlocked = { password ->
-                        val targetFile = fileToUnlock!!
                         isFileLoading = true
                         scope.launch(Dispatchers.IO) {
-                            val decryptedUri = decryptToCache(context, targetFile.uri, password)
+                            val decryptedUri = decryptToCache(context, currentFileToUnlock.uri, password)
                             if (decryptedUri != null) {
                                 val count = getPageCount(context, decryptedUri, null)
                                 withContext(Dispatchers.Main) {
-                                    selectedFiles = selectedFiles.map { if (it.uri == targetFile.uri) it.copy(isUnlocked = true, password = password, decryptedUri = decryptedUri, pageCount = count) else it }
+                                    selectedFiles = selectedFiles.map { if (it.uri == currentFileToUnlock.uri) it.copy(isUnlocked = true, password = password, decryptedUri = decryptedUri, pageCount = count) else it }
                                     fileToUnlock = null
                                     isFileLoading = false
                                 }
@@ -395,11 +403,12 @@ fun MergeView(
     }
 
     if (lightboxFile != null) {
+        val currentLightboxFile = lightboxFile!!
         PageLightbox(
-            uri = lightboxFile!!.decryptedUri ?: lightboxFile!!.uri,
+            uri = currentLightboxFile.decryptedUri ?: currentLightboxFile.uri,
             initialPage = 0,
-            totalCount = lightboxFile!!.pageCount,
-            password = if (lightboxFile!!.decryptedUri != null) null else lightboxFile!!.password,
+            totalCount = currentLightboxFile.pageCount,
+            password = if (currentLightboxFile.decryptedUri != null) null else currentLightboxFile.password,
             onDismiss = { lightboxFile = null }
         )
     }
