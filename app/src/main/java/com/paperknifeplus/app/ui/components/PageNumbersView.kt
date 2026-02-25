@@ -174,18 +174,6 @@ fun PageNumbersView(
                     }
                 }
             }
-        },
-        floatingActionButton = {
-            if (currentState == ToolState.CONFIGURING) {
-                ExtendedFloatingActionButton(
-                    onClick = { showSettingsSheet = true },
-                    icon = { Icon(Icons.Filled.Settings, null) },
-                    text = { Text("SETTINGS", fontWeight = FontWeight.Black) },
-                    containerColor = accentColor,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(20.dp)
-                )
-            }
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -246,9 +234,17 @@ fun PageNumbersView(
                                 )
                             }
                             
+                            // SLIM SETTINGS TOGGLE (UP ARROW)
+                            IconButton(
+                                onClick = { showSettingsSheet = true },
+                                modifier = Modifier.size(32.dp).padding(top = 4.dp)
+                            ) {
+                                Icon(Icons.Filled.KeyboardArrowUp, "Settings", tint = accentColor)
+                            }
+
                             Button(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-numbered.pdf") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
                                 shape = RoundedCornerShape(20.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                             ) {

@@ -122,7 +122,7 @@ fun HomeView(
                 // Support Buy Me a Coffee style Card
                 Surface(
                     onClick = { 
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://buymeacoffee.com/potata"))
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://buymeacoffee.com/potatameister"))
                         context.startActivity(intent)
                     },
                     modifier = Modifier
