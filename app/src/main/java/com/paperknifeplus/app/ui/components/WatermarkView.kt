@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,9 +26,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
@@ -41,8 +44,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image as ComposeImage
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -259,14 +262,14 @@ fun WatermarkView(
                     }
                     ToolState.PROCESSING -> {
                         if (watermarkBitmap != null) {
-                            SignaturePlacementOverlay(
+                            WatermarkPlacementOverlay(
                                 uri = selectedUri!!,
                                 pageIndex = selectedPages.firstOrNull() ?: 0,
-                                signature = watermarkBitmap!!,
+                                watermark = watermarkBitmap!!,
                                 offset = wmOffset,
                                 scale = wmScale,
                                 rotation = wmRotation,
-                                onTransform = { o, s, r -> wmOffset = o; wmScale = s; wmRotation = r },
+                                onTransform = { o: androidx.compose.ui.geometry.Offset, s: Float, r: Float -> wmOffset = o; wmScale = s; wmRotation = r },
                                 onCancel = { currentState = ToolState.CONFIGURING },
                                 onConfirm = { 
                                     scope.launch { generatePreview() }
@@ -389,4 +392,67 @@ fun createTextBitmap(text: String, color: Color): Bitmap {
     }
     canvas.drawText(text, 500f, 220f, paint)
     return bitmap
+}
+
+@Composable
+fun WatermarkPlacementOverlay(
+    uri: Uri,
+    pageIndex: Int,
+    watermark: Bitmap,
+    offset: androidx.compose.ui.geometry.Offset,
+    scale: Float,
+    rotation: Float,
+    onTransform: (androidx.compose.ui.geometry.Offset, Float, Float) -> Unit,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    accentColor: Color
+) {
+    val imageLoader = coil.compose.LocalImageLoader.current
+    val request = remember(uri, pageIndex) { PdfPageRequest(uri, pageIndex, null, 1.5f) }
+    
+    val currentOffset by rememberUpdatedState(offset)
+    val currentScale by rememberUpdatedState(scale)
+    val currentRotation by rememberUpdatedState(rotation)
+
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+        ComposeImage(
+            painter = rememberAsyncImagePainter(request, imageLoader),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, rot ->
+                        onTransform(currentOffset + pan, (currentScale * zoom).coerceIn(0.1f, 15f), currentRotation + rot)
+                    }
+                }
+        ) {
+            ComposeImage(
+                bitmap = watermark.asImageBitmap(),
+                contentDescription = "Watermark",
+                modifier = Modifier
+                    .size(250.dp)
+                    .align(Alignment.Center)
+                    .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        rotationZ = rotation
+                    }
+                    .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
+            )
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp).padding(horizontal = 24.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(onClick = onCancel, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray), shape = RoundedCornerShape(16.dp)) { Text("CANCEL") }
+            Button(onClick = onConfirm, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor), shape = RoundedCornerShape(16.dp)) { Text("APPLY PREVIEW", fontWeight = FontWeight.Black) }
+        }
+    }
 }
