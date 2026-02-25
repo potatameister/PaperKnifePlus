@@ -8,30 +8,33 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
 import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
 fun SettingsView(onNavigateToAbout: (String) -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     
     var autoAuthor by remember { mutableStateOf(PreferencesManager.getDefaultAuthor(context)) }
+    var currentTheme by remember { mutableIntStateOf(PreferencesManager.getTheme(context)) }
+    var historyRetention by remember { mutableIntStateOf(PreferencesManager.getHistoryRetention(context)) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         // Standardized Header
@@ -51,35 +54,41 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
                     color = MaterialTheme.colorScheme.onBackground,
                     letterSpacing = (-1).sp
                 )
-                
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    shape = CircleShape,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(Icons.Outlined.Settings, null, modifier = Modifier.padding(8.dp).size(20.dp), tint = PaperPink)
-                }
+                Logo(modifier = Modifier.size(24.dp), partColor = if (isDark) Color.White else Color.Black)
             }
         }
-        
-        Text(
-            text = "PREFERENCES & STORAGE",
-            fontSize = 8.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.Gray.copy(alpha = 0.6f),
-            letterSpacing = 1.5.sp,
-            modifier = Modifier.padding(top = 16.dp, bottom = 12.dp, start = 24.dp)
-        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 20.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
+                SettingsGroup("APPEARANCE") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ThemeOption("System", Icons.Outlined.SettingsSuggest, currentTheme == 0, Modifier.weight(1f)) {
+                            currentTheme = 0
+                            PreferencesManager.setTheme(context, 0)
+                        }
+                        ThemeOption("Light", Icons.Outlined.LightMode, currentTheme == 1, Modifier.weight(1f)) {
+                            currentTheme = 1
+                            PreferencesManager.setTheme(context, 1)
+                        }
+                        ThemeOption("Dark", Icons.Outlined.DarkMode, currentTheme == 2, Modifier.weight(1f)) {
+                            currentTheme = 2
+                            PreferencesManager.setTheme(context, 2)
+                        }
+                    }
+                }
+            }
+
+            item {
                 SettingsGroup("USER PROFILE") {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                        Text("DEFAULT AUTHOR NAME", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                        Text("DEFAULT AUTHOR", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                         Spacer(Modifier.height(8.dp))
                         TextField(
                             value = autoAuthor,
@@ -98,15 +107,31 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
                             singleLine = true,
                             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         )
-                        Text("Automatically applied to saved PDF metadata.", fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
                     }
                 }
             }
 
             item {
-                SettingsGroup("APPLICATION") {
-                    SettingsItem(Icons.Outlined.Palette, "Appearance", "Toggle Light/Dark theme (on Home)")
-                    SettingsItem(Icons.Outlined.Memory, "Nitro Engine", "Hardware-accelerated rendering (Active)", enabled = false)
+                SettingsGroup("HISTORY & PRIVACY") {
+                    SettingsItem(Icons.Outlined.AutoDelete, "Auto-Delete History", when(historyRetention) {
+                        0 -> "Unlimited (Keep all)"
+                        1 -> "Delete after 24 hours"
+                        7 -> "Delete after 7 days"
+                        else -> "Delete after 30 days"
+                    }) {
+                        // Cycle through options for v1.0
+                        historyRetention = when(historyRetention) {
+                            0 -> 1
+                            1 -> 7
+                            7 -> 30
+                            else -> 0
+                        }
+                        PreferencesManager.setHistoryRetention(context, historyRetention)
+                    }
+                    SettingsItem(Icons.Outlined.DeleteSweep, "Clear All History", "Wipe session history immediately", accentColor = Color.Red) {
+                        SessionManager.clearHistory()
+                        Toast.makeText(context, "History cleared", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
 
@@ -114,53 +139,41 @@ fun SettingsView(onNavigateToAbout: (String) -> Unit) {
                 SettingsGroup("STORAGE") {
                     SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Purge all temporary PDF fragments") {
                         val cacheDir = context.cacheDir.resolve("pdf_previews")
-                        val deleted = if (cacheDir.exists()) cacheDir.deleteRecursively() else true
-                        val msg = if (deleted) "Cache cleared successfully" else "Cache already empty"
-                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                        if (cacheDir.exists()) cacheDir.deleteRecursively()
+                        Toast.makeText(context, "Cache cleared", Toast.LENGTH_SHORT).show()
                     }
-                }
-            }
-
-            item {
-                SettingsGroup("COMMUNITY") {
-                    SettingsItem(
-                        Icons.Outlined.FavoriteBorder, 
-                        "Support Us", 
-                        "Help PaperKnife+ reach Play Store",
-                        accentColor = Color(0xFFF43F5E)
-                    ) { onNavigateToAbout("support") }
-                    SettingsItem(
-                        Icons.Outlined.StarOutline, 
-                        "Hall of Fame", 
-                        "Our amazing supporters",
-                        accentColor = Color(0xFFF59E0B)
-                    ) { onNavigateToAbout("hall") }
                 }
             }
 
             item {
                 SettingsGroup("ABOUT") {
                     SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Credits, License, and Privacy Policy") { onNavigateToAbout("main") }
-                    SettingsItem(Icons.Outlined.Shield, "Privacy Mode", "100% Local processing verified", enabled = false)
+                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help reach the Play Store", accentColor = Color(0xFFF43F5E)) { onNavigateToAbout("support") }
                 }
             }
 
             item {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 200.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Logo(modifier = Modifier.size(24.dp), partColor = if (isDark) Color.White else Color.Black)
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = "PAPERKNIFE+ VERSION 1.0.0",
-                        fontSize = 8.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 2.sp
-                    )
+                Column(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("VERSION 1.0.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ThemeOption(label: String, icon: ImageVector, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(72.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) PaperPink.copy(alpha = 0.1f) else Color.Transparent,
+        border = BorderStroke(1.dp, if (selected) PaperPink else Color.Gray.copy(alpha = 0.1f))
+    ) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(icon, null, modifier = Modifier.size(20.dp), tint = if (selected) PaperPink else Color.Gray)
+            Spacer(Modifier.height(8.dp))
+            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Black, color = if (selected) PaperPink else Color.Gray)
         }
     }
 }
@@ -179,7 +192,6 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
         Surface(
             color = if (MaterialTheme.colorScheme.background == Color.Black) Color(0xFF09090B) else Color.White,
             shape = RoundedCornerShape(24.dp),
-            tonalElevation = 0.dp, // REMOVED ELEVATION
             border = BorderStroke(1.dp, if (MaterialTheme.colorScheme.background == Color.Black) Color.White.copy(alpha = 0.05f) else Color.Black.copy(0.03f))
         ) {
             Column(modifier = Modifier.padding(vertical = 4.dp)) {
@@ -225,7 +237,7 @@ fun SettingsItem(
             Text(subtitle, fontSize = 11.sp, color = Color.Gray)
         }
         Icon(
-            imageVector = Icons.Filled.ChevronRight,
+            imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
             tint = Color.Gray.copy(alpha = 0.3f),
             modifier = Modifier.size(18.dp)

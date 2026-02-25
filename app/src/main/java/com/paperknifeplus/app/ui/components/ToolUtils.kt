@@ -57,6 +57,40 @@ object PreferencesManager {
         val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
         return prefs.getString("default_author", "") ?: ""
     }
+
+    fun setTheme(context: Context, mode: Int) {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("theme_mode", mode).apply()
+    }
+    fun getTheme(context: Context): Int {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        return prefs.getInt("theme_mode", 0) // 0: System, 1: Light, 2: Dark
+    }
+
+    fun setHistoryRetention(context: Context, days: Int) {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("history_retention", days).apply()
+    }
+    fun getHistoryRetention(context: Context): Int {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        return prefs.getInt("history_retention", 0) // 0: Unlimited, 1, 7, 30
+    }
+}
+
+// Shared UI Math Engine
+object LayoutMath {
+    fun getFitRect(containerWidth: Float, containerHeight: Float, pageRatio: Float): android.graphics.RectF {
+        val containerRatio = containerWidth / containerHeight
+        return if (pageRatio > containerRatio) {
+            val h = containerWidth / pageRatio
+            val top = (containerHeight - h) / 2
+            android.graphics.RectF(0f, top, containerWidth, top + h)
+        } else {
+            val w = containerHeight * pageRatio
+            val left = (containerWidth - w) / 2
+            android.graphics.RectF(left, 0f, left + w, containerHeight)
+        }
+    }
 }
 
 // Advanced Memory Cache and Pool for Bitmaps

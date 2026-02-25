@@ -24,7 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -86,7 +86,7 @@ fun WatermarkView(
     var processingTime by remember { mutableStateOf("") }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     
-    // NITRO: Unified Logic
+    // Logic State
     var placedWatermarks by remember { mutableStateOf<List<PlacedWatermark>>(emptyList()) }
     var activeWatermarkBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var activeOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
@@ -169,7 +169,6 @@ fun WatermarkView(
                                         val pdfWidth = page.mediaBox.width
                                         val pdfHeight = page.mediaBox.height
                                         
-                                        // 1:1 NATIVE MAPPING
                                         val drawWidth = pdfWidth * wm.normalizedWidth
                                         val drawHeight = drawWidth * (wm.bitmap.height.toFloat() / wm.bitmap.width.toFloat())
                                         
@@ -183,8 +182,7 @@ fun WatermarkView(
                                         matrix.translate(-(xPos + drawWidth/2), -(yPos + drawHeight/2))
                                         cs.transform(matrix)
                                         
-                                        // Apply global alpha if possible (Note: PDFBox alpha requires ExtGState)
-                                        // For simplicity in v1.0, we rely on the bitmap alpha
+                                        // TODO: High-end opacity requires ExtGState, for now use bitmap alpha
                                         cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                         cs.restoreGraphicsState()
                                     }
@@ -197,7 +195,7 @@ fun WatermarkView(
                     withContext(Dispatchers.Main) {
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
-                        SessionManager.addEntry("Watermarked PDF", "Watermark", "Document watermarked locally", Icons.Filled.TextFields, saveUri, pageCount)
+                        SessionManager.addEntry("Watermarked PDF", "Watermark", "Branding applied locally", Icons.Filled.TextFields, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -210,26 +208,14 @@ fun WatermarkView(
         }
     }
 
-    // Helper: Find exact rect of the PDF page in Aspect-Fit mode
-    fun getFitRect(containerSize: Size, pageRatio: Float): Rect {
-        val containerRatio = containerSize.width / containerSize.height
-        return if (pageRatio > containerRatio) {
-            val h = containerSize.width / pageRatio
-            Rect(0f, (containerSize.height - h) / 2, containerSize.width, (containerSize.height + h) / 2)
-        } else {
-            val w = containerSize.height * pageRatio
-            Rect((containerSize.width - w) / 2, 0f, (containerSize.width + w) / 2, containerSize.height)
-        }
-    }
-
     val watermarkOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val containerWidth = constraints.maxWidth.toFloat()
             val containerHeight = constraints.maxHeight.toFloat()
-            val fitRect = getFitRect(Size(containerWidth, containerHeight), 0.707f)
+            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
             
-            val pageWidth = fitRect.width
-            val pageHeight = fitRect.height
+            val pageWidth = fitRect.width()
+            val pageHeight = fitRect.height()
 
             // Render confirmed watermarks
             placedWatermarks.filter { it.pageIndex == pageIndex || it.pageIndex == -1 }.forEach { wm ->
@@ -429,7 +415,7 @@ fun WatermarkView(
         BoxWithConstraints {
             val containerWidth = constraints.maxWidth.toFloat()
             val containerHeight = constraints.maxHeight.toFloat()
-            val fitRect = getFitRect(Size(containerWidth, containerHeight), 0.707f)
+            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
             
             PageLightbox(
                 uri = selectedUri!!,
@@ -459,15 +445,15 @@ fun WatermarkView(
                                         Button(
                                             onClick = { 
                                                 activeWatermarkBitmap?.let {
-                                                    val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width
-                                                    val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height
+                                                    val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width()
+                                                    val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height()
                                                     
                                                     placedWatermarks = placedWatermarks + PlacedWatermark(
                                                         pageIndex = -1,
                                                         bitmap = it,
                                                         normalizedX = nx,
                                                         normalizedY = ny,
-                                                        normalizedWidth = (fitRect.width * 0.5f * activeScale) / fitRect.width,
+                                                        normalizedWidth = (fitRect.width() * 0.5f * activeScale) / fitRect.width(),
                                                         rotation = activeRotation,
                                                         opacity = activeOpacity
                                                     )
@@ -482,15 +468,15 @@ fun WatermarkView(
                                         Button(
                                             onClick = { 
                                                 activeWatermarkBitmap?.let {
-                                                    val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width
-                                                    val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height
+                                                    val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width()
+                                                    val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height()
                                                     
                                                     placedWatermarks = placedWatermarks + PlacedWatermark(
                                                         pageIndex = currentPage,
                                                         bitmap = it,
                                                         normalizedX = nx,
                                                         normalizedY = ny,
-                                                        normalizedWidth = (fitRect.width * 0.5f * activeScale) / fitRect.width,
+                                                        normalizedWidth = (fitRect.width() * 0.5f * activeScale) / fitRect.width(),
                                                         rotation = activeRotation,
                                                         opacity = activeOpacity
                                                     )
@@ -551,6 +537,29 @@ fun WatermarkView(
             title = { Text("Select Watermark", fontWeight = FontWeight.Black) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("TEMPLATES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("DRAFT", "CONFIDENTIAL", "APPROVED").forEach { template ->
+                            Surface(
+                                onClick = {
+                                    activeWatermarkBitmap = createTextBitmap(template, Color.Gray)
+                                    activeOffset = androidx.compose.ui.geometry.Offset.Zero
+                                    activeScale = 1f
+                                    activeRotation = 0f
+                                    activeOpacity = 0.5f
+                                    isFocusMode = true
+                                    showWatermarkOptions = false
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = accentColor.copy(alpha = 0.05f),
+                                border = BorderStroke(1.dp, accentColor.copy(alpha = 0.1f))
+                            ) {
+                                Text(template, fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, modifier = Modifier.padding(8.dp), textAlign = android.compose.ui.text.style.TextAlign.Center)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
                     SignOptionCard("Text Watermark", Icons.Filled.Title, accentColor, Modifier.fillMaxWidth()) { 
                         showTextInput = true; showWatermarkOptions = false 
                     }
@@ -580,7 +589,11 @@ fun WatermarkView(
                                     modifier = Modifier.size(32.dp).border(2.dp, if (selectedColor == color) accentColor else Color.Transparent, CircleShape),
                                     shape = CircleShape,
                                     color = color
-                                ) {}
+                                ) {
+                                    if (color == Color.White) {
+                                        Box(Modifier.fillMaxSize().border(1.dp, Color.Gray.copy(0.3f), CircleShape))
+                                    }
+                                }
                             }
                         }
                     }
@@ -620,6 +633,10 @@ fun createTextBitmap(text: String, color: Color): Bitmap {
         isAntiAlias = true
         textAlign = Paint.Align.CENTER
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        // Add subtle shadow for visibility if white
+        if (color == Color.White) {
+            setShadowLayer(4f, 0f, 0f, android.graphics.Color.GRAY)
+        }
     }
     canvas.drawText(text, 500f, 220f, paint)
     return bitmap

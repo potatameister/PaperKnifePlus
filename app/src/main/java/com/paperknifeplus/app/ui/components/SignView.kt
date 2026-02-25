@@ -33,8 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asImageBitmap
@@ -69,9 +67,9 @@ data class PlacedSignature(
     val id: String = java.util.UUID.randomUUID().toString(),
     val pageIndex: Int,
     val bitmap: Bitmap,
-    val normalizedX: Float, // 0.0 to 1.0 relative to page width
-    val normalizedY: Float, // 0.0 to 1.0 relative to page height
-    val normalizedWidth: Float, // width as % of page width
+    val normalizedX: Float, // 0.0 to 1.0 relative to content fit rect
+    val normalizedY: Float,
+    val normalizedWidth: Float, // width as % of content fit rect width
     val rotation: Float
 )
 
@@ -196,16 +194,15 @@ fun SignView(
                                         val pdfWidth = page.mediaBox.width
                                         val pdfHeight = page.mediaBox.height
                                         
+                                        // 1:1 NATIVE MAPPING
                                         val drawWidth = pdfWidth * sig.normalizedWidth
                                         val drawHeight = drawWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())
                                         
-                                        // Coordinate Mapping: UI (0,0 is center) to PDF (0,0 is bottom-left)
                                         val xPos = (sig.normalizedX * pdfWidth) - (drawWidth / 2)
                                         val yPos = (pdfHeight - (sig.normalizedY * pdfHeight)) - (drawHeight / 2)
                                         
                                         cs.saveGraphicsState()
                                         val matrix = Matrix()
-                                        // Pivot around the center of the signature
                                         matrix.translate(xPos + drawWidth/2, yPos + drawHeight/2)
                                         matrix.rotate(Math.toRadians((-sig.rotation).toDouble()))
                                         matrix.translate(-(xPos + drawWidth/2), -(yPos + drawHeight/2))
@@ -235,27 +232,15 @@ fun SignView(
         }
     }
 
-    // Helper: Find exact rect of the PDF page in Aspect-Fit mode
-    fun getFitRect(containerSize: Size, pageRatio: Float): Rect {
-        val containerRatio = containerSize.width / containerSize.height
-        return if (pageRatio > containerRatio) {
-            val h = containerSize.width / pageRatio
-            Rect(0f, (containerSize.height - h) / 2, containerSize.width, (containerSize.height + h) / 2)
-        } else {
-            val w = containerSize.height * pageRatio
-            Rect((containerSize.width - w) / 2, 0f, (containerSize.width + w) / 2, containerSize.height)
-        }
-    }
-
     val signatureOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val containerWidth = constraints.maxWidth.toFloat()
             val containerHeight = constraints.maxHeight.toFloat()
-            // Standard A4 aspect ratio 0.707 (unless rotated)
-            val fitRect = getFitRect(Size(containerWidth, containerHeight), 0.707f)
+            // GOLDEN BOUND: Map relative to Aspect-Fit content
+            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
             
-            val pageWidth = fitRect.width
-            val pageHeight = fitRect.height
+            val pageWidth = fitRect.width()
+            val pageHeight = fitRect.height()
 
             // Render confirmed signatures
             placedSignatures.filter { it.pageIndex == pageIndex }.forEach { sig ->
@@ -268,7 +253,6 @@ fun SignView(
                             height = (pageWidth * sig.normalizedWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())).dp / LocalDensity.current.density
                         )
                         .graphicsLayer {
-                            // Map normalized back to fit-box coordinates
                             translationX = fitRect.left + (sig.normalizedX * pageWidth) - (containerWidth / 2)
                             translationY = fitRect.top + (sig.normalizedY * pageHeight) - (containerHeight / 2)
                             rotationZ = sig.rotation
@@ -458,7 +442,7 @@ fun SignView(
         BoxWithConstraints {
             val containerWidth = constraints.maxWidth.toFloat()
             val containerHeight = constraints.maxHeight.toFloat()
-            val fitRect = getFitRect(Size(containerWidth, containerHeight), 0.707f)
+            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
             
             PageLightbox(
                 uri = selectedUri!!,
@@ -483,15 +467,15 @@ fun SignView(
                                     onClick = { 
                                         activeSignatureBitmap?.let {
                                             // Normalizing relative to the fit-box
-                                            val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width
-                                            val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height
+                                            val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width()
+                                            val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height()
                                             
                                             placedSignatures = placedSignatures + PlacedSignature(
                                                 pageIndex = currentPage,
                                                 bitmap = it,
                                                 normalizedX = nx,
                                                 normalizedY = ny,
-                                                normalizedWidth = (fitRect.width * 0.4f * activeScale) / fitRect.width,
+                                                normalizedWidth = (fitRect.width() * 0.4f * activeScale) / fitRect.width(),
                                                 rotation = activeRotation
                                             )
                                         }

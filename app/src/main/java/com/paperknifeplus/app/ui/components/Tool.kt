@@ -38,4 +38,17 @@ object SessionManager {
             pageCount = pageCount
         ))
     }
+
+    fun purgeHistory(retentionDays: Int) {
+        if (retentionDays <= 0) return
+        val cutoff = System.currentTimeMillis() - (retentionDays.toLong() * 24 * 60 * 60 * 1000)
+        history.removeAll { entry ->
+            val timestamp = entry.id.toLongOrNull() ?: 0L
+            timestamp < cutoff
+        }
+    }
+
+    fun clearHistory() {
+        history.clear()
+    }
 }

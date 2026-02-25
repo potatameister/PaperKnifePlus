@@ -69,12 +69,31 @@ class MainActivity : ComponentActivity() {
             .build()
 
         setContent {
-            var isDarkMode by remember { mutableStateOf(false) }
+            val themePreference = remember { PreferencesManager.getTheme(applicationContext) }
+            var isDarkMode by remember { 
+                mutableStateOf(
+                    when(themePreference) {
+                        1 -> false
+                        2 -> true
+                        else -> false // Initial system default, handled below
+                    }
+                )
+            }
+            
+            // Handle System Theme
+            if (themePreference == 0) {
+                isDarkMode = isSystemInDarkTheme()
+            }
+
             var isInitialized by remember { mutableStateOf(false) }
 
-            // NITRO: Background Initialization
+            // NITRO: Background Initialization & History Purge
             LaunchedEffect(Unit) {
-                kotlinx.coroutines.delay(1200) // Branding dwell time
+                val retentionDays = PreferencesManager.getHistoryRetention(applicationContext)
+                if (retentionDays > 0) {
+                    SessionManager.purgeHistory(retentionDays)
+                }
+                kotlinx.coroutines.delay(1200) 
                 isInitialized = true
             }
 
