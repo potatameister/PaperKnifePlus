@@ -423,7 +423,6 @@ fun UltraPreview(
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
             ) {
                 ToolPickerContent(
-                    initialExpanded = true,
                     onToolClick = { tool ->
                         scope.launch { sheetState.hide() }.invokeOnCompletion { 
                             showToolPicker = false

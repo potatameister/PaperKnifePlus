@@ -12,6 +12,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.items
@@ -198,7 +199,6 @@ class MainActivity : ComponentActivity() {
                                     shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
                                 ) {
                                     ToolPickerContent(
-                                        initialExpanded = toolPickerInitialExpanded,
                                         onToolClick = { tool ->
                                             scope.launch { sheetState.hide() }.invokeOnCompletion { 
                                                 showToolPicker = false
