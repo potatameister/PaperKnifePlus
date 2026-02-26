@@ -25,46 +25,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.*
 import com.paperknifeplus.app.R
 import com.paperknifeplus.app.ui.theme.PaperPink
-
-private fun CoffeeCupIcon(): androidx.compose.ui.graphics.vector.ImageVector {
-    return androidx.compose.ui.graphics.vector.ImageVector.Builder()
-        .path(fillColor = androidx.compose.ui.graphics.Color(0xFFFFDD00)) {
-            moveTo(6f, 8f)
-            lineTo(6f, 14f)
-            curveTo(6f, 16f, 8f, 18f, 12f, 18f)
-            curveTo(16f, 18f, 18f, 16f, 18f, 14f)
-            lineTo(18f, 8f)
-            close()
-        }
-        .path(fillColor = androidx.compose.ui.graphics.Color(0xFFFFDD00)) {
-            moveTo(18f, 10f)
-            curveTo(20f, 10f, 21f, 11f, 21f, 13f)
-            curveTo(21f, 15f, 20f, 16f, 18f, 16f)
-            lineTo(18f, 10f)
-            close()
-        }
-        .path(fillColor = androidx.compose.ui.graphics.Color(0xFFFFDD00)) {
-            moveTo(8f, 5f)
-            lineTo(16f, 5f)
-            curveTo(16f, 7f, 14f, 9f, 12f, 9f)
-            curveTo(10f, 9f, 8f, 7f, 8f, 5f)
-            close()
-        }
-        .build()
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -153,7 +123,6 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                 shape = RoundedCornerShape(24.dp)
             ) {
                 Column(Modifier.padding(20.dp)) {
-                    // How It Works Section
                     Text("How it works", fontWeight = FontWeight.Black, fontSize = 14.sp)
                     Spacer(Modifier.height(12.dp))
                     Text(
@@ -165,7 +134,6 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
                     Spacer(Modifier.height(20.dp))
                     
-                    // Privacy Section
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Security, null, tint = PaperPink, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
@@ -173,17 +141,12 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "• 100% local processing — files never leave your device\n" +
-                        "• No servers, no cloud, no uploads\n" +
-                        "• No tracking, no analytics, no telemetry\n" +
-                        "• Works completely offline\n" +
-                        "• Your files, your processor, your device",
+                        "• 100% local processing — files never leave your device\n• No servers, no cloud, no uploads\n• No tracking, no analytics, no telemetry\n• Works completely offline\n• Your files, your processor, your device",
                         fontSize = 12.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     
                     Spacer(Modifier.height(16.dp))
                     
-                    // Open Source Section
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Code, null, tint = PaperPink, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
@@ -191,29 +154,8 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "• All code available on GitHub\n" +
-                        "• Anyone can audit the source\n" +
-                        "• No hidden tracking or data collection\n" +
-                        "• Community-driven development\n" +
-                        "• Security researchers can verify claims",
+                        "• All code available on GitHub\n• Anyone can audit the source\n• No hidden tracking or data collection\n• Community-driven development\n• Security researchers can verify claims",
                         fontSize = 12.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-            }
-        }
-        }
-
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Column(Modifier.padding(20.dp)) {
-                    Text("How it works", fontWeight = FontWeight.Black, fontSize = 14.sp)
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "PaperKnife+ is built on a simple but powerful idea: your documents belong to you, and they should never have to leave your device to be modified.\n\nTraditional PDF tools often require you to upload your files to their servers. This means your private contracts, bank statements, or personal letters are being sent over the internet and processed on a computer you don't control. Even if they promise to delete the data, the risk remains.\n\nWe took a different path. We built a 'Native Engine' that brings the workshop to your phone. When you open a PDF in PaperKnife+, our app reads the file's structure directly from your storage. When you sign a document, merge files, or extract images, all the heavy lifting is done by your phone's processor. It’s like having a professional printing press and a secure vault built right into your pocket.\n\nThis approach doesn't just protect your privacy; it makes the app incredibly fast and reliable. Because there's no uploading or downloading, tools work instantly. You can edit a document on a plane, in a remote area without a signal, or in a high-security environment with zero connectivity. Your data starts on your device and ends on your device—exactly where it belongs.",
-                        fontSize = 13.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -228,15 +170,15 @@ fun AboutMain(onNavigate: (String) -> Unit) {
 
         item {
             AboutSection("CONNECT") {
-                val isDark = MaterialTheme.colorScheme.background == Color.Black
+                val isDarkTheme = MaterialTheme.colorScheme.background == Color.Black
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    SocialIcon(painterResource(R.drawable.ic_github), "GitHub", if (isDark) Color.White else Color(0xFF24292E)) {
+                    SocialIcon(painterResource(R.drawable.ic_github), "GitHub", if (isDarkTheme) Color.White else Color(0xFF24292E)) {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/potatameister")))
                     }
-                    SocialIcon(painterResource(R.drawable.ic_x), "X", if (isDark) Color.White else Color(0xFF000000)) {
+                    SocialIcon(painterResource(R.drawable.ic_x), "X", if (isDarkTheme) Color.White else Color(0xFF000000)) {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://x.com/potatameister")))
                     }
                     SocialIcon(painterResource(R.drawable.ic_discord), "Discord", Color(0xFF5865F2)) {
@@ -264,7 +206,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-fun SocialIcon(painter: Painter, label: String, color: Color, onClick: () -> Unit) {
+fun SocialIcon(painter: androidx.compose.ui.graphics.painter.Painter, label: String, color: Color, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onClick() }.padding(4.dp)) {
         Box(
             modifier = Modifier
@@ -321,7 +263,6 @@ fun SupportPage() {
             Text("WAYS TO HELP", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
             Spacer(Modifier.height(8.dp))
             
-            // Buy Me a Coffee - matching HomeView style
             Surface(
                 onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/potatameister"))) },
                 modifier = Modifier
@@ -336,7 +277,7 @@ fun SupportPage() {
                         modifier = Modifier.size(40.dp).background(Color(0xFFFFEB3B), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(CoffeeCupIcon(), null, tint = Color(0xFF795548), modifier = Modifier.size(22.dp))
+                        Icon(Icons.Filled.Coffee, null, tint = Color(0xFF795548), modifier = Modifier.size(22.dp))
                     }
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
@@ -349,7 +290,6 @@ fun SupportPage() {
         }
         
         item {
-            // GitHub Sponsors - polished
             Surface(
                 onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sponsors/potatameister"))) },
                 modifier = Modifier
@@ -381,36 +321,12 @@ fun SupportPage() {
 }
 
 @Composable
-fun SupportActionCard(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = color.copy(alpha = 0.1f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(40.dp).background(color, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = if (color == Color(0xFFFFDD00)) Color.Black else Color.White, modifier = Modifier.size(20.dp))
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.Black, fontSize = 15.sp)
-                Text(subtitle, fontSize = 11.sp, color = Color.Gray)
-            }
-            Icon(Icons.Filled.ChevronRight, null, tint = Color.Gray)
-        }
-    }
-}
-
-@Composable
 fun LibrariesPage() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // Core Engine Section
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Settings, null, tint = PaperPink, modifier = Modifier.size(14.dp))
@@ -473,7 +389,6 @@ fun LibrariesPage() {
             }
         }
         
-        // UI & Design Section
         item {
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -536,26 +451,7 @@ fun LibrariesPage() {
                 }
             }
         }
-                        modifier = Modifier.size(36.dp).background(Color(0xFF8B5CF6).copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Filled.Style, null, tint = Color(0xFF8B5CF6), modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Material 3", fontWeight = FontWeight.Black, fontSize = 14.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Text("[Apache 2.0]", fontSize = 9.sp, color = Color(0xFF8B5CF6), fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text("Modern design system implementation", fontSize = 11.sp, color = Color.Gray)
-                    }
-                }
-            }
-        }
         
-        // Media Section
         item {
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -598,13 +494,12 @@ fun LibrariesPage() {
 
 @Composable
 fun HallOfFamePage(onNavigate: (String) -> Unit) {
-    // Subtle heartbeat animation for the star
     val infiniteTransition = rememberInfiniteTransition(label = "star")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = EaseInOutCubic),
+            animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
@@ -613,7 +508,7 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
         initialValue = 0.3f,
         targetValue = 0.6f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = EaseInOutCubic),
+            animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glow"
@@ -627,7 +522,6 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
     ) {
         item {
             Box(contentAlignment = Alignment.Center) {
-                // Glow effect behind star
                 Icon(
                     Icons.Filled.Star, null,
                     modifier = Modifier
@@ -636,7 +530,6 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
                         .alpha(glowAlpha),
                     tint = PaperPink.copy(alpha = 0.4f)
                 )
-                // Main star
                 Icon(
                     Icons.Filled.Star, null,
                     modifier = Modifier
@@ -728,12 +621,12 @@ fun LicensePage() {
                     This program is free software: you can redistribute it
                     and/or modify it under the terms of the GNU General Public
                     License as published by the Free Software Foundation,
-                    either version 3 of the License your option)
+                    either version 3 of the License
                     any later version.
                     
                     This program is distributed in the hope that it will be
                     useful, but WITHOUT ANY WARRANTY; without even the implied
-                    warranty of, or (at MERCHANTABILITY or FITNESS FOR A PARTICULAR
+                    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
                     PURPOSE. See the GNU General Public License for more details.
                     
                     You should have received a copy of the GNU General Public
@@ -766,7 +659,7 @@ fun AboutSection(title: String, content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun AboutMenuItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+fun AboutMenuItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
