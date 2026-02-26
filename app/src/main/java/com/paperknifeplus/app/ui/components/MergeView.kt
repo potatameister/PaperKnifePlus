@@ -222,8 +222,9 @@ fun MergeView(
                     
                     ToolState.CONFIGURING -> {
                         val listState = rememberLazyListState()
-                        var draggedIndex by remember { mutableStateOf<Int?>(null) }
+                        var draggedItem by remember { mutableStateOf<MergeFile?>(null) }
                         var dragOffsetY by remember { mutableFloatStateOf(0f) }
+                        var lastReorderIndex by remember { mutableIntStateOf(-1) }
 
                         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                             Row(
@@ -236,18 +237,26 @@ fun MergeView(
                                 Text("Hold & Drag to reorder", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                             }
 
-                            // OVERHAULED: Single column list for stability
                             LazyColumn(
                                 state = listState,
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
                             ) {
-                                itemsIndexed(selectedFiles, key = { _, file -> file.uri.toString() }) { index, file ->
-                                    val isDragging = draggedIndex == index
-                                    val elevation by animateDpAsState(if (isDragging) 12.dp else 0.dp)
-                                    val rotation by animateFloatAsState(if (isDragging) -2f else 0f)
-                                    
+                                itemsIndexed(
+                                    items = selectedFiles,
+                                    key = { _, file -> file.uri.toString() }
+                                ) { index, file ->
+                                    val isDragging = draggedItem?.uri == file.uri
+                                    val elevation by animateDpAsState(
+                                        targetValue = if (isDragging) 12.dp else 0.dp,
+                                        label = "elevation"
+                                    )
+                                    val rotation by animateFloatAsState(
+                                        targetValue = if (isDragging) -2f else 0f,
+                                        label = "rotation"
+                                    )
+
                                     Box(
                                         modifier = Modifier
                                             .zIndex(if (isDragging) 10f else 1f)
@@ -261,36 +270,49 @@ fun MergeView(
                                             }
                                             .animateItemPlacement()
                                             .shadow(elevation, RoundedCornerShape(16.dp))
-                                            .pointerInput(index) {
+                                            .pointerInput(file.uri) {
                                                 detectDragGesturesAfterLongPress(
-                                                    onDragStart = { draggedIndex = index },
+                                                    onDragStart = {
+                                                        draggedItem = file
+                                                        lastReorderIndex = index
+                                                        dragOffsetY = 0f
+                                                    },
                                                     onDrag = { change, dragAmount ->
                                                         change.consume()
                                                         dragOffsetY += dragAmount.y
-                                                        
-                                                        val currentIndex = draggedIndex ?: return@detectDragGesturesAfterLongPress
+
                                                         val layoutInfo = listState.layoutInfo
                                                         val itemInfo = layoutInfo.visibleItemsInfo.find { it.key == file.uri.toString() } ?: return@detectDragGesturesAfterLongPress
-                                                        
                                                         val itemCenterY = itemInfo.offset + itemInfo.size / 2 + dragOffsetY
-                                                        
-                                                        val targetItem = layoutInfo.visibleItemsInfo.find { info ->
-                                                            index != info.index &&
+
+                                                        val targetItem = layoutInfo.visibleItemsInfo.firstOrNull { info ->
+                                                            info.key != file.uri.toString() &&
                                                             itemCenterY.toInt() in info.offset..(info.offset + info.size)
                                                         }
-                                                        
-                                                        if (targetItem != null) {
-                                                            val newList = selectedFiles.toMutableList()
-                                                            val item = newList.removeAt(currentIndex)
-                                                            newList.add(targetItem.index, item)
-                                                            selectedFiles = newList
-                                                            
-                                                            dragOffsetY -= (targetItem.offset - itemInfo.offset).toFloat()
-                                                            draggedIndex = targetItem.index
+
+                                                        if (targetItem != null && targetItem.index != lastReorderIndex) {
+                                                            if (selectedFiles.isNotEmpty() && lastReorderIndex in selectedFiles.indices) {
+                                                                val currentList = selectedFiles.toMutableList()
+                                                                val safeIndex = lastReorderIndex.coerceIn(0, currentList.size - 1)
+                                                                val item = currentList.removeAt(safeIndex)
+                                                                val targetIndex = targetItem.index.coerceIn(0, currentList.size)
+                                                                currentList.add(targetIndex, item)
+                                                                selectedFiles = currentList
+                                                                lastReorderIndex = targetIndex
+                                                                dragOffsetY -= (targetItem.offset - itemInfo.offset).toFloat()
+                                                            }
                                                         }
                                                     },
-                                                    onDragEnd = { draggedIndex = null; dragOffsetY = 0f },
-                                                    onDragCancel = { draggedIndex = null; dragOffsetY = 0f }
+                                                    onDragEnd = {
+                                                        draggedItem = null
+                                                        dragOffsetY = 0f
+                                                        lastReorderIndex = -1
+                                                    },
+                                                    onDragCancel = {
+                                                        draggedItem = null
+                                                        dragOffsetY = 0f
+                                                        lastReorderIndex = -1
+                                                    }
                                                 )
                                             }
                                     ) {

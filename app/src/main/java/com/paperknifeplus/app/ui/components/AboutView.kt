@@ -22,17 +22,49 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.*
 import com.paperknifeplus.app.R
 import com.paperknifeplus.app.ui.theme.PaperPink
+
+private fun CoffeeCupIcon(): androidx.compose.ui.graphics.vector.ImageVector {
+    return androidx.compose.ui.graphics.vector.ImageVector.Builder()
+        .path(fillColor = androidx.compose.ui.graphics.Color(0xFFFFDD00)) {
+            moveTo(6f, 8f)
+            lineTo(6f, 14f)
+            curveTo(6f, 16f, 8f, 18f, 12f, 18f)
+            curveTo(16f, 18f, 18f, 16f, 18f, 14f)
+            lineTo(18f, 8f)
+            close()
+        }
+        .path(fillColor = androidx.compose.ui.graphics.Color(0xFFFFDD00)) {
+            moveTo(18f, 10f)
+            curveTo(20f, 10f, 21f, 11f, 21f, 13f)
+            curveTo(21f, 15f, 20f, 16f, 18f, 16f)
+            lineTo(18f, 10f)
+            close()
+        }
+        .path(fillColor = androidx.compose.ui.graphics.Color(0xFFFFDD00)) {
+            moveTo(8f, 5f)
+            lineTo(16f, 5f)
+            curveTo(16f, 7f, 14f, 9f, 12f, 9f)
+            curveTo(10f, 9f, 8f, 7f, 8f, 5f)
+            close()
+        }
+        .build()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,6 +131,8 @@ fun AboutView(initialPage: String = "main", isFromSettings: Boolean = false, onB
 @Composable
 fun AboutMain(onNavigate: (String) -> Unit) {
     val context = LocalContext.current
+    val isDark = MaterialTheme.colorScheme.background == Color.Black
+    
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(24.dp),
@@ -106,11 +140,67 @@ fun AboutMain(onNavigate: (String) -> Unit) {
     ) {
         item {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                Logo(modifier = Modifier.size(64.dp), partColor = PaperPink)
+                Logo(modifier = Modifier.size(64.dp), partColor = if (isDark) Color.White else Color.Black)
                 Spacer(Modifier.height(16.dp))
                 Text("PaperKnife+", fontSize = 24.sp, fontWeight = FontWeight.Black)
                 Text("NATIVE PDF WORKSHOP", fontSize = 9.sp, color = PaperPink, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
             }
+        }
+
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    // How It Works Section
+                    Text("How it works", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "PaperKnife+ is built on a simple but powerful idea: your documents belong to you, and they should never have to leave your device to be modified.\n\nTraditional PDF tools often require you to upload your files to their servers. This means your private contracts, bank statements, or personal letters are being sent over the internet and processed on a computer you don't control. Even if they promise to delete the data, the risk remains.\n\nWe took a different path. We built a 'Native Engine' that brings the workshop to your phone. When you open a PDF in PaperKnife+, our app reads the file's structure directly from your storage. When you sign a document, merge files, or extract images, all the heavy lifting is done by your phone's processor. It's like having a professional printing press and a secure vault built right into your pocket.\n\nThis approach doesn't just protect your privacy; it makes the app incredibly fast and reliable. Because there's no uploading or downloading, tools work instantly. You can edit a document on a plane, in a remote area without a signal, or in a high-security environment with zero connectivity. Your data starts on your device and ends on your device—exactly where it belongs.",
+                        fontSize = 13.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    
+                    Spacer(Modifier.height(20.dp))
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                    Spacer(Modifier.height(20.dp))
+                    
+                    // Privacy Section
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Security, null, tint = PaperPink, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("PRIVACY BY DESIGN", fontWeight = FontWeight.Black, fontSize = 11.sp, color = PaperPink, letterSpacing = 1.sp)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• 100% local processing — files never leave your device\n" +
+                        "• No servers, no cloud, no uploads\n" +
+                        "• No tracking, no analytics, no telemetry\n" +
+                        "• Works completely offline\n" +
+                        "• Your files, your processor, your device",
+                        fontSize = 12.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    
+                    Spacer(Modifier.height(16.dp))
+                    
+                    // Open Source Section
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Code, null, tint = PaperPink, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("FULLY OPEN SOURCE", fontWeight = FontWeight.Black, fontSize = 11.sp, color = PaperPink, letterSpacing = 1.sp)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "• All code available on GitHub\n" +
+                        "• Anyone can audit the source\n" +
+                        "• No hidden tracking or data collection\n" +
+                        "• Community-driven development\n" +
+                        "• Security researchers can verify claims",
+                        fontSize = 12.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
         }
 
         item {
@@ -138,14 +228,15 @@ fun AboutMain(onNavigate: (String) -> Unit) {
 
         item {
             AboutSection("CONNECT") {
+                val isDark = MaterialTheme.colorScheme.background == Color.Black
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    SocialIcon(painterResource(R.drawable.ic_github), "GitHub", Color(0xFF24292E)) {
+                    SocialIcon(painterResource(R.drawable.ic_github), "GitHub", if (isDark) Color.White else Color(0xFF24292E)) {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/potatameister")))
                     }
-                    SocialIcon(painterResource(R.drawable.ic_x), "X", Color(0xFF000000)) {
+                    SocialIcon(painterResource(R.drawable.ic_x), "X", if (isDark) Color.White else Color(0xFF000000)) {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://x.com/potatameister")))
                     }
                     SocialIcon(painterResource(R.drawable.ic_discord), "Discord", Color(0xFF5865F2)) {
@@ -158,13 +249,13 @@ fun AboutMain(onNavigate: (String) -> Unit) {
         item {
             AboutSection("LEGAL") {
                 AboutMenuItem(Icons.Filled.Code, "Open Source Libraries", "The tech powering our engine") { onNavigate("libraries") }
-                AboutMenuItem(Icons.Filled.Description, "Apache License 2.0", "Read the legal terms") { onNavigate("license") }
+                AboutMenuItem(Icons.Filled.Description, "GPL v3", "Read the legal terms") { onNavigate("license") }
             }
         }
         
         item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("OFFLINE VERSION 1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text("PaperKnife+ V1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
             }
         }
         
@@ -205,13 +296,18 @@ fun SupportPage() {
         }
 
         item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = PaperPink.copy(0.1f)),
+            Surface(
                 shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, PaperPink.copy(0.2f))
+                color = PaperPink.copy(alpha = 0.08f),
+                border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.2f)),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(20.dp)) {
-                    Text("THE PLAY STORE PLAN", fontWeight = FontWeight.Black, fontSize = 12.sp, color = PaperPink)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Store, null, tint = PaperPink, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("THE PLAY STORE PLAN", fontWeight = FontWeight.Black, fontSize = 11.sp, color = PaperPink, letterSpacing = 1.sp)
+                    }
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "We need your help to reach the Google Play Store! Your support covers developer fees, hosting for the website, and ensures PaperKnife+ stays updated forever.",
@@ -225,14 +321,58 @@ fun SupportPage() {
             Text("WAYS TO HELP", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
             Spacer(Modifier.height(8.dp))
             
-            SupportActionCard("Buy Me a Coffee", "Instant support for the developer", Icons.Filled.Coffee, Color(0xFFFFDD00)) {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/potatameister")))
+            // Buy Me a Coffee - matching HomeView style
+            Surface(
+                onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/potatameister"))) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(20.dp)),
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFFFFF9C4),
+                border = BorderStroke(1.dp, Color(0xFFFFEB3B))
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(40.dp).background(Color(0xFFFFEB3B), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(CoffeeCupIcon(), null, tint = Color(0xFF795548), modifier = Modifier.size(22.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Buy Me a Coffee", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                        Text("Instant support for the developer", fontSize = 11.sp, color = Color.Gray)
+                    }
+                    Icon(Icons.Filled.ChevronRight, null, tint = Color.Gray)
+                }
             }
-            
-            Spacer(Modifier.height(12.dp))
-
-            SupportActionCard("GitHub Sponsors", "Join our developer community", Icons.Filled.Favorite, Color(0xFFEA4AAA)) {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sponsors/potatameister")))
+        }
+        
+        item {
+            // GitHub Sponsors - polished
+            Surface(
+                onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sponsors/potatameister"))) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(20.dp)),
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFFEA4AAA).copy(alpha = 0.1f),
+                border = BorderStroke(1.dp, Color(0xFFEA4AAA).copy(alpha = 0.3f))
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(40.dp).background(Color(0xFFEA4AAA), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.Favorite, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("GitHub Sponsors", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                        Text("Join our developer community", fontSize = 11.sp, color = Color.Gray)
+                    }
+                    Icon(Icons.Filled.ChevronRight, null, tint = Color.Gray)
+                }
             }
         }
         
@@ -265,32 +405,189 @@ fun SupportActionCard(title: String, subtitle: String, icon: ImageVector, color:
 
 @Composable
 fun LibrariesPage() {
-    val libraries = listOf(
-        "PDFBox-Android" to "The native heart of our engine. Apache 2.0",
-        "Jetpack Compose" to "Modern UI toolkit for native Android.",
-        "Coil" to "High-performance image loading engine.",
-        "Material 3" to "Modern design system implementation.",
-        "Kotlin Coroutines" to "Powering our multi-threaded rendering engine."
-    )
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+        // Core Engine Section
         item {
-            Text("POWERED BY OPEN SOURCE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Settings, null, tint = PaperPink, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("CORE ENGINE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.2.sp)
+            }
         }
-        items(libraries) { lib ->
+        
+        item {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(lib.first, fontWeight = FontWeight.Black, fontSize = 14.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text(lib.second, fontSize = 11.sp, color = Color.Gray)
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(PaperPink.copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.Description, null, tint = PaperPink, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("PDFBox-Android", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("[Apache 2.0]", fontSize = 9.sp, color = PaperPink, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text("The native heart of our engine", fontSize = 11.sp, color = Color.Gray)
+                    }
+                }
+            }
+        }
+        
+        item {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(PaperPink.copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.Bolt, null, tint = PaperPink, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Kotlin Coroutines", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("[Apache 2.0]", fontSize = 9.sp, color = PaperPink, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text("Powering our multi-threaded rendering engine", fontSize = 11.sp, color = Color.Gray)
+                    }
+                }
+            }
+        }
+        
+        // UI & Design Section
+        item {
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Palette, null, tint = Color(0xFF8B5CF6), modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("UI & DESIGN", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF8B5CF6), letterSpacing = 1.2.sp)
+            }
+        }
+        
+        item {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color(0xFF8B5CF6).copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.TouchApp, null, tint = Color(0xFF8B5CF6), modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Jetpack Compose", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("[Apache 2.0]", fontSize = 9.sp, color = Color(0xFF8B5CF6), fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text("Modern UI toolkit for native Android", fontSize = 11.sp, color = Color.Gray)
+                    }
+                }
+            }
+        }
+        
+        item {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color(0xFF8B5CF6).copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.Style, null, tint = Color(0xFF8B5CF6), modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Material 3", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("[Apache 2.0]", fontSize = 9.sp, color = Color(0xFF8B5CF6), fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text("Modern design system implementation", fontSize = 11.sp, color = Color.Gray)
+                    }
+                }
+            }
+        }
+                        modifier = Modifier.size(36.dp).background(Color(0xFF8B5CF6).copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.Style, null, tint = Color(0xFF8B5CF6), modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Material 3", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("[Apache 2.0]", fontSize = 9.sp, color = Color(0xFF8B5CF6), fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text("Modern design system implementation", fontSize = 11.sp, color = Color.Gray)
+                    }
+                }
+            }
+        }
+        
+        // Media Section
+        item {
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Image, null, tint = Color(0xFF10B981), modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("MEDIA", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF10B981), letterSpacing = 1.2.sp)
+            }
+        }
+        
+        item {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color(0xFF10B981).copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.PhotoLibrary, null, tint = Color(0xFF10B981), modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Coil", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("[MIT]", fontSize = 9.sp, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text("High-performance image loading engine", fontSize = 11.sp, color = Color.Gray)
+                    }
                 }
             }
         }
@@ -301,6 +598,27 @@ fun LibrariesPage() {
 
 @Composable
 fun HallOfFamePage(onNavigate: (String) -> Unit) {
+    // Subtle heartbeat animation for the star
+    val infiniteTransition = rememberInfiniteTransition(label = "star")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow"
+    )
+    
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(24.dp),
@@ -308,7 +626,25 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            Icon(Icons.Filled.Star, null, modifier = Modifier.size(64.dp).alpha(0.1f), tint = PaperPink)
+            Box(contentAlignment = Alignment.Center) {
+                // Glow effect behind star
+                Icon(
+                    Icons.Filled.Star, null,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .graphicsLayer { scaleX = scale; scaleY = scale }
+                        .alpha(glowAlpha),
+                    tint = PaperPink.copy(alpha = 0.4f)
+                )
+                // Main star
+                Icon(
+                    Icons.Filled.Star, null,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .graphicsLayer { scaleX = scale; scaleY = scale },
+                    tint = PaperPink
+                )
+            }
             Spacer(Modifier.height(16.dp))
             Text("The Legends", fontWeight = FontWeight.Black, fontSize = 20.sp)
             Text("PEOPLE WHO MADE THIS POSSIBLE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.5.sp)
@@ -316,22 +652,33 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
         
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                HallSlot("Kalyan", "Me-Kalyan", Modifier.weight(1f))
-                HallSlot("For the Planet!", "Plantbased4Future", Modifier.weight(1f))
+                HallSlot("Kalyan", "Me-Kalyan", Color(0xFFF43F5E), Modifier.weight(1f))
+                HallSlot("For the Planet!", "Plantbased4Future", Color(0xFF10B981), Modifier.weight(1f))
             }
         }
 
         item {
             Surface(
                 onClick = { onNavigate("support") },
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .shadow(8.dp, RoundedCornerShape(20.dp), spotColor = PaperPink.copy(alpha = 0.3f)),
                 shape = RoundedCornerShape(20.dp),
-                color = PaperPink.copy(alpha = 0.05f),
-                border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.1f))
+                color = PaperPink.copy(alpha = 0.08f),
+                border = BorderStroke(1.5.dp, PaperPink.copy(alpha = 0.4f))
             ) {
-                Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("JOIN THE LEGENDS", fontWeight = FontWeight.Black, fontSize = 12.sp, color = PaperPink)
-                    Text("Support the project to see your name here!", fontSize = 10.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Filled.Celebration, null, tint = PaperPink, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("JOIN THE LEGENDS", fontWeight = FontWeight.Black, fontSize = 13.sp, color = PaperPink)
+                        Text("Support the project to see your name here!", fontSize = 10.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                    }
                 }
             }
         }
@@ -341,17 +688,19 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-fun HallSlot(name: String, username: String, modifier: Modifier = Modifier) {
+fun HallSlot(name: String, username: String, accentColor: Color, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, Color.Gray.copy(0.1f)),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.3f)),
         modifier = modifier.aspectRatio(1.2f)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Filled.Favorite, null, tint = accentColor.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
+            Spacer(Modifier.height(8.dp))
             Text(name, fontSize = 14.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(4.dp))
-            Text(username, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = PaperPink, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(2.dp))
+            Text(username, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor, textAlign = TextAlign.Center)
         }
     }
 }
@@ -370,21 +719,26 @@ fun LicensePage() {
             ) {
                 Text(
                     """
-                    Apache License
-                    Version 2.0, January 2004
-                    http://www.apache.org/licenses/
-
-                    Licensed under the Apache License, Version 2.0 (the "License");
-                    you may not use this file except in compliance with the License.
-                    You may obtain a copy of the License at
-
-                        http://www.apache.org/licenses/LICENSE-2.0
-
-                    Unless required by applicable law or agreed to in writing, software
-                    distributed under the License is distributed on an "AS IS" BASIS,
-                    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-                    See the License for the specific language governing permissions and
-                    limitations under the License.
+                    GNU GENERAL PUBLIC LICENSE
+                    Version 3, 29 June 2007
+                    
+                    Copyright (C) 2007 Free Software Foundation, Inc.
+                    https://www.gnu.org/licenses/gpl-3.0.html
+                    
+                    This program is free software: you can redistribute it
+                    and/or modify it under the terms of the GNU General Public
+                    License as published by the Free Software Foundation,
+                    either version 3 of the License your option)
+                    any later version.
+                    
+                    This program is distributed in the hope that it will be
+                    useful, but WITHOUT ANY WARRANTY; without even the implied
+                    warranty of, or (at MERCHANTABILITY or FITNESS FOR A PARTICULAR
+                    PURPOSE. See the GNU General Public License for more details.
+                    
+                    You should have received a copy of the GNU General Public
+                    License along with this program. If not, see
+                    https://www.gnu.org/licenses/.
                     """.trimIndent(),
                     fontSize = 11.sp,
                     lineHeight = 16.sp,

@@ -140,6 +140,13 @@ fun UltraPreview(
                     if (cachedUri != null) {
                         workingUri = cachedUri
                         workingPass = null
+                    } else {
+                        isDecrypting = false
+                        withContext(Dispatchers.Main) {
+                            fileToUnlock = fileName
+                            isInitializing = false
+                        }
+                        return@launch
                     }
                     isDecrypting = false
                 }
@@ -196,6 +203,11 @@ fun UltraPreview(
             if (isInitializing) {
                 LoadingStateView(PaperPink, false, "Loading Document View...")
             } else if (fileToUnlock == null) {
+                val firstVisibleIndex by remember { 
+                    derivedStateOf { listState.firstVisibleItemIndex } 
+                }
+                val scrollOffset = firstVisibleIndex * 800f
+                
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -207,8 +219,9 @@ fun UltraPreview(
                                         targetOffset = androidx.compose.ui.geometry.Offset.Zero
                                     } else {
                                         targetScale = 3f
+                                        val adjustedTapY = tapOffset.y + scrollOffset
                                         val x = (size.width / 2 - tapOffset.x) * (3f - 1f)
-                                        val y = (size.height / 2 - tapOffset.y) * (3f - 1f)
+                                        val y = (size.height / 2 - adjustedTapY) * (3f - 1f)
                                         targetOffset = androidx.compose.ui.geometry.Offset(x, y)
                                     }
                                 }
@@ -220,14 +233,18 @@ fun UltraPreview(
                                 val newScale = (targetScale * zoom).coerceIn(1f, 10f)
                                 
                                 if (newScale > 1f) {
-                                    // Calculate the offset to keep the centroid under the fingers
+                                    // Adjust centroid for current scroll position
+                                    val adjustedCentroid = androidx.compose.ui.geometry.Offset(
+                                        centroid.x,
+                                        centroid.y + scrollOffset
+                                    )
                                     val scaleChange = newScale / oldScale
-                                    val newOffset = (targetOffset + pan) * scaleChange + centroid * (1f - scaleChange)
+                                    val newOffset = (targetOffset + pan) * scaleChange + adjustedCentroid * (1f - scaleChange)
                                     targetOffset = newOffset
                                 } else {
+                                    targetScale = 1f
                                     targetOffset = androidx.compose.ui.geometry.Offset.Zero
                                 }
-                                targetScale = newScale
                             }
                         }
                 ) {
@@ -271,10 +288,12 @@ fun UltraPreview(
             if (!isInitializing && fileToUnlock == null) {
                 var isDragging by remember { mutableStateOf(false) }
                 var dragProgress by remember { mutableFloatStateOf(0f) }
+                var trackHeight by remember { mutableFloatStateOf(0f) }
 
                 val scrollPercentage by remember {
                     derivedStateOf {
                         if (isDragging) dragProgress
+                        else if (activePageCount <= 1) 0f
                         else {
                             val layoutInfo = listState.layoutInfo
                             val visibleItems = layoutInfo.visibleItemsInfo
@@ -294,10 +313,9 @@ fun UltraPreview(
                 val currentPage by remember { 
                     derivedStateOf { 
                         if (!listState.canScrollForward && activePageCount > 0) activePageCount
-                        else listState.firstVisibleItemIndex + 1
+                        else (listState.firstVisibleItemIndex + 1).coerceIn(1, activePageCount)
                     } 
                 }
-                var trackHeight by remember { mutableFloatStateOf(0f) }
 
                 Box(
                     modifier = Modifier
@@ -308,44 +326,49 @@ fun UltraPreview(
                         .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
                         .pointerInput(activePageCount, trackHeight) {
                             detectTapGestures { offset ->
-                                val newPercent = (offset.y / trackHeight).coerceIn(0f, 1f)
-                                val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
-                                scope.launch { listState.scrollToItem(targetPage) }
+                                if (trackHeight > 0) {
+                                    val newPercent = (offset.y / trackHeight).coerceIn(0f, 1f)
+                                    val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
+                                    scope.launch { listState.scrollToItem(targetPage.coerceIn(0, activePageCount - 1)) }
+                                }
                             }
                         }
                 ) {
                     Box(
                         modifier = Modifier.fillMaxHeight().width(6.dp).align(Alignment.Center).background(Color.Gray.copy(alpha = 0.15f), CircleShape)
                     )
-                    val minThumbHeight = 48.dp
-                    val thumbHeightFactor = 1f / activePageCount.coerceAtLeast(1)
-                    val thumbHeightPx = with(density) { 
-                        (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeight.toPx()) 
-                    }
                     
-                    Box(
-                        modifier = Modifier
-                            .height(with(density) { thumbHeightPx.toDp() })
-                            .width(12.dp)
-                            .graphicsLayer {
-                                translationY = scrollPercentage * (trackHeight - thumbHeightPx)
-                            }
-                            .background(PaperPink, CircleShape)
-                            .align(Alignment.TopCenter)
-                            .draggable(
-                                orientation = Orientation.Vertical,
-                                state = rememberDraggableState { delta ->
-                                    if (trackHeight > thumbHeightPx) {
-                                        isDragging = true
-                                        val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
-                                        dragProgress = newPercent
-                                        val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
-                                        scope.launch { listState.scrollToItem(targetPage) }
-                                    }
-                                },
-                                onDragStopped = { isDragging = false }
-                            )
-                    )
+                    if (trackHeight > 0 && activePageCount > 1) {
+                        val minThumbHeight = 48.dp
+                        val thumbHeightFactor = 1f / activePageCount.coerceAtLeast(1)
+                        val thumbHeightPx = with(density) { 
+                            (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeight.toPx()) 
+                        }
+                        
+                        Box(
+                            modifier = Modifier
+                                .height(with(density) { thumbHeightPx.toDp() })
+                                .width(12.dp)
+                                .graphicsLayer {
+                                    translationY = scrollPercentage * (trackHeight - thumbHeightPx)
+                                }
+                                .background(PaperPink, CircleShape)
+                                .align(Alignment.TopCenter)
+                                .draggable(
+                                    orientation = Orientation.Vertical,
+                                    state = rememberDraggableState { delta ->
+                                        if (trackHeight > thumbHeightPx && activePageCount > 1) {
+                                            isDragging = true
+                                            val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
+                                            dragProgress = newPercent
+                                            val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
+                                            scope.launch { listState.scrollToItem(targetPage.coerceIn(0, activePageCount - 1)) }
+                                        }
+                                    },
+                                    onDragStopped = { isDragging = false }
+                                )
+                        )
+                    }
                 }
 
                 Box(

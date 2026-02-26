@@ -28,8 +28,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.vector.path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -39,6 +41,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.launch
+
+private fun CoffeeCupIcon(): ImageVector {
+    return ImageVector.Builder()
+        .path(fillColor = Color(0xFFFFDD00)) {
+            moveTo(6f, 8f)
+            lineTo(6f, 14f)
+            curveTo(6f, 16f, 8f, 18f, 12f, 18f)
+            curveTo(16f, 18f, 18f, 16f, 18f, 14f)
+            lineTo(18f, 8f)
+            close()
+        }
+        .path(fillColor = Color(0xFFFFDD00)) {
+            moveTo(18f, 10f)
+            curveTo(20f, 10f, 21f, 11f, 21f, 13f)
+            curveTo(21f, 15f, 20f, 16f, 18f, 16f)
+            lineTo(18f, 10f)
+            close()
+        }
+        .path(fillColor = Color(0xFFFFDD00)) {
+            moveTo(8f, 5f)
+            lineTo(16f, 5f)
+            curveTo(16f, 7f, 14f, 9f, 12f, 9f)
+            curveTo(10f, 9f, 8f, 7f, 8f, 5f)
+            close()
+        }
+        .build()
+}
 
 @Composable
 fun HomeView(
@@ -129,18 +158,18 @@ fun HomeView(
                         .fillMaxWidth()
                         .padding(bottom = 20.dp),
                     shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFFFDD00).copy(alpha = 0.1f),
-                    border = BorderStroke(1.dp, Color(0xFFFFDD00).copy(alpha = 0.3f))
+                    color = Color(0xFFFFF9C4),
+                    border = BorderStroke(1.dp, Color(0xFFFFEB3B))
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier = Modifier.size(36.dp).background(Color(0xFFFFDD00), CircleShape),
+                            modifier = Modifier.size(36.dp).background(Color(0xFFFFEB3B), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Filled.Coffee, null, tint = Color.Black, modifier = Modifier.size(18.dp))
+                            Icon(CoffeeCupIcon(), null, tint = Color(0xFF795548), modifier = Modifier.size(20.dp))
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {

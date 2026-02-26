@@ -69,7 +69,7 @@ fun SettingsView(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 160.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
@@ -137,21 +137,34 @@ fun SettingsView(
                     }
                     SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Purge all temporary documents and previews") {
                         val cacheDir = context.cacheDir
-                        val extCacheDir = context.externalCacheDir
                         val previewsDir = cacheDir.resolve("pdf_previews")
                         
                         var success = true
                         try {
+                            // Clear Coil disk cache
+                            coil.ImageLoader(context).diskCache?.clear()
+                            
+                            // Clear previews directory
                             if (previewsDir.exists()) previewsDir.deleteRecursively()
-                            if (cacheDir.exists()) {
-                                cacheDir.listFiles()?.forEach { 
-                                    if (it.name != "pdf_previews") it.deleteRecursively() 
+                            
+                            // Clear any decrypted PDFs in cache
+                            cacheDir.listFiles()?.forEach { file ->
+                                if (file.isDirectory) {
+                                    file.deleteRecursively()
+                                } else {
+                                    file.delete()
                                 }
                             }
-                            if (extCacheDir?.exists() == true) extCacheDir.deleteRecursively()
-                        } catch (e: Exception) { success = false }
+                            
+                            // Clear external cache
+                            context.externalCacheDir?.let { extCache ->
+                                if (extCache.exists()) extCache.deleteRecursively()
+                            }
+                        } catch (e: Exception) { 
+                            success = false 
+                        }
                         
-                        if (success) Toast.makeText(context, "Cache wiped successfully", Toast.LENGTH_SHORT).show()
+                        if (success) Toast.makeText(context, "Cache cleared successfully", Toast.LENGTH_SHORT).show()
                         else Toast.makeText(context, "Partial cache clear", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -167,7 +180,7 @@ fun SettingsView(
 
             item {
                 Column(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("OFFLINE VERSION 1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Text("PaperKnife+ V1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                 }
             }
         }
