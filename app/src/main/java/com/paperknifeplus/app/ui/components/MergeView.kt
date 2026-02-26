@@ -89,12 +89,6 @@ fun MergeView(
 
     val imageLoader = coil.compose.LocalImageLoader.current
 
-    LaunchedEffect(initialUri, initialPassword) {
-        if (initialUri != null) {
-            handleUrisWithPassword(listOf(initialUri), initialPassword)
-        }
-    }
-
     fun handleUris(uris: List<Uri>) {
         handleUrisWithPassword(uris, null)
     }
@@ -116,6 +110,12 @@ fun MergeView(
                 }
                 isFileLoading = false
             }
+        }
+    }
+
+    LaunchedEffect(initialUri, initialPassword) {
+        if (initialUri != null) {
+            handleUrisWithPassword(listOf(initialUri), initialPassword)
         }
     }
 
