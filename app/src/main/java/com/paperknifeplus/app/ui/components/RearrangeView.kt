@@ -31,6 +31,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun RearrangeView(
     initialUri: Uri? = null,
+    initialPassword: String? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -42,7 +43,7 @@ fun RearrangeView(
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
-    var unlockPassword by remember { mutableStateOf("") }
+    var unlockPassword by remember { mutableStateOf(initialPassword ?: "") }
     var fileName by remember { mutableStateOf("") }
     var pageOrder by remember { mutableStateOf<List<Int>>(emptyList()) }
     var isFileLoading by remember { mutableStateOf(false) }
@@ -54,20 +55,20 @@ fun RearrangeView(
     var showMoveToDialog by remember { mutableStateOf(false) }
     var moveToInput by remember { mutableStateOf("") }
 
-    fun handleFileSelection(uri: Uri) {
+    fun handleFileSelection(uri: Uri, password: String? = null) {
         selectedUri = uri
         val details = getUriDetails(context, uri)
         fileName = details.name
         isFileLoading = true
         scope.launch(Dispatchers.IO) {
             val isEncrypted = checkIsEncryptedLocal(context, uri)
-            if (isEncrypted) {
+            if (isEncrypted && password == null) {
                 withContext(Dispatchers.Main) {
                     fileToUnlock = fileName
                     isFileLoading = false
                 }
             } else {
-                val count = getPageCount(context, uri, null)
+                val count = getPageCount(context, uri, password)
                 withContext(Dispatchers.Main) {
                     pageOrder = (0 until count).toList()
                     currentState = ToolState.CONFIGURING
@@ -78,7 +79,7 @@ fun RearrangeView(
     }
 
     LaunchedEffect(initialUri) {
-        initialUri?.let { handleFileSelection(it) }
+        initialUri?.let { handleFileSelection(it, initialPassword) }
     }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->

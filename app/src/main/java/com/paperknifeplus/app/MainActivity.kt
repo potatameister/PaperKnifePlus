@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
                         var currentTool by remember { mutableStateOf<String?>(null) }
                         var previewData by remember { mutableStateOf<Triple<Uri, String, Int>?>(null) }
                         var toolInitialUri by remember { mutableStateOf<Uri?>(null) }
+                        var toolInitialPassword by remember { mutableStateOf<String?>(null) }
                         var aboutInitialPage by remember { mutableStateOf("main") }
                         var isAboutFromSettings by remember { mutableStateOf(false) }
                         
@@ -148,10 +149,12 @@ class MainActivity : ComponentActivity() {
                                         )
                                         "tools" -> ToolsView(onToolClick = { 
                                             toolInitialUri = null
+                                            toolInitialPassword = null
                                             currentTool = it 
                                         })
                                         "history" -> HistoryView(onItemClick = { uri, name, count ->
                                             previewData = Triple(uri, name, count)
+                                            toolInitialPassword = null
                                             currentTool = "ultra_preview"
                                         })
                                         "settings" -> SettingsView(
@@ -196,6 +199,8 @@ class MainActivity : ComponentActivity() {
                                         onToolClick = { tool ->
                                             scope.launch { sheetState.hide() }.invokeOnCompletion { 
                                                 showToolPicker = false
+                                                toolInitialUri = null
+                                                toolInitialPassword = null
                                                 currentTool = tool 
                                             }
                                         }
@@ -212,12 +217,12 @@ class MainActivity : ComponentActivity() {
                                     when (currentTool) {
                                         "about" -> AboutView(initialPage = aboutInitialPage, isFromSettings = isAboutFromSettings, onBack = { currentTool = null })
                                         "merge" -> MergeView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
-                                        "split" -> SplitView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "split" -> SplitView(initialUri = toolInitialUri, initialPassword = toolInitialPassword, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "delete" -> DeleteView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
-                                        "compress" -> CompressView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "compress" -> CompressView(initialUri = toolInitialUri, initialPassword = toolInitialPassword, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "repair" -> RepairView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "rotate" -> RotateView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
-                                        "rearrange" -> RearrangeView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "rearrange" -> RearrangeView(initialUri = toolInitialUri, initialPassword = toolInitialPassword, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "protect" -> ProtectView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "unlock" -> UnlockView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "grayscale" -> GrayscaleView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
@@ -237,8 +242,9 @@ class MainActivity : ComponentActivity() {
                                                 UltraPreview(
                                                     uri = uri, fileName = name, pageCount = count, 
                                                     onDismiss = { currentTool = null }, 
-                                                    onOpenInTool = { tool -> 
-                                                        toolInitialUri = uri // PRESERVE CONTEXT
+                                                    onOpenInTool = { tool, targetUri, targetPass -> 
+                                                        toolInitialUri = targetUri
+                                                        toolInitialPassword = targetPass
                                                         currentTool = tool 
                                                     }
                                                 )
@@ -284,6 +290,7 @@ fun FixedTitanBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.98f))
             .navigationBarsPadding()
             .height(84.dp),
         contentAlignment = Alignment.BottomCenter

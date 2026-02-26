@@ -173,9 +173,10 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Uni
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     val entryColor = remember(entry.tool) { 
         when {
-            entry.tool.contains("Merge", true) || entry.tool.contains("Split", true) -> Color(0xFFF43F5E)
-            entry.tool.contains("Compress", true) || entry.tool.contains("ZIP", true) -> Color(0xFFF59E0B)
-            entry.tool.contains("Rearrange", true) -> Color(0xFF10B981)
+            entry.tool.contains("Merge", true) || entry.tool.contains("Split", true) || entry.tool.contains("Delete", true) || entry.tool.contains("Rearrange", true) -> Color(0xFFF43F5E)
+            entry.tool.contains("Compress", true) || entry.tool.contains("ZIP", true) || entry.tool.contains("Grayscale", true) -> Color(0xFFF59E0B)
+            entry.tool.contains("Protect", true) || entry.tool.contains("Lock", true) || entry.tool.contains("Unlock", true) || entry.tool.contains("Metadata", true) -> Color(0xFF8B5CF6)
+            entry.tool.contains("Convert", true) || entry.tool.contains("PDF to", true) || entry.tool.contains("Img to", true) || entry.tool.contains("Extract", true) -> Color(0xFF10B981)
             else -> PaperPink
         }
     }
@@ -189,7 +190,7 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Uni
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) Color(0xFF09090B) else Color.White
         ),
-        border = BorderStroke(1.dp, if (isDark) entryColor.copy(alpha = 0.05f) else entryColor.copy(alpha = 0.03f))
+        border = BorderStroke(1.dp, if (isDark) entryColor.copy(alpha = 0.1f) else entryColor.copy(alpha = 0.05f))
     ) {
         Row(
             modifier = Modifier
@@ -207,11 +208,11 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Uni
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(entry.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-                Text("${entry.tool} • ${entry.size}", fontSize = 11.sp, color = Color.Gray)
+                Text("${entry.tool.uppercase()} • ${entry.size}", fontSize = 11.sp, color = Color.Gray)
             }
             
             IconButton(onClick = onDownload, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Outlined.FileDownload, null, tint = entryColor.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.Share, null, tint = entryColor.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
             }
             
             Spacer(Modifier.width(12.dp))

@@ -244,7 +244,8 @@ fun MergeView(
                             ) {
                                 itemsIndexed(selectedFiles, key = { _, file -> file.uri.toString() }) { index, file ->
                                     val isDragging = draggedIndex == index
-                                    val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                                    val elevation by animateDpAsState(if (isDragging) 12.dp else 0.dp)
+                                    val rotation by animateFloatAsState(if (isDragging) -2f else 0f)
                                     
                                     Box(
                                         modifier = Modifier
@@ -252,8 +253,9 @@ fun MergeView(
                                             .graphicsLayer {
                                                 if (isDragging) {
                                                     translationY = dragOffsetY
-                                                    scaleX = 1.02f
-                                                    scaleY = 1.02f
+                                                    scaleX = 1.05f
+                                                    scaleY = 1.05f
+                                                    rotationZ = rotation
                                                 }
                                             }
                                             .animateItemPlacement()

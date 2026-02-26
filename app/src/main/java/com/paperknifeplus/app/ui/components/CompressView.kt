@@ -36,6 +36,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun CompressView(
     initialUri: Uri? = null,
+    initialPassword: String? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -47,7 +48,7 @@ fun CompressView(
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
-    var unlockPassword by remember { mutableStateOf("") }
+    var unlockPassword by remember { mutableStateOf(initialPassword ?: "") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
     var fileSizeOld by remember { mutableLongStateOf(0L) }
@@ -61,7 +62,7 @@ fun CompressView(
     var showLoadingWarning by remember { mutableStateOf(false) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
 
-    fun handleFileSelection(uri: Uri) {
+    fun handleFileSelection(uri: Uri, password: String? = null) {
         selectedUri = uri
         val details = getUriDetails(context, uri)
         fileName = details.name
@@ -71,13 +72,13 @@ fun CompressView(
         isFileLoading = true
         scope.launch(Dispatchers.IO) {
             val isEncrypted = checkIsEncryptedLocal(context, uri)
-            if (isEncrypted) {
+            if (isEncrypted && password == null) {
                 withContext(Dispatchers.Main) {
                     fileToUnlock = fileName
                     isFileLoading = false
                 }
             } else {
-                val count = getPageCount(context, uri, null)
+                val count = getPageCount(context, uri, password)
                 withContext(Dispatchers.Main) {
                     pageCount = count
                     currentState = ToolState.CONFIGURING
@@ -88,7 +89,7 @@ fun CompressView(
     }
 
     LaunchedEffect(initialUri) {
-        initialUri?.let { handleFileSelection(it) }
+        initialUri?.let { handleFileSelection(it, initialPassword) }
     }
 
     LaunchedEffect(isFileLoading, currentState) {

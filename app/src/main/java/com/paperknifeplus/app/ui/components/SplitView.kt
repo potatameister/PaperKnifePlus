@@ -40,6 +40,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SplitView(
     initialUri: Uri? = null,
+    initialPassword: String? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -51,7 +52,7 @@ fun SplitView(
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
-    var unlockPassword by remember { mutableStateOf("") }
+    var unlockPassword by remember { mutableStateOf(initialPassword ?: "") }
     var rangeText by remember { mutableStateOf("") }
     var selectedPages by remember { mutableStateOf<Set<Int>>(emptySet()) }
     
@@ -65,7 +66,7 @@ fun SplitView(
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
     var showRangeInput by remember { mutableStateOf(false) }
 
-    fun handleFileSelection(uri: Uri) {
+    fun handleFileSelection(uri: Uri, password: String? = null) {
         selectedUri = uri
         val details = getUriDetails(context, uri)
         fileName = details.name
@@ -73,13 +74,13 @@ fun SplitView(
         isFileLoading = true
         scope.launch(Dispatchers.IO) {
             val isEncrypted = checkIsEncryptedLocal(context, uri)
-            if (isEncrypted) {
+            if (isEncrypted && password == null) {
                 withContext(Dispatchers.Main) {
                     fileToUnlock = fileName
                     isFileLoading = false
                 }
             } else {
-                val count = getPageCount(context, uri, null)
+                val count = getPageCount(context, uri, password)
                 withContext(Dispatchers.Main) {
                     pageCount = count
                     selectedPages = emptySet()
@@ -92,7 +93,7 @@ fun SplitView(
     }
 
     LaunchedEffect(initialUri) {
-        initialUri?.let { handleFileSelection(it) }
+        initialUri?.let { handleFileSelection(it, initialPassword) }
     }
 
     LaunchedEffect(isFileLoading, currentState) {

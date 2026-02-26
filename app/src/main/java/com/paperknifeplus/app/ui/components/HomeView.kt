@@ -373,7 +373,7 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(115.dp),
+            .aspectRatio(1.2f),
         shape = RoundedCornerShape(24.dp),
         color = containerColor,
         border = BorderStroke(1.dp, borderColor)
@@ -381,7 +381,7 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(

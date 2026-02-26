@@ -138,10 +138,16 @@ fun SettingsView(
                     SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Purge all temporary documents and previews") {
                         val cacheDir = context.cacheDir
                         val extCacheDir = context.externalCacheDir
+                        val previewsDir = cacheDir.resolve("pdf_previews")
                         
                         var success = true
                         try {
-                            if (cacheDir.exists()) cacheDir.deleteRecursively()
+                            if (previewsDir.exists()) previewsDir.deleteRecursively()
+                            if (cacheDir.exists()) {
+                                cacheDir.listFiles()?.forEach { 
+                                    if (it.name != "pdf_previews") it.deleteRecursively() 
+                                }
+                            }
                             if (extCacheDir?.exists() == true) extCacheDir.deleteRecursively()
                         } catch (e: Exception) { success = false }
                         

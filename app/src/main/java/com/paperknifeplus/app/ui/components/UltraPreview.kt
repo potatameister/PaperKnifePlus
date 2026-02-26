@@ -59,7 +59,7 @@ fun UltraPreview(
     pageCount: Int,
     password: String? = null,
     onDismiss: () -> Unit,
-    onOpenInTool: (String) -> Unit
+    onOpenInTool: (String, Uri, String?) -> Unit
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -215,14 +215,19 @@ fun UltraPreview(
                             )
                         }
                         .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
+                            detectTransformGestures { centroid, pan, zoom, _ ->
+                                val oldScale = targetScale
                                 val newScale = (targetScale * zoom).coerceIn(1f, 10f)
-                                targetScale = newScale
-                                if (targetScale > 1f) {
-                                    targetOffset += pan
+                                
+                                if (newScale > 1f) {
+                                    // Calculate the offset to keep the centroid under the fingers
+                                    val scaleChange = newScale / oldScale
+                                    val newOffset = (targetOffset + pan) * scaleChange + centroid * (1f - scaleChange)
+                                    targetOffset = newOffset
                                 } else {
                                     targetOffset = androidx.compose.ui.geometry.Offset.Zero
                                 }
+                                targetScale = newScale
                             }
                         }
                 ) {
@@ -426,7 +431,7 @@ fun UltraPreview(
                     onToolClick = { tool ->
                         scope.launch { sheetState.hide() }.invokeOnCompletion { 
                             showToolPicker = false
-                            onOpenInTool(tool)
+                            onOpenInTool(tool, uri, activePassword)
                         }
                     }
                 )

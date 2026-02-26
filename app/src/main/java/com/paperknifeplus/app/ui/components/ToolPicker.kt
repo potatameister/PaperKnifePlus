@@ -197,9 +197,10 @@ fun ModernToolItem(tool: Tool, isDark: Boolean, modifier: Modifier = Modifier, o
             Column {
                 Text(
                     tool.name, 
-                    fontSize = 11.sp, // REDUCED SLIGHTLY TO PREVENT COMP-RESS
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Black, 
                     color = MaterialTheme.colorScheme.onSurface,
+                    letterSpacing = (-0.2).sp,
                     maxLines = 1
                 )
                 Text(
