@@ -202,7 +202,7 @@ fun UnlockView(
                                 }, 
                                 modifier = Modifier.fillMaxWidth().height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("SAVE UNRESTRICTED PDF", fontWeight = FontWeight.Black, color = Color.White)
                             }

@@ -487,7 +487,7 @@ fun WatermarkView(
                                             },
                                             modifier = Modifier.weight(1f).height(50.dp),
                                             shape = RoundedCornerShape(16.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                                         ) { Text("APPLY", fontSize = 10.sp, fontWeight = FontWeight.Black) }
                                     }
                                 }
@@ -499,7 +499,7 @@ fun WatermarkView(
                                         onClick = { showWatermarkOptions = true },
                                         modifier = Modifier.fillMaxWidth().height(50.dp),
                                         shape = RoundedCornerShape(16.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                                     ) {
                                         Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
                                         Spacer(Modifier.width(8.dp))

@@ -225,7 +225,7 @@ fun RearrangeView(
                                     Button(
                                         onClick = { showMoveToDialog = true },
                                         enabled = selectedPageIndex != null,
-                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Text("MOVE TO...", fontSize = 11.sp, fontWeight = FontWeight.Black)
@@ -253,7 +253,7 @@ fun RearrangeView(
                             Button(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-reordered.pdf") },
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White),
                                 shape = RoundedCornerShape(24.dp)
                             ) {
                                 Text(text = "SAVE NEW ORDER", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)

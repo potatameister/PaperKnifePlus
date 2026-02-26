@@ -191,7 +191,7 @@ fun PdfToTextView(
                             Button(
                                 onClick = { startExtraction() },
                                 modifier = Modifier.fillMaxWidth().height(60.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White),
                                 shape = RoundedCornerShape(20.dp)
                             ) {
                                 Text("EXTRACT TEXT", fontWeight = FontWeight.Black)
@@ -273,7 +273,7 @@ fun PdfToTextView(
                                     .padding(24.dp)
                                     .height(56.dp),
                                 shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("DONE", fontWeight = FontWeight.Black)
                             }

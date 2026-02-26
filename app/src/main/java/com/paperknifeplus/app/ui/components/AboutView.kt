@@ -23,17 +23,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.paperknifeplus.app.R
 import com.paperknifeplus.app.ui.theme.PaperPink
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutView(initialPage: String = "main", onBack: () -> Unit) {
+fun AboutView(initialPage: String = "main", isFromSettings: Boolean = false, onBack: () -> Unit) {
     val context = LocalContext.current
     var currentSubPage by remember { mutableStateOf(initialPage) }
 
@@ -47,7 +50,17 @@ fun AboutView(initialPage: String = "main", onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { if (currentSubPage == "main") onBack() else currentSubPage = "main" },
+                    onClick = { 
+                        if (currentSubPage == "main") {
+                            onBack()
+                        } else {
+                            if (isFromSettings && (currentSubPage == "hall" || currentSubPage == "support")) {
+                                onBack()
+                            } else {
+                                currentSubPage = "main"
+                            }
+                        }
+                    },
                     modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
@@ -66,7 +79,7 @@ fun AboutView(initialPage: String = "main", onBack: () -> Unit) {
                         fontWeight = FontWeight.Black,
                         letterSpacing = (-0.5).sp
                     )
-                    Text("OFFLINE EDITION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                    Text("SECURE PDF ENGINE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                 }
             }
         }
@@ -96,7 +109,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                 Logo(modifier = Modifier.size(64.dp), partColor = PaperPink)
                 Spacer(Modifier.height(16.dp))
                 Text("PaperKnife+", fontSize = 24.sp, fontWeight = FontWeight.Black)
-                Text("OFFLINE ARCHITECTURE", fontSize = 9.sp, color = PaperPink, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                Text("NATIVE PDF WORKSHOP", fontSize = 9.sp, color = PaperPink, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
             }
         }
 
@@ -107,10 +120,10 @@ fun AboutMain(onNavigate: (String) -> Unit) {
             ) {
                 Column(Modifier.padding(20.dp)) {
                     Text("How it works", fontWeight = FontWeight.Black, fontSize = 14.sp)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
                     Text(
-                        "Unlike other PDF tools, PaperKnife+ processes everything on your device. Your documents never touch a server, ensuring 100% privacy and fast speed. No internet required, no data uploaded.",
-                        fontSize = 13.sp, lineHeight = 18.sp, color = Color.Gray
+                        "PaperKnife+ is built on a simple but powerful idea: your documents belong to you, and they should never have to leave your device to be modified.\n\nTraditional PDF tools often require you to upload your files to their servers. This means your private contracts, bank statements, or personal letters are being sent over the internet and processed on a computer you don't control. Even if they promise to delete the data, the risk remains.\n\nWe took a different path. We built a 'Native Engine' that brings the workshop to your phone. When you open a PDF in PaperKnife+, our app reads the file's structure directly from your storage. When you sign a document, merge files, or extract images, all the heavy lifting is done by your phone's processor. It’s like having a professional printing press and a secure vault built right into your pocket.\n\nThis approach doesn't just protect your privacy; it makes the app incredibly fast and reliable. Because there's no uploading or downloading, tools work instantly. You can edit a document on a plane, in a remote area without a signal, or in a high-security environment with zero connectivity. Your data starts on your device and ends on your device—exactly where it belongs.",
+                        fontSize = 13.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -129,13 +142,13 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    SocialIcon(Icons.Filled.Code, "GitHub", Color(0xFF24292E)) {
+                    SocialIcon(painterResource(R.drawable.ic_github), "GitHub", Color(0xFF24292E)) {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/potatameister")))
                     }
-                    SocialIcon(Icons.Filled.Public, "X", Color(0xFF000000)) {
+                    SocialIcon(painterResource(R.drawable.ic_x), "X", Color(0xFF000000)) {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://x.com/potatameister")))
                     }
-                    SocialIcon(Icons.Filled.Forum, "Discord", Color(0xFF5865F2)) {
+                    SocialIcon(painterResource(R.drawable.ic_discord), "Discord", Color(0xFF5865F2)) {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.gg/7538nAWYx")))
                     }
                 }
@@ -151,7 +164,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
         
         item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("VERSION 1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text("OFFLINE VERSION 1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
             }
         }
         
@@ -160,7 +173,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-fun SocialIcon(icon: ImageVector, label: String, color: Color, onClick: () -> Unit) {
+fun SocialIcon(painter: Painter, label: String, color: Color, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onClick() }.padding(4.dp)) {
         Box(
             modifier = Modifier
@@ -169,7 +182,7 @@ fun SocialIcon(icon: ImageVector, label: String, color: Color, onClick: () -> Un
                 .border(1.dp, color.copy(alpha = 0.2f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
+            Icon(painter, null, tint = color, modifier = Modifier.size(24.dp))
         }
         Spacer(Modifier.height(4.dp))
         Text(label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Gray)

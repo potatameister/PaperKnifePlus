@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
                         var previewData by remember { mutableStateOf<Triple<Uri, String, Int>?>(null) }
                         var toolInitialUri by remember { mutableStateOf<Uri?>(null) }
                         var aboutInitialPage by remember { mutableStateOf("main") }
+                        var isAboutFromSettings by remember { mutableStateOf(false) }
                         
                         val mainScreens = listOf("home", "tools", "history", "settings")
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
@@ -134,6 +135,7 @@ class MainActivity : ComponentActivity() {
                                                 toolInitialUri = null
                                                 if (it == "about") {
                                                     aboutInitialPage = "support"
+                                                    isAboutFromSettings = false
                                                     currentTool = "about"
                                                 } else {
                                                     currentTool = it 
@@ -160,6 +162,7 @@ class MainActivity : ComponentActivity() {
                                             },
                                             onNavigateToAbout = { 
                                                 aboutInitialPage = it
+                                                isAboutFromSettings = true
                                                 currentTool = "about" 
                                             }
                                         )
@@ -207,7 +210,7 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                                     when (currentTool) {
-                                        "about" -> AboutView(initialPage = aboutInitialPage, onBack = { currentTool = null })
+                                        "about" -> AboutView(initialPage = aboutInitialPage, isFromSettings = isAboutFromSettings, onBack = { currentTool = null })
                                         "merge" -> MergeView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "split" -> SplitView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "delete" -> DeleteView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
@@ -259,8 +262,6 @@ class MainActivity : ComponentActivity() {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Logo(modifier = Modifier.size(64.dp), partColor = if (isDarkMode) Color.White else Color.Black)
                                     Spacer(Modifier.height(24.dp))
-                                    Text("v1.0", fontSize = 12.sp, color = PaperPink, fontWeight = FontWeight.Black)
-                                    Spacer(Modifier.height(12.dp))
                                     CircularProgressIndicator(color = PaperPink, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                                 }
                             }

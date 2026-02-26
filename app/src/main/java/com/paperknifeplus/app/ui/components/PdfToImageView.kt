@@ -289,7 +289,7 @@ fun PdfToImageView(
                             onClick = { saveLauncher.launch(fileName.replace(".pdf", ".zip")) },
                             modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
                             enabled = selectedPages.isNotEmpty(),
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White),
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Text("Convert ${selectedPages.size} Pages to $format", fontWeight = FontWeight.Black)

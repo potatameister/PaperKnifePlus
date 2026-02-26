@@ -156,7 +156,7 @@ fun CompareView(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp).height(60.dp),
                         enabled = fileA != null && fileB != null,
                         shape = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                     ) {
                         Text("START COMPARISON", fontWeight = FontWeight.Black)
                     }

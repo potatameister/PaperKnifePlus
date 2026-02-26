@@ -271,7 +271,7 @@ fun ImageToPdfView(
                         Button(
                             onClick = { saveLauncher.launch("images.pdf") },
                             modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White),
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Text("Create PDF from ${selectedUris.size} Images", fontWeight = FontWeight.Black)

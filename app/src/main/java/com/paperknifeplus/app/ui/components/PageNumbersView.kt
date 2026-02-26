@@ -164,7 +164,7 @@ fun PageNumbersView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Page Numbers", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("PIXEL-PERFECT PAGINATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("CUSTOM PAGINATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -255,7 +255,7 @@ fun PageNumbersView(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-numbered.pdf") },
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(60.dp),
                                 shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("SAVE DOCUMENT", fontWeight = FontWeight.Black)
                             }

@@ -323,7 +323,7 @@ fun DeleteView(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp), 
                                 enabled = pagesToDeleteSet.isNotEmpty() && pagesToDeleteSet.size < pageCount,
                                 shape = RoundedCornerShape(20.dp), 
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("DELETE ${pagesToDeleteSet.size} PAGES", fontWeight = FontWeight.Black, color = Color.White)
                             }

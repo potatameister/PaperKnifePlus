@@ -135,24 +135,33 @@ fun SettingsView(
                     SettingsItem(Icons.Outlined.DeleteSweep, "Clear History", "Wipe all session history now") {
                         showClearConfirm = true
                     }
-                    SettingsItem(Icons.Outlined.DeleteForever, "Clear Image Cache", "Purge temporary high-res previews") {
-                        val cacheDir = context.cacheDir.resolve("pdf_previews")
-                        if (cacheDir.exists()) cacheDir.deleteRecursively()
-                        Toast.makeText(context, "Cache cleared", Toast.LENGTH_SHORT).show()
+                    SettingsItem(Icons.Outlined.DeleteForever, "Clear Cache", "Purge all temporary documents and previews") {
+                        val cacheDir = context.cacheDir
+                        val extCacheDir = context.externalCacheDir
+                        
+                        var success = true
+                        try {
+                            if (cacheDir.exists()) cacheDir.deleteRecursively()
+                            if (extCacheDir?.exists() == true) extCacheDir.deleteRecursively()
+                        } catch (e: Exception) { success = false }
+                        
+                        if (success) Toast.makeText(context, "Cache wiped successfully", Toast.LENGTH_SHORT).show()
+                        else Toast.makeText(context, "Partial cache clear", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
 
             item {
-                SettingsGroup("ABOUT") {
-                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Credits, License, and Privacy") { onNavigateToAbout("main") }
+                SettingsGroup("COMMUNITY") {
+                    SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Our mission and how it works") { onNavigateToAbout("main") }
                     SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help reach the Play Store", accentColor = Color(0xFFF43F5E)) { onNavigateToAbout("support") }
+                    SettingsItem(Icons.Outlined.StarOutline, "Hall of Fame", "The legends who made this possible", accentColor = Color(0xFFFFD700)) { onNavigateToAbout("hall") }
                 }
             }
 
             item {
                 Column(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("EDITION v1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Text("OFFLINE VERSION 1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                 }
             }
         }
@@ -198,11 +207,11 @@ fun SettingsView(
                         showClearConfirm = false
                         Toast.makeText(context, "History wiped", Toast.LENGTH_SHORT).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.2f), contentColor = MaterialTheme.colorScheme.onSurface)
                 ) { Text("WIPE EVERYTHING", fontWeight = FontWeight.Black) }
             },
             dismissButton = {
-                TextButton(onClick = { showClearConfirm = false }) { Text("CANCEL", color = Color.Gray) }
+                TextButton(onClick = { showClearConfirm = false }) { Text("CANCEL", color = PaperPink) }
             }
         )
     }

@@ -216,7 +216,7 @@ fun PdfToZipView(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-pages.zip") }, 
                                 modifier = Modifier.fillMaxWidth().height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("CONVERT & SAVE ZIP", fontWeight = FontWeight.Black, color = Color.White)
                             }

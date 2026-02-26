@@ -270,7 +270,7 @@ fun ExtractImagesView(
                                 }, 
                                 modifier = Modifier.fillMaxWidth().height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("EXTRACT IMAGES (ZIP)", fontWeight = FontWeight.Black, color = Color.White)
                             }

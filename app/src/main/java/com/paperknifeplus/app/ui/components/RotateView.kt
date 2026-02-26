@@ -250,7 +250,7 @@ fun RotateView(
                                 onClick = { saveLauncher.launch(fileName.replace(".pdf", "", true) + "-rotated.pdf") }, 
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).height(60.dp), 
                                 shape = RoundedCornerShape(20.dp), 
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("SAVE ROTATED PDF", fontWeight = FontWeight.Black, color = Color.White)
                             }

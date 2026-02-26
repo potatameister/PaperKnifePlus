@@ -251,7 +251,7 @@ fun BookmarksView(
                         Column(Modifier.fillMaxSize()) {
                             Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("${bookmarks.size} BOOKMARKS", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
-                                Button(onClick = { showAddDialog = true }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) {
+                                Button(onClick = { showAddDialog = true }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)) {
                                     Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(8.dp))
                                     Text("ADD", fontSize = 11.sp, fontWeight = FontWeight.Black)
@@ -291,7 +291,7 @@ fun BookmarksView(
                                     onClick = { saveLauncher.launch(fileName.replace(".pdf", "") + "-nav.pdf") },
                                     modifier = Modifier.weight(1f).height(60.dp),
                                     shape = RoundedCornerShape(20.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                                 ) {
                                     Text("SAVE PDF", fontWeight = FontWeight.Black)
                                 }
@@ -382,7 +382,7 @@ fun BookmarksView(
                         bookmarks = bookmarks + Bookmark(title, p)
                         showAddDialog = false
                     }
-                }, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("ADD") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)) { Text("ADD") }
             }
         )
     }

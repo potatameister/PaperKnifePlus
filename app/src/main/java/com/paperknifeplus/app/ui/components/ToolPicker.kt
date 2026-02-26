@@ -30,38 +30,45 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
     
     val allTools = remember {
         listOf(
-            Tool("merge", "Merge", "Join PDFs", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("split", "Split", "Extract pages", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("delete", "Delete", "Remove pages", Icons.Outlined.Delete, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rearrange", "Rearrange", "Sort pages", Icons.Outlined.SwapVert, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rotate", "Rotate", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("sign", "Sign", "Add signature", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("watermark", "Watermark", "Add overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("page-numbers", "Numbers", "Add pagination", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("merge", "Merge", "Join PDFs", "Join Files", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("split", "Split", "Extract pages", "Extract Pages", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("delete", "Delete", "Remove pages", "Wipe Pages", Icons.Outlined.Delete, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("rearrange", "Rearrange", "Sort pages", "Sort Order", Icons.Outlined.SwapVert, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("rotate", "Rotate", "Fix orientation", "Fix Angle", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("sign", "Sign", "Add signature", "Add Signature", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("watermark", "Watermark", "Add overlay", "Custom Overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool("page-numbers", "Numbers", "Add pagination", "Add Numbers", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
             
-            Tool("compress", "Compress", "Small size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("grayscale", "Grayscale", "Gray tones", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("repair", "Repair", "Fix corruption", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("compare", "Compare", "Visual diff", Icons.Outlined.Compare, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("compress", "Compress", "Small size", "Reduce Size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("grayscale", "Grayscale", "Gray tones", "Black & White", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("repair", "Repair", "Fix corruption", "Fix Defects", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool("compare", "Compare", "Visual diff", "Side-by-Side", Icons.Outlined.Compare, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
             
-            Tool("protect", "Lock", "Password", Icons.Outlined.Lock, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-            Tool("unlock", "Unlock", "Remove pass", Icons.Outlined.LockOpen, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-            Tool("metadata", "Metadata", "Edit props", Icons.Outlined.Fingerprint, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
+            Tool("protect", "Lock", "Password", "Set Pass", Icons.Outlined.Lock, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
+            Tool("unlock", "Unlock", "Remove pass", "Remove Pass", Icons.Outlined.LockOpen, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
+            Tool("metadata", "Metadata", "Edit props", "Edit Metadata", Icons.Outlined.Fingerprint, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
             
-            Tool("pdf2img", "PDF to Image", "High-res export", Icons.Outlined.BurstMode, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
-            Tool("img2pdf", "Image to PDF", "Build from photos", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
-            Tool("extract-images", "Extract Image", "Strip assets", Icons.Outlined.Collections, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
-            Tool("pdf2text", "PDF to Text", "Extract text", Icons.AutoMirrored.Outlined.Notes, "Convert", Color(0xFF10B981), Color(0xFFECFDF5))
+            Tool("pdf2img", "PDF to Img", "High-res export", "Export Assets", Icons.Outlined.BurstMode, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
+            Tool("img2pdf", "Img to PDF", "Build from photos", "Build PDF", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
+            Tool("extract-images", "Extract", "Strip assets", "Strip Raw", Icons.Outlined.Collections, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
+            Tool("pdf2text", "PDF to Text", "Extract text", "Plain Text", Icons.AutoMirrored.Outlined.Notes, "Convert", Color(0xFF10B981), Color(0xFFECFDF5))
         )
     }
 
     val essentialIds = listOf("merge", "split", "compress", "sign", "protect", "pdf2img")
     val categories = listOf("Edit", "Optimize", "Secure", "Convert")
+    val catDescriptions = mapOf(
+        "Edit" to "Organize & Modify",
+        "Optimize" to "Shrink & Repair",
+        "Secure" to "Protect & Unlock",
+        "Convert" to "Export Assets"
+    )
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
             .animateContentSize()
     ) {
@@ -127,14 +134,24 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
                         val catColor = catTools.firstOrNull()?.color ?: PaperPink
                         
                         Column {
-                            Text(
-                                category.uppercase(),
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Black,
-                                color = catColor,
-                                letterSpacing = 1.5.sp,
-                                modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    category.uppercase(),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = catColor,
+                                    letterSpacing = 1.5.sp,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    catDescriptions[category] ?: "",
+                                    fontSize = 8.sp,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
                             
                             catTools.chunked(2).forEach { rowTools ->
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -150,6 +167,8 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
                 }
             }
         }
+        // FIXED: Navbar bleed prevention
+        Spacer(Modifier.height(8.dp))
     }
 }
 
@@ -157,13 +176,13 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
 fun ModernToolItem(tool: Tool, isDark: Boolean, modifier: Modifier = Modifier, onClick: (String) -> Unit) {
     Surface(
         onClick = { onClick(tool.id) },
-        modifier = modifier.height(64.dp),
+        modifier = modifier.height(72.dp), // INCREASED HEIGHT FOR SUBTITLE
         shape = RoundedCornerShape(16.dp),
         color = if (isDark) tool.color.copy(alpha = 0.08f) else tool.bgColor.copy(alpha = 0.5f),
         border = BorderStroke(1.dp, tool.color.copy(alpha = 0.15f))
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = 10.dp), // SLIGHTLY REDUCED PADDING
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -174,10 +193,23 @@ fun ModernToolItem(tool: Tool, isDark: Boolean, modifier: Modifier = Modifier, o
             ) {
                 Icon(tool.icon ?: Icons.Filled.Build, null, modifier = Modifier.size(18.dp), tint = tool.color)
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(10.dp))
             Column {
-                Text(tool.name, fontSize = 12.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
-                Text(tool.category.uppercase(), fontSize = 6.sp, fontWeight = FontWeight.Bold, color = Color.Gray, letterSpacing = 0.5.sp)
+                Text(
+                    tool.name, 
+                    fontSize = 11.sp, // REDUCED SLIGHTLY TO PREVENT COMP-RESS
+                    fontWeight = FontWeight.Black, 
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                Text(
+                    tool.subtitle.uppercase(), 
+                    fontSize = 6.sp, 
+                    fontWeight = FontWeight.Bold, 
+                    color = Color.Gray, 
+                    letterSpacing = 0.5.sp,
+                    maxLines = 1
+                )
             }
         }
     }

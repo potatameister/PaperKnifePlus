@@ -107,7 +107,7 @@ fun LockedFilePrompt(
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                    colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 3.dp)

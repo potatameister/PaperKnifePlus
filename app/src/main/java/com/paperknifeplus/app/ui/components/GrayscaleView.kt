@@ -225,7 +225,7 @@ fun GrayscaleView(
                                 },
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(60.dp),
                                 shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("CONVERT & SAVE PDF", fontWeight = FontWeight.Black)
                             }
