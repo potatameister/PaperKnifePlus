@@ -37,33 +37,33 @@ fun ToolsView(onToolClick: (String) -> Unit) {
     val allTools = remember {
         listOf(
             // EDIT - Rose
-            Tool("merge", "Merge", "Combine PDFs", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("split", "Split", "Extract pages", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("delete", "Delete", "Remove pages", Icons.Outlined.Delete, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rearrange", "Rearrange", "Sort pages", Icons.Outlined.SwapVert, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rotate", "Rotate", "Fix orientation", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("sign", "Sign", "Add signature", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("watermark", "Watermark", "Add overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("page-numbers", "Numbers", "Add pagination", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("bookmarks", "Bookmarks", "Edit bookmarks", Icons.Outlined.BookmarkBorder, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
+            Tool(id = "merge", name = "Merge", description = "Combine PDFs", subtitle = "Join Files", icon = Icons.Outlined.Layers, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "split", name = "Split", description = "Extract pages", subtitle = "Extract Pages", icon = Icons.Outlined.ContentCut, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "delete", name = "Delete", description = "Remove pages", subtitle = "Wipe Pages", icon = Icons.Outlined.Delete, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "rearrange", name = "Rearrange", description = "Sort pages", subtitle = "Sort Order", icon = Icons.Outlined.SwapVert, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "rotate", name = "Rotate", description = "Fix orientation", subtitle = "Fix Angle", icon = Icons.Outlined.RotateRight, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "sign", name = "Sign", description = "Add signature", subtitle = "Add Signature", icon = Icons.Outlined.Draw, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "watermark", name = "Watermark", description = "Add overlay", subtitle = "Custom Overlay", icon = Icons.Outlined.TextFields, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "page-numbers", name = "Numbers", description = "Add pagination", subtitle = "Add Numbers", icon = Icons.Outlined.FormatListNumbered, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "bookmarks", name = "Bookmarks", description = "Edit bookmarks", subtitle = "Nav Anchors", icon = Icons.Outlined.BookmarkBorder, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
             
             // OPTIMIZE - Amber
-            Tool("compress", "Compress", "Small size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("grayscale", "Grayscale", "Gray tones", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("repair", "Repair", "Fix corruption", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("compare", "Compare", "Visual diff", Icons.Outlined.Compare, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
+            Tool(id = "compress", name = "Compress", description = "Small size", subtitle = "Reduce Size", icon = Icons.Outlined.Bolt, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
+            Tool(id = "grayscale", name = "Grayscale", description = "Gray tones", subtitle = "Black & White", icon = Icons.Outlined.Palette, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
+            Tool(id = "repair", name = "Repair", description = "Fix corruption", subtitle = "Fix Defects", icon = Icons.Outlined.Build, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
+            Tool(id = "compare", name = "Compare", description = "Visual diff", subtitle = "Side-by-Side", icon = Icons.Outlined.Compare, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
             
             // SECURE - Indigo
-            Tool("protect", "Lock", "Password", Icons.Outlined.Lock, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-            Tool("unlock", "Unlock", "Remove pass", Icons.Outlined.LockOpen, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
-            Tool("metadata", "Metadata", "Edit props", Icons.Outlined.Fingerprint, "Secure", Color(0xFF6366F1), Color(0xFFEEF2FF)),
+            Tool(id = "protect", name = "Lock", description = "Password", subtitle = "Set Pass", icon = Icons.Outlined.Lock, category = "Secure", color = Color(0xFF6366F1), bgColor = Color(0xFFEEF2FF)),
+            Tool(id = "unlock", name = "Unlock", description = "Remove pass", subtitle = "Remove Pass", icon = Icons.Outlined.LockOpen, category = "Secure", color = Color(0xFF6366F1), bgColor = Color(0xFFEEF2FF)),
+            Tool(id = "metadata", name = "Metadata", description = "Edit props", subtitle = "Edit Info", icon = Icons.Outlined.Fingerprint, category = "Secure", color = Color(0xFF6366F1), bgColor = Color(0xFFEEF2FF)),
             
             // CONVERT - Teal
-            Tool("pdf2img", "PDF to Image", "High-res export", Icons.Outlined.BurstMode, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-            Tool("img2pdf", "Image to PDF", "Build from photos", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-            Tool("pdf2zip", "PDF to ZIP", "Archive for sharing", Icons.Outlined.FolderZip, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-            Tool("extract-images", "Extract", "Save page assets", Icons.Outlined.Collections, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA)),
-            Tool("pdf2text", "PDF to Text", "Extract plain text", Icons.Outlined.Article, "Convert", Color(0xFF14B8A6), Color(0xFFF0FDFA))
+            Tool(id = "pdf2img", name = "PDF to Img", description = "High-res export", subtitle = "Export Frames", icon = Icons.Outlined.BurstMode, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA)),
+            Tool(id = "img2pdf", name = "Img to PDF", description = "Build from photos", subtitle = "Build PDF", icon = Icons.Outlined.PictureAsPdf, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA)),
+            Tool(id = "pdf2zip", name = "PDF to ZIP", description = "Archive docs", subtitle = "Zip Pages", icon = Icons.Outlined.FolderZip, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA)),
+            Tool(id = "extract-images", name = "Extract", description = "Save assets", subtitle = "Strip Raw", icon = Icons.Outlined.Collections, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA)),
+            Tool(id = "pdf2text", name = "PDF to Text", description = "Extract text", subtitle = "Plain Text", icon = Icons.Outlined.Article, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA))
         )
     }
 

@@ -64,10 +64,10 @@ fun HomeView(
 
     val coreEngines = remember {
         listOf(
-            Tool("merge", "Merge", "COMBINE", Icons.Filled.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("compress", "Compress", "OPTIMIZE", Icons.Filled.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("unlock", "Unlock", "REOVE LOCK", Icons.Filled.LockOpen, "Security", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-            Tool("pdf_text", "PDF to Text", "EXTRACT", Icons.AutoMirrored.Filled.Notes, "Convert", Color(0xFF10B981), Color(0xFFECFDF5))
+            Tool(id = "merge", name = "Merge", description = "COMBINE", subtitle = "Join Files", icon = Icons.Filled.Layers, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+            Tool(id = "compress", name = "Compress", description = "OPTIMIZE", subtitle = "Reduce Size", icon = Icons.Filled.Bolt, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
+            Tool(id = "unlock", name = "Unlock", description = "REOVE LOCK", subtitle = "Remove Pass", icon = Icons.Filled.LockOpen, category = "Security", color = Color(0xFF8B5CF6), bgColor = Color(0xFFF5F3FF)),
+            Tool(id = "pdf_text", name = "PDF to Text", description = "EXTRACT", subtitle = "Plain Text", icon = Icons.AutoMirrored.Filled.Notes, category = "Convert", color = Color(0xFF10B981), bgColor = Color(0xFFECFDF5))
         )
     }
 
