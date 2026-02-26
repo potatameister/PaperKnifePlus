@@ -120,13 +120,15 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
             Spacer(Modifier.height(24.dp))
         } else {
             // Mode 2: Full Categorized List
+            val listState = rememberLazyListState()
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 500.dp)
                     .padding(horizontal = 20.dp),
                 contentPadding = PaddingValues(bottom = 48.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 categories.forEach { category ->
                     item {
@@ -176,13 +178,13 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
 fun ModernToolItem(tool: Tool, isDark: Boolean, modifier: Modifier = Modifier, onClick: (String) -> Unit) {
     Surface(
         onClick = { onClick(tool.id) },
-        modifier = modifier.height(72.dp), // INCREASED HEIGHT FOR SUBTITLE
+        modifier = modifier.height(72.dp),
         shape = RoundedCornerShape(16.dp),
         color = if (isDark) tool.color.copy(alpha = 0.08f) else tool.bgColor.copy(alpha = 0.5f),
         border = BorderStroke(1.dp, tool.color.copy(alpha = 0.15f))
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp), // SLIGHTLY REDUCED PADDING
+            modifier = Modifier.padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -193,11 +195,11 @@ fun ModernToolItem(tool: Tool, isDark: Boolean, modifier: Modifier = Modifier, o
             ) {
                 Icon(tool.icon ?: Icons.Filled.Build, null, modifier = Modifier.size(18.dp), tint = tool.color)
             }
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(8.dp))
             Column {
                 Text(
                     tool.name, 
-                    fontSize = 10.5.sp,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.Black, 
                     color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.2).sp,

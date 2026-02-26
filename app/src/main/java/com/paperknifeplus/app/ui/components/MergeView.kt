@@ -67,6 +67,7 @@ data class MergeFile(
 @Composable
 fun MergeView(
     initialUri: Uri? = null,
+    initialPassword: String? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -88,7 +89,17 @@ fun MergeView(
 
     val imageLoader = coil.compose.LocalImageLoader.current
 
+    LaunchedEffect(initialUri, initialPassword) {
+        if (initialUri != null) {
+            handleUrisWithPassword(listOf(initialUri), initialPassword)
+        }
+    }
+
     fun handleUris(uris: List<Uri>) {
+        handleUrisWithPassword(uris, null)
+    }
+
+    fun handleUrisWithPassword(uris: List<Uri>, password: String?) {
         if (uris.isNotEmpty()) {
             isFileLoading = true
             scope.launch {
@@ -97,7 +108,7 @@ fun MergeView(
                     val details = getUriDetails(context, uri)
                     val isLocked = checkIsEncryptedLocal(context, uri)
                     val count = if (!isLocked) getPageCount(context, uri, null) else 0
-                    MergeFile(uri, details.name, details.size, isLocked, pageCount = count)
+                    MergeFile(uri, details.name, details.size, isLocked, password = password, pageCount = count)
                 }
                 if (newFiles.isNotEmpty()) {
                     selectedFiles = selectedFiles + newFiles
@@ -106,10 +117,6 @@ fun MergeView(
                 isFileLoading = false
             }
         }
-    }
-
-    LaunchedEffect(initialUri) {
-        initialUri?.let { handleUris(listOf(it)) }
     }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->

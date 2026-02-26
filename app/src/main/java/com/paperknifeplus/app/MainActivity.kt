@@ -216,7 +216,7 @@ class MainActivity : ComponentActivity() {
                                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                                     when (currentTool) {
                                         "about" -> AboutView(initialPage = aboutInitialPage, isFromSettings = isAboutFromSettings, onBack = { currentTool = null })
-                                        "merge" -> MergeView(initialUri = toolInitialUri, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
+                                        "merge" -> MergeView(initialUri = toolInitialUri, initialPassword = toolInitialPassword, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "split" -> SplitView(initialUri = toolInitialUri, initialPassword = toolInitialPassword, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "delete" -> DeleteView(onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
                                         "compress" -> CompressView(initialUri = toolInitialUri, initialPassword = toolInitialPassword, onBack = { currentTool = null }, onOpenPreview = { uri, name, count -> previewData = Triple(uri, name, count); currentTool = "ultra_preview" })
