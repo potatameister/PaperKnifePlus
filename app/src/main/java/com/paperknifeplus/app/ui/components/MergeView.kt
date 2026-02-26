@@ -252,10 +252,6 @@ fun MergeView(
                                         targetValue = if (isDragging) 12.dp else 0.dp,
                                         label = "elevation"
                                     )
-                                    val rotation by animateFloatAsState(
-                                        targetValue = if (isDragging) -2f else 0f,
-                                        label = "rotation"
-                                    )
 
                                     Box(
                                         modifier = Modifier
@@ -263,9 +259,8 @@ fun MergeView(
                                             .graphicsLayer {
                                                 if (isDragging) {
                                                     translationY = dragOffsetY
-                                                    scaleX = 1.05f
-                                                    scaleY = 1.05f
-                                                    rotationZ = rotation
+                                                    scaleX = 1.03f
+                                                    scaleY = 1.03f
                                                 }
                                             }
                                             .animateItemPlacement()
@@ -293,12 +288,15 @@ fun MergeView(
                                                         if (targetItem != null && targetItem.index != lastReorderIndex) {
                                                             if (selectedFiles.isNotEmpty() && lastReorderIndex in selectedFiles.indices) {
                                                                 val currentList = selectedFiles.toMutableList()
-                                                                val safeIndex = lastReorderIndex.coerceIn(0, currentList.size - 1)
-                                                                val item = currentList.removeAt(safeIndex)
-                                                                val targetIndex = targetItem.index.coerceIn(0, currentList.size)
-                                                                currentList.add(targetIndex, item)
+                                                                val item = currentList.removeAt(lastReorderIndex)
+                                                                val newPosition = if (targetItem.index > lastReorderIndex) {
+                                                                    (targetItem.index).coerceIn(0, currentList.size)
+                                                                } else {
+                                                                    targetItem.index.coerceIn(0, currentList.size)
+                                                                }
+                                                                currentList.add(newPosition, item)
                                                                 selectedFiles = currentList
-                                                                lastReorderIndex = targetIndex
+                                                                lastReorderIndex = newPosition
                                                                 dragOffsetY -= (targetItem.offset - itemInfo.offset).toFloat()
                                                             }
                                                         }

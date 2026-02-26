@@ -120,6 +120,11 @@ fun HomeView(
             item(span = { GridItemSpan(2) }, key = "footer") {
                 Spacer(modifier = Modifier.height(12.dp))
                 
+                val isDark = MaterialTheme.colorScheme.background == Color.Black
+                val coffeeBg = if (isDark) Color(0xFF3D3520) else Color(0xFFFFF9C4)
+                val coffeeBorder = if (isDark) Color(0xFF5D5020) else Color(0xFFFFEB3B)
+                val coffeeIconBg = if (isDark) Color(0xFF5D5020) else Color(0xFFFFEB3B)
+                
                 // Support Buy Me a Coffee style Card
                 Surface(
                     onClick = { 
@@ -130,18 +135,18 @@ fun HomeView(
                         .fillMaxWidth()
                         .padding(bottom = 20.dp),
                     shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFFFF9C4),
-                    border = BorderStroke(1.dp, Color(0xFFFFEB3B))
+                    color = coffeeBg,
+                    border = BorderStroke(1.dp, coffeeBorder)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier = Modifier.size(36.dp).background(Color(0xFFFFEB3B), CircleShape),
+                            modifier = Modifier.size(36.dp).background(coffeeIconBg, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Filled.Coffee, null, tint = Color(0xFF795548), modifier = Modifier.size(20.dp))
+                            Icon(Icons.Filled.Coffee, null, tint = if (isDark) Color(0xFFFFE082) else Color(0xFF795548), modifier = Modifier.size(20.dp))
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
@@ -149,7 +154,7 @@ fun HomeView(
                                 "Buy me a coffee",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = if (isDark) Color(0xFFFFE082) else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 "Help PaperKnife be released on Play Store!",

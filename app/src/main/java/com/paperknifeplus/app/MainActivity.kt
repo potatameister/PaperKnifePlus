@@ -286,11 +286,12 @@ fun FixedTitanBottomBar(
     onNavigate: (String) -> Unit,
     onPlusClick: () -> Unit
 ) {
-    // FIXED: Navigation bar layout adjusted to be flush with bottom
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.98f))
+            .navigationBarsPadding()
+            .imePadding()
             .height(84.dp),
         contentAlignment = Alignment.BottomCenter
     ) {

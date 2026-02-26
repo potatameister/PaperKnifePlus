@@ -203,11 +203,6 @@ fun UltraPreview(
             if (isInitializing) {
                 LoadingStateView(PaperPink, false, "Loading Document View...")
             } else if (fileToUnlock == null) {
-                val firstVisibleIndex by remember { 
-                    derivedStateOf { listState.firstVisibleItemIndex } 
-                }
-                val scrollOffset = firstVisibleIndex * 800f
-                
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -219,9 +214,8 @@ fun UltraPreview(
                                         targetOffset = androidx.compose.ui.geometry.Offset.Zero
                                     } else {
                                         targetScale = 3f
-                                        val adjustedTapY = tapOffset.y + scrollOffset
                                         val x = (size.width / 2 - tapOffset.x) * (3f - 1f)
-                                        val y = (size.height / 2 - adjustedTapY) * (3f - 1f)
+                                        val y = (size.height / 2 - tapOffset.y) * (3f - 1f)
                                         targetOffset = androidx.compose.ui.geometry.Offset(x, y)
                                     }
                                 }
@@ -233,13 +227,8 @@ fun UltraPreview(
                                 val newScale = (targetScale * zoom).coerceIn(1f, 10f)
                                 
                                 if (newScale > 1f) {
-                                    // Adjust centroid for current scroll position
-                                    val adjustedCentroid = androidx.compose.ui.geometry.Offset(
-                                        centroid.x,
-                                        centroid.y + scrollOffset
-                                    )
                                     val scaleChange = newScale / oldScale
-                                    val newOffset = (targetOffset + pan) * scaleChange + adjustedCentroid * (1f - scaleChange)
+                                    val newOffset = (targetOffset + pan) * scaleChange + centroid * (1f - scaleChange)
                                     targetOffset = newOffset
                                 } else {
                                     targetScale = 1f
