@@ -69,9 +69,8 @@ class MainActivity : ComponentActivity() {
             .build()
 
         // Handle incoming PDF from external apps (e.g., WhatsApp file share)
-        var incomingPdfUri by mutableStateOf<Uri?>(null)
-        var incomingPdfName by mutableStateOf<String>("")
-        var incomingPdfPageCount by mutableIntStateOf(0)
+        var incomingPdfUri: Uri? = null
+        var incomingPdfName: String = ""
 
         intent?.data?.let { uri ->
             if (intent?.type == "application/pdf" || uri.toString().lowercase().endsWith(".pdf")) {
@@ -88,18 +87,16 @@ class MainActivity : ComponentActivity() {
                 if (incomingPdfName.isEmpty()) {
                     incomingPdfName = uri.lastPathSegment ?: "Document"
                 }
-            }
-        }
 
-        // Grant persistent URI permission if needed
-        incomingPdfUri?.let { uri ->
-            try {
-                contentResolver.takePersistableUriPermission(
-                    uri,
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (e: SecurityException) {
-                // Permission already taken or not available
+                // Grant persistent URI permission if needed
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (e: SecurityException) {
+                    // Permission already taken or not available
+                }
             }
         }
 
