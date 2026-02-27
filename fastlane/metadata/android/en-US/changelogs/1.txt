@@ -1,0 +1,7 @@
+PaperKnife+ first release!
+- PDF Merge & Split
+- PDF Password protection
+- Image to PDF conversion
+- PDF to Images export (ZIP)
+- Page rotation and reordering
+- 100% offline, privacy-first
