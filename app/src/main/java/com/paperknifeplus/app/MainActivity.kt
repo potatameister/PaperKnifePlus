@@ -161,7 +161,6 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(MaterialTheme.colorScheme.background)
-                                .navigationBarsPadding()
                         ) {
                             Column(modifier = Modifier.fillMaxSize()) {
                                 androidx.compose.foundation.pager.HorizontalPager(
@@ -183,6 +182,8 @@ class MainActivity : ComponentActivity() {
                                                     aboutInitialPage = "support"
                                                     isAboutFromSettings = false
                                                     currentTool = "about"
+                                                } else if (it == "tools") {
+                                                    scope.launch { pagerState.animateScrollToPage(1) }
                                                 } else {
                                                     currentTool = it 
                                                 }
