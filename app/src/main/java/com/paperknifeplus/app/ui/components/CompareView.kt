@@ -200,18 +200,6 @@ fun CompareView(
             }
         }
     }
-}
-
-@Composable
-fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: String, passB: String) {
-    val context = LocalContext.current
-    var pageCountA by remember { mutableIntStateOf(0) }
-    var pageCountB by remember { mutableIntStateOf(0) }
-    val imageLoader = coil.compose.LocalImageLoader.current
-    
-    val listState = rememberLazyListState()
-    var lightboxData by remember { mutableStateOf<Triple<Uri, Int, Int>?>(null) }
-    var lightboxPass by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(initialUri) {
         if (initialUri != null) {
@@ -230,7 +218,19 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: 
             }
         }
     }
+}
+
+@Composable
+fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: String, passB: String) {
+    val context = LocalContext.current
+    var pageCountA by remember { mutableIntStateOf(0) }
+    var pageCountB by remember { mutableIntStateOf(0) }
+    val imageLoader = coil.compose.LocalImageLoader.current
     
+    val listState = rememberLazyListState()
+    var lightboxData by remember { mutableStateOf<Triple<Uri, Int, Int>?>(null) }
+    var lightboxPass by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(uriA, uriB) {
         pageCountA = getPageCount(context, uriA, passA.ifEmpty { null })
         pageCountB = getPageCount(context, uriB, passB.ifEmpty { null })
