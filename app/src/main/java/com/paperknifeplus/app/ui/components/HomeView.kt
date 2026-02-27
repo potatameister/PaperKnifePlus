@@ -436,17 +436,6 @@ fun MoreToolsCard(onClick: () -> Unit) {
         color = PaperPink
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Icon(
-                imageVector = Icons.Filled.GridView,
-                null,
-                modifier = Modifier
-                    .size(100.dp)
-                    .align(Alignment.CenterEnd)
-                    .offset(x = 25.dp, y = 10.dp)
-                    .alpha(0.1f),
-                tint = Color.White
-            )
-
             Row(
                 modifier = Modifier
                     .fillMaxSize()

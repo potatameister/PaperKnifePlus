@@ -290,7 +290,7 @@ fun FixedTitanBottomBar(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.98f))
-            .imePadding()
+            .navigationBarsWithImePadding()
             .height(84.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
