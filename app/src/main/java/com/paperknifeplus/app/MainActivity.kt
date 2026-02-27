@@ -106,6 +106,46 @@ class MainActivity : ComponentActivity() {
                         val mainScreens = listOf("home", "tools", "history", "settings")
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
 
+                        // Handle incoming PDF from external apps (e.g., WhatsApp file share)
+                        val incomingPdfData = remember(intent) {
+                            val uri = intent?.data
+                            if (uri != null && (intent?.type == "application/pdf" || uri.toString().lowercase().endsWith(".pdf"))) {
+                                // Grant persistent URI permission
+                                try {
+                                    contentResolver.takePersistableUriPermission(
+                                        uri,
+                                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    )
+                                } catch (e: SecurityException) {
+                                    // Permission already taken or not available
+                                }
+                                // Get file name
+                                var fileName = ""
+                                contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                                    if (cursor.moveToFirst()) {
+                                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                                        if (nameIndex >= 0) {
+                                            fileName = cursor.getString(nameIndex) ?: "Document"
+                                        }
+                                    }
+                                }
+                                if (fileName.isEmpty()) {
+                                    fileName = uri.lastPathSegment ?: "Document"
+                                }
+                                Pair(uri, fileName)
+                            } else {
+                                null
+                            }
+                        }
+
+                        // Navigate to UltraPreview when incoming PDF is detected
+                        LaunchedEffect(incomingPdfData) {
+                            if (incomingPdfData != null && currentTool == null) {
+                                previewData = Triple(incomingPdfData.first, incomingPdfData.second, 0)
+                                currentTool = "ultra_preview"
+                            }
+                        }
+
                         BackHandler(enabled = currentTool != null || pagerState.currentPage != 0 || showToolPicker) {
                             if (showToolPicker) {
                                 scope.launch { sheetState.hide() }.invokeOnCompletion { showToolPicker = false }
