@@ -29,13 +29,9 @@ jobs:
         gradle-version: 8.7
         cache-disabled: true
 
-    - name: Build Release APK
+    - name: Build Release APK and AAB
       run: |
-        gradle clean assembleRelease --stacktrace --no-daemon --console=plain
-
-    - name: Build Release AAB
-      run: |
-        gradle clean bundleRelease --stacktrace --no-daemon --console=plain
+        gradle clean assembleRelease bundleRelease --stacktrace --no-daemon --console=plain
 
     - name: Sign and Zipalign
       run: |
