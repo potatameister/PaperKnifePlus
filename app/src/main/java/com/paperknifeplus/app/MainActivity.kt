@@ -156,8 +156,13 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // ROOT CONTAINER: Removed duplicate navigation padding causing the black gap
-                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                        // ROOT CONTAINER
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                                .navigationBarsPadding()
+                        ) {
                             Column(modifier = Modifier.fillMaxSize()) {
                                 androidx.compose.foundation.pager.HorizontalPager(
                                     state = pagerState,
