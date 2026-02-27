@@ -34,18 +34,25 @@ A privacy-first PDF utility for Android. Works 100% offline - no internet, no tr
 - Convert Images to PDF
 - Export PDF pages as Images (ZIP)
 - Rotate and rearrange pages
+- And more!
 
 All processing happens on your device. Your files never leave your phone.
+
+---
+
+## Download
+
+Get the latest APK: [PaperKnife+ v1.0](https://github.com/potatameister/PaperKnifePlus/releases/latest)
 
 ---
 
 ## Support
 
 <a href="https://github.com/sponsors/potatameister">
-  <img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-red?style=for-the-badge&logo=github" alt="GitHub Sponsor">
+  <img src="https://img.shields.io/badge/GitHub_Sponsors-sponsor-red?style=for-the-badge&logo=github" alt="GitHub Sponsor">
 </a>
 <a href="https://buymeacoffee.com/potatameister">
-  <img src="https://img.shields.io/badge/Buy_Coffee-%E2%9D%A4-orange?style=for-the-badge&logo=buymeacoffee" alt="Buy Me Coffee">
+  <img src="https://img.shields.io/badge/Buy_Me_a_Coffee-support-orange?style=for-the-badge&logo=buymeacoffee" alt="Buy Me Coffee">
 </a>
 
 ---
