@@ -34,6 +34,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun DeleteView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -43,7 +44,7 @@ fun DeleteView(
     val accentColor = Color(0xFFF43F5E) // Consistent Rose accent
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedUri by remember { mutableStateOf(initialUri) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var rangeText by remember { mutableStateOf("") }
@@ -181,6 +182,28 @@ fun DeleteView(
     }
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
+
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            selectedUri = initialUri
+            val details = getUriDetails(context, initialUri)
+            fileName = details.name
+            fileSize = details.size
+            isFileLoading = true
+            val isEncrypted = checkIsEncryptedLocal(context, initialUri)
+            if (isEncrypted) {
+                fileToUnlock = fileName
+                isFileLoading = false
+            } else {
+                val count = getPageCount(context, initialUri, null)
+                pageCount = count
+                pagesToDeleteSet = emptySet()
+                rangeText = ""
+                isFileLoading = false
+                currentState = ToolState.READY
+            }
+        }
+    }
 
     Scaffold(
         topBar = {

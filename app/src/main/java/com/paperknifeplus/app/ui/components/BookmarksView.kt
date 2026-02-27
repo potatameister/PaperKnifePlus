@@ -41,6 +41,7 @@ data class Bookmark(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookmarksView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -50,7 +51,7 @@ fun BookmarksView(
     val accentColor = Color(0xFFF43F5E)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedUri by remember { mutableStateOf(initialUri) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var fileName by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
@@ -200,6 +201,16 @@ fun BookmarksView(
     }
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
+
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            selectedUri = initialUri
+            val details = getUriDetails(context, initialUri)
+            fileName = details.name
+            isFileLoading = true
+            extractBookmarks(initialUri, null)
+        }
+    }
 
     Scaffold(
         topBar = {

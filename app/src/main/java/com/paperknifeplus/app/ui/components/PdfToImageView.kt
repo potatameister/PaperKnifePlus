@@ -130,6 +130,32 @@ fun PdfToImageView(
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
 
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            selectedUri = initialUri
+            val details = getUriDetails(context, initialUri)
+            fileName = details.name
+            fileSize = details.size
+            isFileLoading = true
+            scope.launch(Dispatchers.IO) {
+                val isEncrypted = checkIsEncryptedLocal(context, initialUri)
+                if (isEncrypted) {
+                    withContext(Dispatchers.Main) { 
+                        fileToUnlock = fileName
+                        isFileLoading = false
+                    }
+                } else {
+                    val count = getPageCount(context, initialUri, null)
+                    withContext(Dispatchers.Main) {
+                        pageCount = count
+                        currentState = ToolState.CONFIGURING
+                        isFileLoading = false
+                    }
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {

@@ -36,6 +36,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun RepairView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -45,7 +46,7 @@ fun RepairView(
     val accentColor = Color(0xFFF59E0B)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedUri by remember { mutableStateOf(initialUri) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
@@ -117,6 +118,26 @@ fun RepairView(
     }
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
+
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            selectedUri = initialUri
+            val details = getUriDetails(context, initialUri)
+            fileName = details.name
+            fileSize = details.size
+            isFileLoading = true
+            val isEncrypted = checkIsEncryptedLocal(context, initialUri)
+            if (isEncrypted) {
+                fileToUnlock = fileName
+                isFileLoading = false
+            } else {
+                val count = getPageCount(context, initialUri, null)
+                pageCount = count
+                currentState = ToolState.CONFIGURING
+                isFileLoading = false
+            }
+        }
+    }
 
     Scaffold(
         topBar = {

@@ -39,6 +39,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun UnlockView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -47,8 +48,7 @@ fun UnlockView(
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     val accentColor = Color(0xFF6366F1)
 
-    var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedUri by remember { mutableStateOf(initialUri) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var password by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
@@ -122,6 +122,24 @@ fun UnlockView(
     }
 
     LaunchedEffect(Unit) { PDFBoxResourceLoader.init(context) }
+
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            selectedUri = initialUri
+            val details = getUriDetails(context, initialUri)
+            fileName = details.name
+            fileSize = details.size
+            isFileLoading = true
+            val isEncrypted = checkIsEncryptedLocal(context, initialUri)
+            if (isEncrypted) {
+                fileToUnlock = fileName
+                isFileLoading = false
+            } else {
+                Toast.makeText(context, "File is not encrypted", Toast.LENGTH_SHORT).show()
+                isFileLoading = false
+            }
+        }
+    }
 
     Scaffold(
         topBar = {

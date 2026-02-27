@@ -36,6 +36,7 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PageNumbersView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -45,7 +46,7 @@ fun PageNumbersView(
     val accentColor = PaperPink
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedUri by remember { mutableStateOf(initialUri) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
@@ -84,6 +85,12 @@ fun PageNumbersView(
                     isFileLoading = false
                 }
             }
+        }
+    }
+
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            handleFileSelection(initialUri)
         }
     }
 

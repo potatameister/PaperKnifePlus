@@ -44,7 +44,7 @@ fun PdfToZipView(
     val accentColor = Color(0xFF14B8A6)
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedUri by remember { mutableStateOf(initialUri) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
     var fileSize by remember { mutableStateOf("") }
@@ -71,6 +71,32 @@ fun PdfToZipView(
                     }
                 } else {
                     val count = getPageCount(context, it, null)
+                    withContext(Dispatchers.Main) {
+                        pageCount = count
+                        currentState = ToolState.CONFIGURING
+                        isFileLoading = false
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            selectedUri = initialUri
+            val details = getUriDetails(context, initialUri)
+            fileName = details.name
+            fileSize = details.size
+            isFileLoading = true
+            scope.launch(Dispatchers.IO) {
+                val isEncrypted = checkIsEncryptedLocal(context, initialUri)
+                if (isEncrypted) {
+                    withContext(Dispatchers.Main) { 
+                        fileToUnlock = fileName
+                        isFileLoading = false
+                    }
+                } else {
+                    val count = getPageCount(context, initialUri, null)
                     withContext(Dispatchers.Main) {
                         pageCount = count
                         currentState = ToolState.CONFIGURING

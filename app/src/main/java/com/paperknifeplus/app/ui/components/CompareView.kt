@@ -37,6 +37,7 @@ import kotlin.math.max
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompareView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -45,7 +46,7 @@ fun CompareView(
     val isDark = MaterialTheme.colorScheme.background == Color.Black
     val accentColor = Color(0xFFF59E0B)
 
-    var fileA by remember { mutableStateOf<Uri?>(null) }
+    var fileA by remember { mutableStateOf(initialUri) }
     var fileB by remember { mutableStateOf<Uri?>(null) }
     var nameA by remember { mutableStateOf("") }
     var nameB by remember { mutableStateOf("") }
@@ -211,6 +212,24 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: 
     val listState = rememberLazyListState()
     var lightboxData by remember { mutableStateOf<Triple<Uri, Int, Int>?>(null) }
     var lightboxPass by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            isFileLoading = true
+            scope.launch(Dispatchers.IO) {
+                val isEncrypted = checkIsEncryptedLocal(context, initialUri)
+                withContext(Dispatchers.Main) {
+                    if (isEncrypted) {
+                        fileToUnlock = initialUri to "A"
+                    } else {
+                        fileA = initialUri
+                        nameA = getUriDetails(context, initialUri).name
+                    }
+                    isFileLoading = false
+                }
+            }
+        }
+    }
     
     LaunchedEffect(uriA, uriB) {
         pageCountA = getPageCount(context, uriA, passA.ifEmpty { null })

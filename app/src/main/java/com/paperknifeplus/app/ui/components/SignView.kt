@@ -76,6 +76,7 @@ data class PlacedSignature(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
@@ -85,7 +86,7 @@ fun SignView(
     val accentColor = PaperPink
 
     var currentState by remember { mutableStateOf<ToolState>(ToolState.SELECTING) }
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedUri by remember { mutableStateOf(initialUri) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
@@ -128,6 +129,30 @@ fun SignView(
     LaunchedEffect(Unit) { 
         PDFBoxResourceLoader.init(context)
         loadSavedSignatures()
+    }
+
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) {
+            selectedUri = initialUri
+            val details = getUriDetails(context, initialUri)
+            fileName = details.name
+            isFileLoading = true
+            scope.launch(Dispatchers.IO) {
+                val isEncrypted = checkIsEncryptedLocal(context, initialUri)
+                if (isEncrypted) {
+                    withContext(Dispatchers.Main) {
+                        isFileLoading = false
+                    }
+                } else {
+                    val count = getPageCount(context, initialUri, null)
+                    withContext(Dispatchers.Main) {
+                        pageCount = count
+                        currentState = ToolState.CONFIGURING
+                        isFileLoading = false
+                    }
+                }
+            }
+        }
     }
 
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
