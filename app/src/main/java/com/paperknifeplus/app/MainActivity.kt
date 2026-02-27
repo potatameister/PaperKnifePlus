@@ -161,6 +161,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(MaterialTheme.colorScheme.background)
+                                .navigationBarsPadding()
                         ) {
                             Column(modifier = Modifier.fillMaxSize()) {
                                 androidx.compose.foundation.pager.HorizontalPager(
@@ -221,7 +222,9 @@ class MainActivity : ComponentActivity() {
 
                             if (currentTool == null) {
                                 FixedTitanBottomBar(
-                                    modifier = Modifier.align(Alignment.BottomCenter),
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .offset(y = (-16).dp),
                                     currentScreen = mainScreens[pagerState.currentPage],
                                     onNavigate = { screen ->
                                         val index = mainScreens.indexOf(screen)
