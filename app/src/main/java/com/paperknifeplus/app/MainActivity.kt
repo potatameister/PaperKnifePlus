@@ -68,38 +68,6 @@ class MainActivity : ComponentActivity() {
             .crossfade(false)
             .build()
 
-        // Handle incoming PDF from external apps (e.g., WhatsApp file share)
-        var incomingPdfUri: Uri? = null
-        var incomingPdfName: String = ""
-
-        intent?.data?.let { uri ->
-            if (intent?.type == "application/pdf" || uri.toString().lowercase().endsWith(".pdf")) {
-                incomingPdfUri = uri
-                // Get file name from URI
-                contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                        if (nameIndex >= 0) {
-                            incomingPdfName = cursor.getString(nameIndex) ?: "Document"
-                        }
-                    }
-                }
-                if (incomingPdfName.isEmpty()) {
-                    incomingPdfName = uri.lastPathSegment ?: "Document"
-                }
-
-                // Grant persistent URI permission if needed
-                try {
-                    contentResolver.takePersistableUriPermission(
-                        uri,
-                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
-                } catch (e: SecurityException) {
-                    // Permission already taken or not available
-                }
-            }
-        }
-
         setContent {
             // NITRO: Dynamic Theme Engine
             var themePreference by remember { mutableIntStateOf(PreferencesManager.getTheme(applicationContext)) }
@@ -145,15 +113,6 @@ class MainActivity : ComponentActivity() {
                                 currentTool = null
                             } else if (pagerState.currentPage != 0) {
                                 scope.launch { pagerState.animateScrollToPage(0) }
-                            }
-                        }
-
-                        // Handle incoming PDF from external apps - open UltraPreview immediately
-                        LaunchedEffect(incomingPdfUri) {
-                            if (incomingPdfUri != null) {
-                                // UltraPreview will fetch page count automatically
-                                previewData = Triple(incomingPdfUri!!, incomingPdfName, 0)
-                                currentTool = "ultra_preview"
                             }
                         }
 
