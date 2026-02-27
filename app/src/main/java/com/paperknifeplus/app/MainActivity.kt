@@ -247,7 +247,7 @@ class MainActivity : ComponentActivity() {
                                         onToolClick = { tool ->
                                             scope.launch { sheetState.hide() }.invokeOnCompletion { 
                                                 showToolPicker = false
-                                                toolInitialUri = null
+                                                toolInitialUri = previewData?.first
                                                 toolInitialPassword = null
                                                 currentTool = tool 
                                             }
