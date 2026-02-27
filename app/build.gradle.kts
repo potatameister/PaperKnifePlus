@@ -81,12 +81,6 @@ tasks.withType<AbstractArchiveTask>().configureEach {
     isReproducibleFileOrder = true
 }
 
-tasks.withType<com.android.build.gradle.tasks.PackageApplication>().configureEach {
-    if (name.lowercase().contains("release")) {
-        archiveFileName.set("PaperKnife+.apk")
-    }
-}
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime)
