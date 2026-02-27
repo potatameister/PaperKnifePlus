@@ -1,11 +1,10 @@
 Categories:
-  - Utility
-
+  - Reading
 License: GPL-3.0-or-later
-
 WebSite: https://github.com/potatameister/PaperKnifePlus
 SourceCode: https://github.com/potatameister/PaperKnifePlus
 IssueTracker: https://github.com/potatameister/PaperKnifePlus/issues
+
 AutoName: PaperKnife+
 
 RepoType: git
