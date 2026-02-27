@@ -224,7 +224,7 @@ class MainActivity : ComponentActivity() {
                                 FixedTitanBottomBar(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
-                                        .offset(y = (-16).dp),
+                                        .offset(y = (-24).dp),
                                     currentScreen = mainScreens[pagerState.currentPage],
                                     onNavigate = { screen ->
                                         val index = mainScreens.indexOf(screen)
