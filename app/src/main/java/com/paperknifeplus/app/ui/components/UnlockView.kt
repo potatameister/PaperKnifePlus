@@ -58,6 +58,7 @@ fun UnlockView(
     var processingTime by remember { mutableStateOf("") }
     var showLoadingWarning by remember { mutableStateOf(false) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
+    var currentState by remember { mutableStateOf(ToolState.SELECTING) }
 
     LaunchedEffect(isFileLoading, currentState) {
         if (isFileLoading || currentState == ToolState.PROCESSING) {

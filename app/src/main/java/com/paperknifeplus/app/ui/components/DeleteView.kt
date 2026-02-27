@@ -200,7 +200,6 @@ fun DeleteView(
                 pagesToDeleteSet = emptySet()
                 rangeText = ""
                 isFileLoading = false
-                currentState = ToolState.READY
             }
         }
     }
