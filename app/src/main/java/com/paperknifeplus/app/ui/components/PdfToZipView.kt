@@ -35,6 +35,7 @@ import java.util.zip.ZipOutputStream
 
 @Composable
 fun PdfToZipView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {

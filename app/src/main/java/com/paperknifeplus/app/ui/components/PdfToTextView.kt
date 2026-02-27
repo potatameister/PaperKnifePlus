@@ -39,6 +39,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun PdfToTextView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {

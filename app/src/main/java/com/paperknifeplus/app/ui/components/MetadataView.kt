@@ -35,6 +35,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun MetadataView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {

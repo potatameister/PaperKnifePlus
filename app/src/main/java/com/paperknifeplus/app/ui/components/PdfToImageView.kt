@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun PdfToImageView(
+    initialUri: Uri? = null,
     onBack: () -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
 ) {
