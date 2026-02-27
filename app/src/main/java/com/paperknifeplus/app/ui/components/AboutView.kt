@@ -298,8 +298,7 @@ fun SupportPage() {
             Surface(
                 onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sponsors/potatameister"))) },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp, RoundedCornerShape(20.dp)),
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 color = Color(0xFFEA4AAA).copy(alpha = 0.1f),
                 border = BorderStroke(1.dp, Color(0xFFEA4AAA).copy(alpha = 0.3f))
@@ -560,8 +559,7 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
                 onClick = { onNavigate("support") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
-                    .shadow(8.dp, RoundedCornerShape(20.dp), spotColor = PaperPink.copy(alpha = 0.3f)),
+                    .padding(top = 16.dp),
                 shape = RoundedCornerShape(20.dp),
                 color = PaperPink.copy(alpha = 0.08f),
                 border = BorderStroke(1.5.dp, PaperPink.copy(alpha = 0.4f))

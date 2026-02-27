@@ -208,28 +208,24 @@ fun UltraPreview(
                         .fillMaxSize()
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onDoubleTap = { tapOffset ->
+                                onDoubleTap = { _ ->
                                     if (targetScale > 1.01f) {
                                         targetScale = 1f
                                         targetOffset = androidx.compose.ui.geometry.Offset.Zero
                                     } else {
                                         targetScale = 3f
-                                        val x = (size.width / 2 - tapOffset.x) * (3f - 1f)
-                                        val y = (size.height / 2 - tapOffset.y) * (3f - 1f)
-                                        targetOffset = androidx.compose.ui.geometry.Offset(x, y)
+                                        targetOffset = androidx.compose.ui.geometry.Offset.Zero
                                     }
                                 }
                             )
                         }
                         .pointerInput(Unit) {
-                            detectTransformGestures { centroid, pan, zoom, _ ->
-                                val oldScale = targetScale
+                            detectTransformGestures { _, pan, zoom, _ ->
                                 val newScale = (targetScale * zoom).coerceIn(1f, 10f)
                                 
                                 if (newScale > 1f) {
-                                    val scaleChange = newScale / oldScale
-                                    val newOffset = (targetOffset + pan) * scaleChange + centroid * (1f - scaleChange)
-                                    targetOffset = newOffset
+                                    targetScale = newScale
+                                    targetOffset = targetOffset + pan
                                 } else {
                                     targetScale = 1f
                                     targetOffset = androidx.compose.ui.geometry.Offset.Zero

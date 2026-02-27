@@ -4,14 +4,12 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -36,7 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -225,9 +222,6 @@ fun MergeView(
                     
                     ToolState.CONFIGURING -> {
                         val listState = rememberLazyListState()
-                        var draggedItem by remember { mutableStateOf<MergeFile?>(null) }
-                        var dragOffsetY by remember { mutableFloatStateOf(0f) }
-                        var lastReorderIndex by remember { mutableIntStateOf(-1) }
 
                         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                             Row(
@@ -235,9 +229,7 @@ fun MergeView(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Filled.SwapVert, null, tint = accentColor.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Hold & Drag to reorder", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                                Text("Drag and drop coming soon", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                             }
 
                             LazyColumn(
@@ -250,72 +242,9 @@ fun MergeView(
                                     items = selectedFiles,
                                     key = { _, file -> file.uri.toString() }
                                 ) { index, file ->
-                                    val isDragging = draggedItem?.uri == file.uri
-                                    val elevation by animateDpAsState(
-                                        targetValue = if (isDragging) 12.dp else 0.dp,
-                                        label = "elevation"
-                                    )
-
                                     Box(
                                         modifier = Modifier
-                                            .zIndex(if (isDragging) 10f else 1f)
-                                            .graphicsLayer {
-                                                if (isDragging) {
-                                                    translationY = dragOffsetY
-                                                    scaleX = 1.03f
-                                                    scaleY = 1.03f
-                                                }
-                                            }
                                             .animateItemPlacement()
-                                            .shadow(elevation, RoundedCornerShape(16.dp))
-                                            .pointerInput(file.uri) {
-                                                detectDragGesturesAfterLongPress(
-                                                    onDragStart = {
-                                                        draggedItem = file
-                                                        lastReorderIndex = index
-                                                        dragOffsetY = 0f
-                                                    },
-                                                    onDrag = { change, dragAmount ->
-                                                        change.consume()
-                                                        dragOffsetY += dragAmount.y
-
-                                                        val layoutInfo = listState.layoutInfo
-                                                        val itemInfo = layoutInfo.visibleItemsInfo.find { it.key == file.uri.toString() } ?: return@detectDragGesturesAfterLongPress
-                                                        val itemCenterY = itemInfo.offset + itemInfo.size / 2 + dragOffsetY
-
-                                                        val targetItem = layoutInfo.visibleItemsInfo.firstOrNull { info ->
-                                                            info.key != file.uri.toString() &&
-                                                            itemCenterY.toInt() in info.offset..(info.offset + info.size)
-                                                        }
-
-                                                        if (targetItem != null && targetItem.index != lastReorderIndex) {
-                                                            if (selectedFiles.isNotEmpty() && lastReorderIndex in selectedFiles.indices) {
-                                                                val currentList = selectedFiles.toMutableList()
-                                                                val item = currentList.removeAt(lastReorderIndex)
-                                                                val newPosition = if (targetItem.index > lastReorderIndex) {
-                                                                    (targetItem.index).coerceIn(0, currentList.size)
-                                                                } else {
-                                                                    targetItem.index.coerceIn(0, currentList.size)
-                                                                }
-                                                                currentList.add(newPosition, item)
-                                                                selectedFiles = currentList
-                                                                lastReorderIndex = newPosition
-                                                                dragOffsetY -= (targetItem.offset - itemInfo.offset).toFloat()
-                                                            }
-                                                        }
-                                                    },
-                                                    onDragEnd = {
-                                                        draggedItem = null
-                                                        dragOffsetY = 0f
-                                                        lastReorderIndex = -1
-                                                    },
-                                                    onDragCancel = {
-                                                        draggedItem = null
-                                                        dragOffsetY = 0f
-                                                        lastReorderIndex = -1
-                                                    }
-                                                )
-                                            }
                                     ) {
                                         MergeFileListItem(
                                             file = file,
@@ -324,7 +253,27 @@ fun MergeView(
                                             imageLoader = imageLoader,
                                             onDelete = { selectedFiles = selectedFiles.filterIndexed { i, _ -> i != index } },
                                             onUnlock = { fileToUnlock = file },
-                                            onClick = { lightboxFile = file }
+                                            onClick = { lightboxFile = file },
+                                            onMoveUp = { 
+                                                if (index > 0) {
+                                                    val newList = selectedFiles.toMutableList()
+                                                    val temp = newList[index]
+                                                    newList[index] = newList[index - 1]
+                                                    newList[index - 1] = temp
+                                                    selectedFiles = newList
+                                                }
+                                            },
+                                            onMoveDown = { 
+                                                if (index < selectedFiles.lastIndex) {
+                                                    val newList = selectedFiles.toMutableList()
+                                                    val temp = newList[index]
+                                                    newList[index] = newList[index + 1]
+                                                    newList[index + 1] = temp
+                                                    selectedFiles = newList
+                                                }
+                                            },
+                                            isFirst = index == 0,
+                                            isLast = index == selectedFiles.lastIndex
                                         )
                                     }
                                 }
@@ -345,7 +294,7 @@ fun MergeView(
                                     }
                                 }
                             }
-                            
+
                             val allReady = selectedFiles.size > 1 && selectedFiles.all { !it.isLocked || it.isUnlocked }
                             Button(
                                 onClick = { saveLauncher.launch("merged_${System.currentTimeMillis() / 1000}.pdf") },
@@ -440,7 +389,11 @@ fun MergeFileListItem(
     imageLoader: coil.ImageLoader,
     onDelete: () -> Unit,
     onUnlock: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    isFirst: Boolean,
+    isLast: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().height(100.dp),
@@ -489,11 +442,24 @@ fun MergeFileListItem(
                 }
             }
             
+            Column {
+                IconButton(onClick = onMoveUp, enabled = !isFirst) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowUp, null, 
+                        tint = if (isFirst) Color.Gray.copy(0.2f) else Color.Gray
+                    )
+                }
+                IconButton(onClick = onMoveDown, enabled = !isLast) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowDown, null, 
+                        tint = if (isLast) Color.Gray.copy(0.2f) else Color.Gray
+                    )
+                }
+            }
+            
             IconButton(onClick = onDelete, modifier = Modifier.padding(end = 8.dp)) {
                 Icon(Icons.Filled.DeleteOutline, null, tint = Color.Gray)
             }
-            
-            Icon(Icons.Filled.DragHandle, null, tint = Color.Gray.copy(0.3f), modifier = Modifier.padding(end = 12.dp))
         }
     }
 }
