@@ -50,7 +50,7 @@ fun HomeView(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     val pickLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.GetContent()
     ) { uri ->
@@ -67,7 +67,7 @@ fun HomeView(
         listOf(
             Tool(id = "merge", name = "Merge", description = "COMBINE", subtitle = "Join Files", icon = Icons.Filled.Layers, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
             Tool(id = "compress", name = "Compress", description = "OPTIMIZE", subtitle = "Reduce Size", icon = Icons.Filled.Bolt, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
-            Tool(id = "unlock", name = "Unlock", description = "REOVE LOCK", subtitle = "Remove Pass", icon = Icons.Filled.LockOpen, category = "Security", color = Color(0xFF8B5CF6), bgColor = Color(0xFFF5F3FF)),
+            Tool(id = "unlock", name = "Unlock", description = "REMOVE LOCK", subtitle = "Remove Pass", icon = Icons.Filled.LockOpen, category = "Security", color = Color(0xFF8B5CF6), bgColor = Color(0xFFF5F3FF)),
             Tool(id = "pdf_text", name = "PDF to Text", description = "EXTRACT", subtitle = "Plain Text", icon = Icons.AutoMirrored.Filled.Notes, category = "Convert", color = Color(0xFF10B981), bgColor = Color(0xFFECFDF5))
         )
     }
@@ -116,18 +116,18 @@ fun HomeView(
             item(span = { GridItemSpan(2) }, key = "more") {
                 MoreToolsCard(onClick = { onToolClick("tools") })
             }
-            
+
             item(span = { GridItemSpan(2) }, key = "footer") {
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 val isDark = MaterialTheme.colorScheme.background == Color.Black
                 val coffeeBg = if (isDark) Color(0xFF3D3520) else Color(0xFFFFF9C4)
                 val coffeeBorder = if (isDark) Color(0xFF5D5020) else Color(0xFFFFEB3B)
                 val coffeeIconBg = if (isDark) Color(0xFF5D5020) else Color(0xFFFFEB3B)
-                
+
                 // Support Buy Me a Coffee style Card
                 Surface(
-                    onClick = { 
+                    onClick = {
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://buymeacoffee.com/potatameister"))
                         context.startActivity(intent)
                     },
@@ -199,7 +199,7 @@ fun HomeHeader(isDarkMode: Boolean, onThemeToggle: () -> Unit) {
                 letterSpacing = (-0.5).sp
             )
         }
-        
+
         Surface(
             onClick = onThemeToggle,
             modifier = Modifier.size(36.dp),
@@ -267,7 +267,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                     letterSpacing = 0.5.sp
                 )
             }
-            
+
             Surface(
                 modifier = Modifier
                     .size(40.dp)
@@ -331,7 +331,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
                 Text("VIEW ALL", fontSize = 7.5.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 0.8.sp)
             }
         }
-        
+
         if (history.isEmpty()) {
             Spacer(Modifier.height(8.dp))
             Text(
@@ -343,7 +343,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
         } else {
             Spacer(Modifier.height(8.dp))
             history.take(2).forEach { entry ->
-                val entryColor = remember(entry.tool) { 
+                val entryColor = remember(entry.tool) {
                     when {
                         entry.tool.contains("Merge", true) || entry.tool.contains("Split", true) -> Color(0xFFF43F5E)
                         entry.tool.contains("Compress", true) || entry.tool.contains("ZIP", true) -> Color(0xFFF59E0B)
@@ -354,7 +354,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
                 Row(
                     modifier = Modifier
                         .padding(vertical = 3.dp)
-                        .clickable(enabled = entry.uri != null) { 
+                        .clickable(enabled = entry.uri != null) {
                             entry.uri?.let { onOpenPreview(it, entry.name, entry.pageCount) }
                         },
                     verticalAlignment = Alignment.CenterVertically
@@ -403,7 +403,7 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
                     modifier = Modifier.size(18.dp)
                 )
             }
-            
+
             Column {
                 Text(
                     text = tool.name,
@@ -473,7 +473,7 @@ fun MoreToolsCard(onClick: () -> Unit) {
                         )
                     }
                 }
-                
+
                 Icon(
                     imageVector = Icons.Filled.ChevronRight,
                     contentDescription = null,
