@@ -553,6 +553,48 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
                 HallSlot("For the Planet!", Color(0xFF10B981), Modifier.weight(1f))
             }
         }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("1260er", Color(0xFFF59E0B), Modifier.weight(1f))
+                HallSlot("Sushant Sangle", Color(0xFF8B5CF6), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Bittu Shaw", Color(0xFF06B6D4), Modifier.weight(1f))
+                HallSlot("@chetly968", Color(0xFFEF4444), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Andrei", Color(0xFF84CC16), Modifier.weight(1f))
+                HallSlot("Csaba Gal", Color(0xFFEC4899), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Jason", Color(0xFF6366F1), Modifier.weight(1f))
+                HallSlot("Vishnumahanthy Mohan", Color(0xFF14B8A6), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Maurin", Color(0xFFF97316), Modifier.weight(1f))
+                HallSlot("Moh", Color(0xFFA855F7), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Balboc", Color(0xFF0EA5E9), Modifier.weight(1f))
+                HallSlot("Winkewinke", Color(0xFF22C55E), Modifier.weight(1f))
+            }
+        }
 
         item {
             Surface(
