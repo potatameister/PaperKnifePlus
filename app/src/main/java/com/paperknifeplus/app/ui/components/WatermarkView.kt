@@ -47,6 +47,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState
 import com.tom_roush.pdfbox.util.Matrix
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -208,8 +209,12 @@ fun WatermarkView(
                                         matrix.rotate(Math.toRadians((-wm.rotation).toDouble()))
                                         matrix.translate(-(xPos + drawWidth/2), -(yPos + drawHeight/2))
                                         cs.transform(matrix)
-                                        
-                                        // TODO: High-end opacity requires ExtGState, for now use bitmap alpha
+
+                                        if (wm.opacity < 1f) {
+                                            val gs = PDExtendedGraphicsState()
+                                            gs.nonStrokingAlphaConstant = wm.opacity
+                                            cs.setGraphicsStateParameters(gs)
+                                        }
                                         cs.drawImage(pdImage, xPos, yPos, drawWidth, drawHeight)
                                         cs.restoreGraphicsState()
                                     }
