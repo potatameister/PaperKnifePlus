@@ -197,7 +197,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
         
         item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("PaperKnife+ V1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text("PaperKnife+ V1.1", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
             }
         }
         
