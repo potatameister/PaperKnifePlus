@@ -1,0 +1,3 @@
+## PaperKnife+ v1.1
+
+- Fixed typo in Unlock tool description ("REOVE" → "REMOVE") — thanks @Gabbar-v7
