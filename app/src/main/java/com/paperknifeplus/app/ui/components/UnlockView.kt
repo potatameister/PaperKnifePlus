@@ -109,6 +109,7 @@ fun UnlockView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Unlock", "Decrypted", Icons.Outlined.LockOpen, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }

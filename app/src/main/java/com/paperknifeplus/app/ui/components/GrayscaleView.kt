@@ -113,6 +113,7 @@ fun GrayscaleView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Grayscale", "Converted to B&W", Icons.Outlined.Palette, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }

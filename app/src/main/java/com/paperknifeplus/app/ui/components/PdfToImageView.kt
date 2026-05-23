@@ -116,7 +116,8 @@ fun PdfToImageView(
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "PDF to Image", "${selectedPages.size} images", Icons.Outlined.BurstMode)
+                        fileName = getUriDetails(context, saveUri).name
+                        SessionManager.addEntry(fileName, "PDF to Image", "${selectedPages.size} images", Icons.Outlined.BurstMode, saveUri)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {

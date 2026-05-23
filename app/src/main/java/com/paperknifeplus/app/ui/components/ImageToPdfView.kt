@@ -86,7 +86,7 @@ fun ImageToPdfView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
-                        SessionManager.addEntry("Created PDF", "Image to PDF", "${selectedUris.size} images", Icons.Filled.Description, saveUri, selectedUris.size)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Image to PDF", "${selectedUris.size} images", Icons.Filled.Description, saveUri, selectedUris.size)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {

@@ -104,6 +104,7 @@ fun RepairView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Repair", "Restored", Icons.Outlined.Build, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }

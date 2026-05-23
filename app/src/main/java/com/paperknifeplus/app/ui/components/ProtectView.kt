@@ -126,6 +126,7 @@ fun ProtectView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Protect", "Encrypted", Icons.Outlined.Lock, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }

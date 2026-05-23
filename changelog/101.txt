@@ -1,3 +1,4 @@
 ## PaperKnife+ v1.1
 
 - Fixed typo in Unlock tool description ("REOVE" → "REMOVE") — thanks @Gabbar-v7
+- Fixed history showing original file name instead of output file name after processing (fixes #4)

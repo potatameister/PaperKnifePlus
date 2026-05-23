@@ -156,7 +156,7 @@ fun MergeView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         mergedUri = saveUri
-                        SessionManager.addEntry("Merged PDF", "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers, saveUri, finalCount)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {

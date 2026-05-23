@@ -222,7 +222,7 @@ fun WatermarkView(
                     withContext(Dispatchers.Main) {
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
-                        SessionManager.addEntry("Watermarked PDF", "Watermark", "Branding applied locally", Icons.Filled.TextFields, saveUri, pageCount)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Watermark", "Branding applied locally", Icons.Filled.TextFields, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
