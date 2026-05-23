@@ -124,6 +124,7 @@ fun CompressView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Filled.FlashOn, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }

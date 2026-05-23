@@ -168,6 +168,7 @@ fun DeleteView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Delete", "${pagesToDeleteSet.size} pages removed", Icons.Filled.Delete, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }

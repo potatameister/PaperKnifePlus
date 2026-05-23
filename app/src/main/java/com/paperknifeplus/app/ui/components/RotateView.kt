@@ -124,6 +124,7 @@ fun RotateView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Rotate", "Fixed orientation", Icons.Filled.RotateRight, saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }

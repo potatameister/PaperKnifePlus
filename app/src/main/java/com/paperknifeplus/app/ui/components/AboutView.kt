@@ -197,7 +197,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
         
         item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("PaperKnife+ V1.0", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text("PaperKnife+ V1.1", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
             }
         }
         
@@ -549,8 +549,50 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
         
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                HallSlot("Kalyan", "Me-Kalyan", Color(0xFFF43F5E), Modifier.weight(1f))
-                HallSlot("For the Planet!", "Plantbased4Future", Color(0xFF10B981), Modifier.weight(1f))
+                HallSlot("Kalyan", Color(0xFFF43F5E), Modifier.weight(1f))
+                HallSlot("For the Planet!", Color(0xFF10B981), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("1260er", Color(0xFFF59E0B), Modifier.weight(1f))
+                HallSlot("Sushant Sangle", Color(0xFF8B5CF6), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Bittu Shaw", Color(0xFF06B6D4), Modifier.weight(1f))
+                HallSlot("@chetly968", Color(0xFFEF4444), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Andrei", Color(0xFF84CC16), Modifier.weight(1f))
+                HallSlot("Csaba Gal", Color(0xFFEC4899), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Jason", Color(0xFF6366F1), Modifier.weight(1f))
+                HallSlot("Vishnumahanthy Mohan", Color(0xFF14B8A6), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Maurin", Color(0xFFF97316), Modifier.weight(1f))
+                HallSlot("Moh", Color(0xFFA855F7), Modifier.weight(1f))
+            }
+        }
+        
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HallSlot("Balboc", Color(0xFF0EA5E9), Modifier.weight(1f))
+                HallSlot("Winkewinke", Color(0xFF22C55E), Modifier.weight(1f))
             }
         }
 
@@ -584,19 +626,17 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-fun HallSlot(name: String, username: String, accentColor: Color, modifier: Modifier = Modifier) {
+fun HallSlot(name: String, accentColor: Color, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f),
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, accentColor.copy(alpha = 0.3f)),
         modifier = modifier.aspectRatio(1.2f)
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Filled.Favorite, null, tint = accentColor.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(name, fontSize = 14.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(2.dp))
-            Text(username, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor, textAlign = TextAlign.Center)
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Filled.Favorite, null, tint = accentColor.copy(alpha = 0.6f), modifier = Modifier.size(24.dp))
+            Spacer(Modifier.height(12.dp))
+            Text(name, fontSize = 16.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
         }
     }
 }

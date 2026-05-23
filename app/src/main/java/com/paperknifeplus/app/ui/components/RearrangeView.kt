@@ -103,6 +103,7 @@ fun RearrangeView(
                     withContext(Dispatchers.Main) {
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", Icons.Filled.GridView, saveUri, pageOrder.size)
                         currentState = ToolState.SUCCESS
                     }

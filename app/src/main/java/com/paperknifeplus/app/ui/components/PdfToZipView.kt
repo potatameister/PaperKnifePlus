@@ -147,7 +147,8 @@ fun PdfToZipView(
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
-                        SessionManager.addEntry(fileName, "PDF to Pages ZIP", "$pageCount pages archived", Icons.Outlined.FolderZip)
+                        fileName = getUriDetails(context, saveUri).name
+                        SessionManager.addEntry(fileName, "PDF to Pages ZIP", "$pageCount pages archived", Icons.Outlined.FolderZip, saveUri)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {

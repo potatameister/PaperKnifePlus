@@ -179,6 +179,7 @@ fun SplitView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
+                        fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Split", "${selectedPages.size} pages extracted", Icons.Filled.ContentCut, saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
