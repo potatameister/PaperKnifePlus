@@ -90,8 +90,7 @@ fun MergeView(
         if (uris.isNotEmpty()) {
             isFileLoading = true
             scope.launch {
-                val currentUris = selectedFiles.map { it.uri }
-                val newFiles = uris.filter { it !in currentUris }.map { uri ->
+                val newFiles = uris.map { uri ->
                     val details = getUriDetails(context, uri)
                     val isLocked = checkIsEncryptedLocal(context, uri)
                     val count = if (!isLocked) getPageCount(context, uri, null) else 0
@@ -240,7 +239,7 @@ fun MergeView(
                             ) {
                                 itemsIndexed(
                                     items = selectedFiles,
-                                    key = { _, file -> file.uri.toString() }
+                                    key = { index, file -> "${index}_${file.uri}" }
                                 ) { index, file ->
                                     Box(
                                         modifier = Modifier
