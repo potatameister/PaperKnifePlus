@@ -42,7 +42,14 @@ All processing happens on your device. Your files never leave your phone.
 
 ## Download
 
-Get the latest APK: [PaperKnife+ v1.0](https://github.com/potatameister/PaperKnifePlus/releases/latest)
+Get the latest APK: [PaperKnife+ v1.1](https://github.com/potatameister/PaperKnifePlus/releases/latest)
+
+<a href="https://apt.izzysoft.de/fdroid/index/apk/com.paperknifeplus.app">
+  <img src="https://img.shields.io/badge/IzzyOnDroid-F00000?style=for-the-badge" alt="IzzyOnDroid">
+</a>
+<a href="https://f-droid.org/packages/com.paperknifeplus.app">
+  <img src="https://img.shields.io/badge/F--Droid-1976D2?style=for-the-badge&logo=fdroid" alt="F-Droid">
+</a>
 
 ---
 
