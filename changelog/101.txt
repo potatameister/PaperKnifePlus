@@ -4,3 +4,4 @@
 - Fixed history showing original file name instead of output file name after processing (fixes #4)
 - Fixed merge tool rejecting same file added multiple times (fixes #13)
 - Fixed watermark transparency not applied to output PDF (fixes #9)
+- Added export saved signature as PNG (feature #10)

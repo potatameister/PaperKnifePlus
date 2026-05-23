@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -256,6 +257,29 @@ fun SignView(
             }
         }
     }
+
+    val exportSignatureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri ->
+        uri?.let { exportUri ->
+            val fileToExport = selectedSignatureFile
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val bytes = fileToExport?.readBytes() ?: return@launch
+                    context.contentResolver.openOutputStream(exportUri)?.use { outputStream ->
+                        outputStream.write(bytes)
+                    }
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Signature exported", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    var selectedSignatureFile by remember { mutableStateOf<File?>(null) }
 
     val signatureOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -575,17 +599,34 @@ fun SignView(
                         Spacer(Modifier.height(12.dp))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(savedSignatures) { file ->
-                                Surface(
-                                    modifier = Modifier.size(100.dp, 60.dp).clickable {
-                                        activeSignatureBitmap = BitmapFactory.decodeFile(file.absolutePath)
-                                        activeOffset = androidx.compose.ui.geometry.Offset.Zero
-                                        activeScale = 1f
-                                        activeRotation = 0f
-                                        isFocusMode = true
-                                        showSignOptions = false
-                                    },
-                                    shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
-                                ) { ComposeImage(painter = rememberAsyncImagePainter(file), contentDescription = null, modifier = Modifier.padding(8.dp)) }
+                                Box {
+                                    Surface(
+                                        modifier = Modifier.size(100.dp, 60.dp).clickable {
+                                            activeSignatureBitmap = BitmapFactory.decodeFile(file.absolutePath)
+                                            activeOffset = androidx.compose.ui.geometry.Offset.Zero
+                                            activeScale = 1f
+                                            activeRotation = 0f
+                                            isFocusMode = true
+                                            showSignOptions = false
+                                        },
+                                        shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.Gray.copy(0.2f))
+                                    ) { ComposeImage(painter = rememberAsyncImagePainter(file), contentDescription = null, modifier = Modifier.padding(8.dp)) }
+                                    
+                                    IconButton(
+                                        onClick = {
+                                            selectedSignatureFile = file
+                                            exportSignatureLauncher.launch("signature_${System.currentTimeMillis()}.png")
+                                        },
+                                        modifier = Modifier.align(Alignment.BottomEnd).size(22.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.FileDownload,
+                                            contentDescription = "Export signature",
+                                            tint = accentColor.copy(alpha = 0.7f),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
