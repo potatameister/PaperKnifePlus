@@ -258,6 +258,8 @@ fun SignView(
         }
     }
 
+    var selectedSignatureFile by remember { mutableStateOf<File?>(null) }
+
     val exportSignatureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri ->
         uri?.let { exportUri ->
             val fileToExport = selectedSignatureFile
@@ -265,7 +267,7 @@ fun SignView(
                 try {
                     val bytes = fileToExport?.readBytes() ?: return@launch
                     context.contentResolver.openOutputStream(exportUri)?.use { outputStream ->
-                        outputStream.write(bytes)
+                        outputStream.write(bytes, 0, bytes.size)
                     }
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Signature exported", Toast.LENGTH_SHORT).show()
@@ -278,8 +280,6 @@ fun SignView(
             }
         }
     }
-
-    var selectedSignatureFile by remember { mutableStateOf<File?>(null) }
 
     val signatureOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
         BoxWithConstraints(Modifier.fillMaxSize()) {
