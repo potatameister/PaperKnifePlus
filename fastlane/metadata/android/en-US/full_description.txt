@@ -1,6 +1,7 @@
 PaperKnife+ is a privacy-first PDF utility for Android that works 100% offline.
 
 Features:
+
 - Merge & Split: Combine PDFs or extract pages visually
 - Secure: Add or remove passwords (100% locally)
 - Convert: Convert Images to PDF and Export PDF pages as Images (ZIP)
