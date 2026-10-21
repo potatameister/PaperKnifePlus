@@ -549,9 +549,10 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                             val last = textPositions[endIndex]
 
                             if (first != null && last != null) {
-                                val page = document.getPage(currentPageNo - 1)
-                                val pageWidth = page.mediaBox.width
-                                val pageHeight = page.mediaBox.height
+                                // Use the same page dimensions the text stripper used.
+                                // The rendered page below is based on the crop box, not the media box.
+                                val pageWidth = first.pageWidth
+                                val pageHeight = first.pageHeight
 
                                 // NITRO 6.0: Percentage-Based Mapping (Normalized 0.0 - 1.0)
                                 val x = first.xDirAdj / pageWidth

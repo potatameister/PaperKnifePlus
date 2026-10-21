@@ -1,7 +1,16 @@
 package com.paperknifeplus.app.ui.components
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Bundle
+import android.os.CancellationSignal
+import android.os.ParcelFileDescriptor
+import android.print.PageRange
+import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
+import android.print.PrintDocumentInfo
+import android.print.PrintManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -29,6 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -36,6 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,10 +61,13 @@ import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.Image
 import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,13 +91,14 @@ fun UltraPreview(
     val sheetState = rememberModalBottomSheetState()
 
     var showMoreMenu by remember { mutableStateOf(false) }
-    var showSearchSheet by remember { mutableStateOf(false) }
-    val searchSheetState = rememberModalBottomSheetState()
+    var showSearchBar by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<TextMatch>>(emptyList()) }
+    var activeMatchIndex by remember { mutableIntStateOf(-1) }
     var isSearching by remember { mutableStateOf(false) }
-    var hasSearched by remember { mutableStateOf(false) }
-    var viewRotation by remember { mutableIntStateOf(0) }
+    var searchJob by remember { mutableStateOf<Job?>(null) }
+    val searchFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var targetScale by remember { mutableFloatStateOf(1f) }
     var targetOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
@@ -142,19 +158,53 @@ fun UltraPreview(
         }
     }
 
+    fun printPdf() {
+        try {
+            val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+            printManager.print("PaperKnife+", PdfPrintAdapter(context, activeUri), null)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot print file", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun runSearch() {
-        if (searchQuery.isBlank() || isSearching) return
-        scope.launch {
-            isSearching = true
-            hasSearched = true
+        searchJob?.cancel()
+        if (searchQuery.isBlank()) {
             searchResults = emptyList()
+            activeMatchIndex = -1
+            isSearching = false
+            return
+        }
+        searchJob = scope.launch {
+            isSearching = true
             val results = findAllTextMatches(context, activeUri, activePassword, searchQuery)
             searchResults = results
             isSearching = false
             if (results.isNotEmpty()) {
+                activeMatchIndex = 0
                 listState.scrollToItem(results.first().pageIndex)
+            } else {
+                activeMatchIndex = -1
             }
         }
+    }
+
+    fun goToMatch(delta: Int) {
+        if (searchResults.isEmpty()) return
+        val next = if (activeMatchIndex < 0) 0
+        else (activeMatchIndex + delta + searchResults.size) % searchResults.size
+        activeMatchIndex = next
+        scope.launch { listState.scrollToItem(searchResults[next].pageIndex) }
+    }
+
+    fun closeSearch() {
+        searchJob?.cancel()
+        showSearchBar = false
+        searchQuery = ""
+        searchResults = emptyList()
+        activeMatchIndex = -1
+        isSearching = false
+        keyboardController?.hide()
     }
 
     fun initializeReader(targetUri: Uri, targetPass: String?) {
@@ -199,7 +249,11 @@ fun UltraPreview(
                     val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
                     val count = document.numberOfPages
                     val sizes = document.pages.mapIndexed { index, page ->
-                        index to (page.mediaBox.width to page.mediaBox.height)
+                        val crop = page.cropBox
+                        val pageRotation = ((page.rotation % 360) + 360) % 360
+                        val width = if (pageRotation % 180 == 0) crop.width else crop.height
+                        val height = if (pageRotation % 180 == 0) crop.height else crop.width
+                        index to (width to height)
                     }.toMap()
                     
                     val extractedLinks = mutableListOf<PdfLink>()
@@ -227,6 +281,28 @@ fun UltraPreview(
                 }
             }
         }
+    }
+
+    LaunchedEffect(showSearchBar) {
+        if (showSearchBar) {
+            delay(120)
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
+    BackHandler(enabled = showSearchBar) { closeSearch() }
+
+    LaunchedEffect(searchQuery, showSearchBar) {
+        if (!showSearchBar) return@LaunchedEffect
+        if (searchQuery.isBlank()) {
+            searchResults = emptyList()
+            activeMatchIndex = -1
+            isSearching = false
+            return@LaunchedEffect
+        }
+        delay(300)
+        runSearch()
     }
 
     LaunchedEffect(uri) {
@@ -296,8 +372,9 @@ fun UltraPreview(
                                 password = activePassword,
                                 imageLoader = imageLoader,
                                 pageSize = pageSizes[index],
-                                rotation = viewRotation,
+                                rotation = 0,
                                 searchMatches = searchResults.filter { it.pageIndex == index },
+                                activeMatch = searchResults.getOrNull(activeMatchIndex),
                                 links = links.filter { it.pageIndex == index },
                                 onLinkClick = { url ->
                                     try {
@@ -460,15 +537,15 @@ fun UltraPreview(
                                 leadingIcon = { Icon(Icons.Filled.Search, null) },
                                 onClick = {
                                     showMoreMenu = false
-                                    showSearchSheet = true
+                                    showSearchBar = true
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Rotate view") },
-                                leadingIcon = { Icon(Icons.Filled.RotateRight, null) },
+                                text = { Text("Print") },
+                                leadingIcon = { Icon(Icons.Filled.Print, null) },
                                 onClick = {
                                     showMoreMenu = false
-                                    viewRotation = (viewRotation + 90) % 360
+                                    printPdf()
                                 }
                             )
                             DropdownMenuItem(
@@ -486,115 +563,69 @@ fun UltraPreview(
                         Icon(Icons.Filled.Add, null, tint = PaperPink, modifier = Modifier.size(22.dp))
                     }
                 }
+
+                AnimatedVisibility(visible = showSearchBar) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.weight(1f).focusRequester(searchFocusRequester),
+                            singleLine = true,
+                            placeholder = { Text("Find in document") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { runSearch() }),
+                            trailingIcon = {
+                                if (isSearching) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = PaperPink
+                                    )
+                                }
+                            }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = when {
+                                isSearching -> "..."
+                                searchQuery.isNotBlank() && searchResults.isEmpty() -> "0/0"
+                                searchResults.isNotEmpty() -> "${activeMatchIndex + 1}/${searchResults.size}"
+                                else -> ""
+                            },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.Gray
+                        )
+                        IconButton(
+                            onClick = { goToMatch(-1) },
+                            enabled = searchResults.isNotEmpty(),
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Filled.KeyboardArrowUp, "Previous match", modifier = Modifier.size(20.dp))
+                        }
+                        IconButton(
+                            onClick = { goToMatch(1) },
+                            enabled = searchResults.isNotEmpty(),
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Filled.KeyboardArrowDown, "Next match", modifier = Modifier.size(20.dp))
+                        }
+                        IconButton(
+                            onClick = { closeSearch() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Filled.Close, "Close search", modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+
                 Divider(color = Color.Gray.copy(alpha = 0.1f))
             }
         }
 
-        if (showSearchSheet) {
-            ModalBottomSheet(
-                onDismissRequest = {
-                    showSearchSheet = false
-                    searchResults = emptyList()
-                    searchQuery = ""
-                    hasSearched = false
-                },
-                sheetState = searchSheetState,
-                containerColor = MaterialTheme.colorScheme.surface,
-                dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray.copy(alpha = 0.2f)) },
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .navigationBarsPadding()
-                ) {
-                    Text("Find in document", fontSize = 18.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = {
-                            searchQuery = it
-                            if (it.isBlank()) {
-                                searchResults = emptyList()
-                                hasSearched = false
-                            }
-                        },
-                        placeholder = { Text("Search text...") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { runSearch() })
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Button(
-                        onClick = { runSearch() },
-                        enabled = searchQuery.isNotBlank() && !isSearching,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = PaperPink)
-                    ) {
-                        Text("SEARCH", fontWeight = FontWeight.Black, color = Color.White)
-                    }
-                    if (isSearching) {
-                        LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                            color = PaperPink
-                        )
-                    }
-                    if (searchResults.isNotEmpty()) {
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "${searchResults.size} matches",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.Gray,
-                            letterSpacing = 1.sp
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp)
-                        ) {
-                            items(searchResults) { match ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            showSearchSheet = false
-                                            scope.launch { listState.scrollToItem(match.pageIndex) }
-                                        }
-                                        .padding(vertical = 10.dp),
-                                    verticalAlignment = Alignment.Top
-                                ) {
-                                    Text(
-                                        "P${match.pageIndex + 1}",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = PaperPink,
-                                        modifier = Modifier.width(42.dp)
-                                    )
-                                    Text(
-                                        match.snippet.ifBlank { "Match on page ${match.pageIndex + 1}" },
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
-                            }
-                        }
-                    } else if (hasSearched && !isSearching) {
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "No matches found.",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
-                    Spacer(Modifier.height(24.dp))
-                }
-            }
-        }
 
         if (showToolPicker) {
             ModalBottomSheet(
@@ -682,6 +713,7 @@ fun PdfPageReaderItem(
     pageSize: Pair<Float, Float>?,
     rotation: Int,
     searchMatches: List<TextMatch>,
+    activeMatch: TextMatch?,
     links: List<PdfLink>,
     onLinkClick: (String) -> Unit
 ) {
@@ -750,11 +782,15 @@ fun PdfPageReaderItem(
                 val top = r[1] * pageHeightDp
                 val width = (r[2] - r[0]) * pageWidthDp
                 val height = (r[3] - r[1]) * pageHeightDp
+                val isActive = match === activeMatch
                 Box(
                     modifier = Modifier
                         .offset(x = left.dp, y = top.dp)
                         .size(width = width.dp, height = height.dp)
-                        .background(Color(0xFFFFC107).copy(alpha = 0.35f))
+                        .background(
+                            if (isActive) Color(0xFFFF9800).copy(alpha = 0.5f)
+                            else Color(0xFFFFC107).copy(alpha = 0.3f)
+                        )
                 )
             }
 
@@ -804,4 +840,55 @@ private fun rotateNormalizedRect(
     val minY = points.minOf { it.second }
     val maxY = points.maxOf { it.second }
     return floatArrayOf(minX, minY, maxX, maxY)
+}
+
+private class PdfPrintAdapter(
+    private val context: Context,
+    private val uri: Uri
+) : PrintDocumentAdapter() {
+    override fun onLayout(
+        oldAttributes: PrintAttributes?,
+        newAttributes: PrintAttributes?,
+        cancellationSignal: CancellationSignal?,
+        callback: PrintDocumentAdapter.LayoutResultCallback?,
+        extras: Bundle?
+    ) {
+        if (cancellationSignal?.isCanceled == true) {
+            callback?.onLayoutCancelled()
+            return
+        }
+        val info = PrintDocumentInfo.Builder("PaperKnife+.pdf")
+            .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+            .build()
+        callback?.onLayoutFinished(info, true)
+    }
+
+    override fun onWrite(
+        pages: Array<out PageRange>?,
+        destination: ParcelFileDescriptor?,
+        cancellationSignal: CancellationSignal?,
+        callback: PrintDocumentAdapter.WriteResultCallback?
+    ) {
+        if (cancellationSignal?.isCanceled == true) {
+            callback?.onWriteCancelled()
+            return
+        }
+        try {
+            val fileDescriptor = destination?.fileDescriptor
+                ?: throw IllegalStateException("No print destination")
+            val inputStream = if (uri.scheme == "file") {
+                uri.path?.let { File(it).inputStream() }
+            } else {
+                context.contentResolver.openInputStream(uri)
+            }
+            inputStream?.use { input ->
+                FileOutputStream(fileDescriptor).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: throw IllegalStateException("Cannot open PDF")
+            callback?.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+        } catch (e: Exception) {
+            callback?.onWriteFailed(e.message)
+        }
+    }
 }
