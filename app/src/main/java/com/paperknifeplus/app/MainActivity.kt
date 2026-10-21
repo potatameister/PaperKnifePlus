@@ -3,6 +3,7 @@ package com.paperknifeplus.app
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -51,7 +52,16 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            )
+        )
         com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
@@ -348,8 +358,8 @@ fun FixedTitanBottomBar(
             modifier = Modifier.fillMaxWidth().height(68.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-            shadowElevation = 12.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
+            shadowElevation = 0.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
         ) {
             Row(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
@@ -392,8 +402,7 @@ fun FixedTitanBottomBar(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .offset(y = (-18).dp)
-                .size(58.dp)
-                .shadow(14.dp, RoundedCornerShape(20.dp), spotColor = PaperPink),
+                .size(58.dp),
             shape = RoundedCornerShape(20.dp),
             color = PaperPink
         ) {
