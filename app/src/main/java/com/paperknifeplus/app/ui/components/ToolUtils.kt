@@ -520,7 +520,8 @@ suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? =
 
 data class TextMatch(
     val pageIndex: Int,
-    val rect: PDRectangle
+    val rect: PDRectangle,
+    val snippet: String = ""
 )
 
 /**
@@ -542,23 +543,33 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                     
                     var index = text.indexOf(query, 0, ignoreCase = true)
                     while (index != -1) {
-                        val first = textPositions[index]
-                        val last = textPositions[index + query.length - 1]
-                        
-                        val page = document.getPage(currentPageNo - 1)
-                        val pageWidth = page.mediaBox.width
-                        val pageHeight = page.mediaBox.height
-                        
-                        // NITRO 6.0: Percentage-Based Mapping (Normalized 0.0 - 1.0)
-                        val x = first.xDirAdj / pageWidth
-                        val y = first.yDirAdj / pageHeight
-                        val w = ((last.xDirAdj + last.widthDirAdj) - first.xDirAdj) / pageWidth
-                        val h = first.heightDir / pageHeight
-                        
-                        matches.add(TextMatch(
-                            currentPageNo - 1,
-                            PDRectangle(x, y, x + w, y + h) 
-                        ))
+                        val endIndex = index + query.length - 1
+                        if (endIndex in textPositions.indices) {
+                            val first = textPositions[index]
+                            val last = textPositions[endIndex]
+
+                            if (first != null && last != null) {
+                                val page = document.getPage(currentPageNo - 1)
+                                val pageWidth = page.mediaBox.width
+                                val pageHeight = page.mediaBox.height
+
+                                // NITRO 6.0: Percentage-Based Mapping (Normalized 0.0 - 1.0)
+                                val x = first.xDirAdj / pageWidth
+                                val y = first.yDirAdj / pageHeight
+                                val w = ((last.xDirAdj + last.widthDirAdj) - first.xDirAdj) / pageWidth
+                                val h = first.heightDir / pageHeight
+
+                                val snippetStart = (index - 30).coerceAtLeast(0)
+                                val snippetEnd = (index + query.length + 30).coerceAtMost(text.length)
+                                val snippet = text.substring(snippetStart, snippetEnd).trim()
+
+                                matches.add(TextMatch(
+                                    currentPageNo - 1,
+                                    PDRectangle(x, y, x + w, y + h),
+                                    snippet
+                                ))
+                            }
+                        }
                         index = text.indexOf(query, index + 1, ignoreCase = true)
                     }
                 }
