@@ -807,11 +807,10 @@ fun PdfPageReaderItem(
                     match.rect.upperRightY,
                     rotation
                 )
-                val pad = 1f
-                val left = (offsetX + r[0] * drawWidth - pad).coerceAtLeast(0f)
-                val top = (offsetY + r[1] * drawHeight - pad).coerceAtLeast(0f)
-                val right = (offsetX + r[2] * drawWidth + pad).coerceAtMost(boxWidth)
-                val bottom = (offsetY + r[3] * drawHeight + pad).coerceAtMost(boxHeight)
+                val left = (offsetX + r[0] * drawWidth - 1f).coerceAtLeast(0f)
+                val top = (offsetY + r[1] * drawHeight - 1f).coerceAtLeast(0f)
+                val right = (offsetX + r[2] * drawWidth).coerceAtMost(boxWidth)
+                val bottom = (offsetY + r[3] * drawHeight).coerceAtMost(boxHeight)
                 val isActive = match === activeMatch
                 Box(
                     modifier = Modifier

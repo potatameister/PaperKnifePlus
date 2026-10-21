@@ -558,10 +558,13 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                                 // yDirAdj is the text baseline, not the visual top.
                                 val textHeight = first.heightDir
                                 val top = (first.yDirAdj - textHeight * 1.25f).coerceAtLeast(0f)
-                                val bottom = (first.yDirAdj + textHeight * 0.15f).coerceAtMost(pageHeight)
+                                val bottom = first.yDirAdj.coerceAtMost(pageHeight)
                                 val x = first.xDirAdj / pageWidth
                                 val y = top / pageHeight
-                                val w = ((last.xDirAdj + last.widthDirAdj) - first.xDirAdj) / pageWidth
+                                // Pull the right edge in slightly; the last glyph's advance
+                                // includes a little trailing bearing.
+                                val right = last.xDirAdj + last.widthDirAdj * 0.9f
+                                val w = (right - first.xDirAdj) / pageWidth
                                 val h = (bottom - top) / pageHeight
 
                                 val snippetStart = (index - 30).coerceAtLeast(0)
