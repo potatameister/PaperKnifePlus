@@ -403,7 +403,7 @@ private fun PremiumListItem(tool: Tool, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(8.dp))
 
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                imageVector = Icons.Outlined.KeyboardArrowRight,
                 contentDescription = null,
                 tint = Color.Gray.copy(alpha = 0.5f),
                 modifier = Modifier.size(20.dp)
