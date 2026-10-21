@@ -767,8 +767,34 @@ fun PdfPageReaderItem(
         }
 
         if (pageSize != null && displaySize != null) {
-            val pageWidthDp = maxWidth.value
-            val pageHeightDp = maxHeight.value
+            val boxWidth = maxWidth.value
+            val boxHeight = maxHeight.value
+
+            val intrinsic = if (highResPainter.state is AsyncImagePainter.State.Success) {
+                highResPainter.intrinsicSize
+            } else {
+                lowResPainter.intrinsicSize
+            }
+            val imageAspect = if (
+                intrinsic.width > 0f && intrinsic.height > 0f &&
+                !intrinsic.width.isNaN() && !intrinsic.height.isNaN()
+            ) {
+                intrinsic.width / intrinsic.height
+            } else {
+                displaySize.first / displaySize.second
+            }
+            val boxAspect = boxWidth / boxHeight
+            val drawWidth: Float
+            val drawHeight: Float
+            if (imageAspect > boxAspect) {
+                drawWidth = boxWidth
+                drawHeight = boxWidth / imageAspect
+            } else {
+                drawHeight = boxHeight
+                drawWidth = boxHeight * imageAspect
+            }
+            val offsetX = (boxWidth - drawWidth) / 2f
+            val offsetY = (boxHeight - drawHeight) / 2f
 
             searchMatches.forEach { match ->
                 val r = rotateNormalizedRect(
@@ -778,15 +804,16 @@ fun PdfPageReaderItem(
                     match.rect.upperRightY,
                     rotation
                 )
-                val left = r[0] * pageWidthDp
-                val top = r[1] * pageHeightDp
-                val width = (r[2] - r[0]) * pageWidthDp
-                val height = (r[3] - r[1]) * pageHeightDp
+                val pad = 1f
+                val left = (offsetX + r[0] * drawWidth - pad).coerceAtLeast(0f)
+                val top = (offsetY + r[1] * drawHeight - pad).coerceAtLeast(0f)
+                val right = (offsetX + r[2] * drawWidth + pad).coerceAtMost(boxWidth)
+                val bottom = (offsetY + r[3] * drawHeight + pad).coerceAtMost(boxHeight)
                 val isActive = match === activeMatch
                 Box(
                     modifier = Modifier
                         .offset(x = left.dp, y = top.dp)
-                        .size(width = width.dp, height = height.dp)
+                        .size(width = (right - left).dp, height = (bottom - top).dp)
                         .background(
                             if (isActive) Color(0xFFFF9800).copy(alpha = 0.5f)
                             else Color(0xFFFFC107).copy(alpha = 0.3f)
@@ -800,10 +827,10 @@ fun PdfPageReaderItem(
                 val u2 = link.rect.upperRightX / pageSize.first
                 val v2 = 1f - link.rect.lowerLeftY / pageSize.second
                 val r = rotateNormalizedRect(u1, v1, u2, v2, rotation)
-                val left = r[0] * pageWidthDp
-                val top = r[1] * pageHeightDp
-                val width = (r[2] - r[0]) * pageWidthDp
-                val height = (r[3] - r[1]) * pageHeightDp
+                val left = offsetX + r[0] * drawWidth
+                val top = offsetY + r[1] * drawHeight
+                val width = (r[2] - r[0]) * drawWidth
+                val height = (r[3] - r[1]) * drawHeight
                 Box(
                     modifier = Modifier
                         .offset(x = left.dp, y = top.dp)
