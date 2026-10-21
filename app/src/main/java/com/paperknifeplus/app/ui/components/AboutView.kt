@@ -163,7 +163,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
 
         item {
             AboutSection("COMMUNITY") {
-                AboutMenuItem(Icons.Filled.Favorite, "Support PaperKnife+", "Help us reach the Play Store") { onNavigate("support") }
+                AboutMenuItem(Icons.Filled.Favorite, "Support PaperKnife+", "Help support development") { onNavigate("support") }
                 AboutMenuItem(Icons.Filled.Star, "Hall of Fame", "Our amazing supporters") { onNavigate("hall") }
             }
         }
@@ -197,7 +197,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
         
         item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("PaperKnife+ V1.1", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text("PaperKnife+ V1.2", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
             }
         }
         
@@ -235,28 +235,6 @@ fun SupportPage() {
                 "PaperKnife+ is a mission to build the world's most powerful, private, and 100% free PDF utility. No ads, no tracking, no server costs.",
                 fontSize = 15.sp, fontWeight = FontWeight.Medium, lineHeight = 22.sp
             )
-        }
-
-        item {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = PaperPink.copy(alpha = 0.08f),
-                border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.2f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Store, null, tint = PaperPink, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("THE PLAY STORE PLAN", fontWeight = FontWeight.Black, fontSize = 11.sp, color = PaperPink, letterSpacing = 1.sp)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "We need your help to reach the Google Play Store! Your support covers developer fees, hosting for the website, and ensures PaperKnife+ stays updated forever.",
-                        fontSize = 13.sp, lineHeight = 18.sp
-                    )
-                }
-            }
         }
 
         item {

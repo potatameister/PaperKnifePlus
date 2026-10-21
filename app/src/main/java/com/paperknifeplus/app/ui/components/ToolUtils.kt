@@ -148,7 +148,7 @@ object BitmapPool {
                 pool[randomKey]?.removeFirstOrNull()?.recycle()
                 currentCount--
             }
-            val key = Triple(bitmap.width, bitmap.height, bitmap.config)
+            val key = Triple(bitmap.width, bitmap.height, bitmap.config ?: android.graphics.Bitmap.Config.ARGB_8888)
             pool.getOrPut(key) { mutableListOf() }.add(bitmap)
             currentCount++
         }

@@ -157,7 +157,7 @@ fun HomeView(
                                 color = if (isDark) Color(0xFFFFE082) else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Help PaperKnife be released on Play Store!",
+                                "Help support PaperKnife+ development",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Gray

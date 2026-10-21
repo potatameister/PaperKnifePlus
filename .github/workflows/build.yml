@@ -15,7 +15,7 @@ jobs:
 
     - name: Set SOURCE_DATE_EPOCH
       run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> $GITHUB_ENV
-    
+
     - name: set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -25,7 +25,7 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        packages: "build-tools;34.0.0"
+        packages: "platforms;android-36,build-tools;35.0.0"
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
@@ -37,24 +37,35 @@ jobs:
       run: |
         gradle clean assembleRelease bundleRelease --stacktrace --no-daemon --console=plain
 
-    - name: Sign and Zipalign
+    - name: Sign APK and AAB
       run: |
         # Locate tools
-        ZIPALIGN=$ANDROID_HOME/build-tools/34.0.0/zipalign
-        APKSIGNER=$ANDROID_HOME/build-tools/34.0.0/apksigner
-        
+        ZIPALIGN=$ANDROID_HOME/build-tools/35.0.0/zipalign
+        APKSIGNER=$ANDROID_HOME/build-tools/35.0.0/apksigner
+
         # Zipalign
         $ZIPALIGN -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/app-release-aligned.apk
-        
-        # Sign
+
+        # Decode signing key
         echo "${{ secrets.SIGNING_KEY }}" | base64 -d > keystore.jks
-        $APKSIGNER sign --ks keystore.jks \
+
+        # Sign APK (preserve alignment for F-Droid reproducible builds)
+        $APKSIGNER sign --alignment-preserved true --ks keystore.jks \
           --ks-key-alias "${{ secrets.ALIAS }}" \
           --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
           --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
           --out app/build/outputs/apk/release/PaperKnife+.apk \
           app/build/outputs/apk/release/app-release-aligned.apk
-        
+
+        # Sign AAB for Google Play
+        $APKSIGNER sign --ks keystore.jks \
+          --ks-key-alias "${{ secrets.ALIAS }}" \
+          --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
+          --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
+          --min-sdk-version 24 \
+          --out app/build/outputs/bundle/release/PaperKnife+.aab \
+          app/build/outputs/bundle/release/app-release.aab
+
         # Cleanup
         rm keystore.jks
 
@@ -73,4 +84,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: PaperKnifePlus-Release-AAB
-        path: app/build/outputs/bundle/release/app-release.aab
+        path: app/build/outputs/bundle/release/PaperKnife+.aab
