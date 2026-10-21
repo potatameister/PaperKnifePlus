@@ -76,8 +76,8 @@ This confirms the APK was signed by the PaperKnife+ signing key. It verifies the
 <a href="https://github.com/sponsors/potatameister">
   <img src="https://img.shields.io/badge/GitHub_Sponsors-sponsor-red?style=for-the-badge&logo=github" alt="GitHub Sponsor">
 </a>
-<a href="https://potatameister.github.io/support">
-  <img src="https://img.shields.io/badge/Support-us-pink?style=for-the-badge&logo=github" alt="Support PaperKnife+">
+<a href="https://buymeacoffee.com/potatameister">
+  <img src="https://img.shields.io/badge/Buy_Me_a_Coffee-support-orange?style=for-the-badge&logo=buymeacoffee" alt="Buy Me Coffee">
 </a>
 
 ---
