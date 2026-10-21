@@ -148,7 +148,7 @@ fun PdfToZipView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "PDF to Pages ZIP", "$pageCount pages archived", Icons.Outlined.FolderZip, saveUri)
+                        SessionManager.addEntry(fileName, "PDF to Pages ZIP", "$pageCount pages archived", ToolCatalog.icon("pdf2zip"), saveUri)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -200,7 +200,7 @@ fun PdfToZipView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.FolderZip,
+                            icon = ToolCatalog.icon("pdf2zip"),
                             title = "Tap to enter file",
                             subtitle = "CREATE PAGES ARCHIVE",
                             accentColor = accentColor,

@@ -86,7 +86,7 @@ fun ImageToPdfView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
-                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Image to PDF", "${selectedUris.size} images", Icons.Filled.Description, saveUri, selectedUris.size)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Image to PDF", "${selectedUris.size} images", ToolCatalog.icon("img2pdf"), saveUri, selectedUris.size)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -140,7 +140,7 @@ fun ImageToPdfView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("image/*") },
                             isDark = isDark,
-                            icon = Icons.Outlined.PictureAsPdf,
+                            icon = ToolCatalog.icon("img2pdf"),
                             title = "Tap to select images",
                             subtitle = "JPG, PNG, OR WEBP",
                             accentColor = accentColor,

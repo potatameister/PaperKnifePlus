@@ -105,7 +105,7 @@ fun RepairView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Repair", "Restored", Icons.Outlined.Build, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Repair", "Restored", ToolCatalog.icon("repair"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -179,7 +179,7 @@ fun RepairView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Build,
+                            icon = ToolCatalog.icon("repair"),
                             title = "Tap to enter file",
                             subtitle = "REPAIR BROKEN PDF STRUCTURE",
                             accentColor = accentColor,

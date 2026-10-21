@@ -227,7 +227,7 @@ fun WatermarkView(
                     withContext(Dispatchers.Main) {
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
-                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Watermark", "Branding applied locally", Icons.Filled.TextFields, saveUri, pageCount)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Watermark", "Branding applied locally", ToolCatalog.icon("watermark"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -345,7 +345,7 @@ fun WatermarkView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.TextFields,
+                            icon = ToolCatalog.icon("watermark"),
                             title = "Tap to enter file",
                             subtitle = "WATERMARK PAGES",
                             accentColor = accentColor,

@@ -111,7 +111,7 @@ fun PdfToTextView(
                 extractedText = text
                 processingTime = time
                 withContext(Dispatchers.Main) {
-                    SessionManager.addEntry(fileName, "To Text", "${text.length} chars", Icons.Outlined.Description)
+                    SessionManager.addEntry(fileName, "To Text", "${text.length} chars", ToolCatalog.icon("pdf2text"))
                     currentState = ToolState.SUCCESS
                 }
             }
@@ -184,7 +184,7 @@ fun PdfToTextView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Description,
+                            icon = ToolCatalog.icon("pdf2text"),
                             title = "Tap to select PDF",
                             subtitle = "EXTRACT TEXT DATA",
                             accentColor = accentColor,

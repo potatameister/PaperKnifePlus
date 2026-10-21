@@ -125,7 +125,7 @@ fun CompressView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Compress", "Optimized", Icons.Filled.FlashOn, saveUri, finalCount)
+                        SessionManager.addEntry(fileName, "Compress", "Optimized", ToolCatalog.icon("compress"), saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -179,7 +179,7 @@ fun CompressView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Bolt,
+                            icon = ToolCatalog.icon("compress"),
                             title = "Tap to enter file",
                             subtitle = "OPTIMIZE ANY PDF DOCUMENT",
                             accentColor = accentColor,

@@ -177,7 +177,7 @@ fun ExtractImagesView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Extract Image", "$extractedCount assets", Icons.Filled.Collections, saveUri)
+                        SessionManager.addEntry(fileName, "Extract Image", "$extractedCount assets", ToolCatalog.icon("extract-images"), saveUri)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -257,7 +257,7 @@ fun ExtractImagesView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.PhotoLibrary,
+                            icon = ToolCatalog.icon("extract-images"),
                             title = "Tap to enter file",
                             subtitle = "EXTRACT ASSETS FROM PDF",
                             accentColor = accentColor,

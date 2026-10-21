@@ -180,7 +180,7 @@ fun SplitView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Split", "${selectedPages.size} pages extracted", Icons.Filled.ContentCut, saveUri, finalCount)
+                        SessionManager.addEntry(fileName, "Split", "${selectedPages.size} pages extracted", ToolCatalog.icon("split"), saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -234,7 +234,7 @@ fun SplitView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.ContentCut,
+                            icon = ToolCatalog.icon("split"),
                             title = "Tap to enter file",
                             subtitle = "SPLIT PDF INTO PARTS",
                             accentColor = accentColor,

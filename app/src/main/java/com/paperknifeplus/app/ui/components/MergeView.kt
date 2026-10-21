@@ -155,7 +155,7 @@ fun MergeView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         mergedUri = saveUri
-                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers, saveUri, finalCount)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Merge", "${selectedFiles.size} files joined", ToolCatalog.icon("merge"), saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -211,7 +211,7 @@ fun MergeView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") },
                             isDark = isDark,
-                            icon = Icons.Filled.Layers,
+                            icon = ToolCatalog.icon("merge"),
                             title = "Tap to choose files",
                             subtitle = "SELECT MULTIPLE PDFS",
                             accentColor = accentColor,

@@ -169,7 +169,7 @@ fun DeleteView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Delete", "${pagesToDeleteSet.size} pages removed", Icons.Filled.Delete, saveUri, finalCount)
+                        SessionManager.addEntry(fileName, "Delete", "${pagesToDeleteSet.size} pages removed", ToolCatalog.icon("delete"), saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -233,7 +233,7 @@ fun DeleteView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.Delete,
+                            icon = ToolCatalog.icon("delete"),
                             title = "Tap to enter file",
                             subtitle = "DELETE PAGES INSTANTLY",
                             accentColor = accentColor,

@@ -110,7 +110,7 @@ fun UnlockView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Unlock", "Decrypted", Icons.Outlined.LockOpen, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Unlock", "Decrypted", ToolCatalog.icon("unlock"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -182,7 +182,7 @@ fun UnlockView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.LockOpen,
+                            icon = ToolCatalog.icon("unlock"),
                             title = "Tap to select locked file",
                             subtitle = "REMOVE PASSWORD PROTECTION",
                             accentColor = accentColor,

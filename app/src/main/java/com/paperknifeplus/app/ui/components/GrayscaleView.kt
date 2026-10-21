@@ -114,7 +114,7 @@ fun GrayscaleView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Grayscale", "Converted to B&W", Icons.Outlined.Palette, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Grayscale", "Converted to B&W", ToolCatalog.icon("grayscale"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -168,7 +168,7 @@ fun GrayscaleView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Palette,
+                            icon = ToolCatalog.icon("grayscale"),
                             title = "Tap to enter file",
                             subtitle = "GRAYSCALE ANY PDF DOCUMENT",
                             accentColor = accentColor,

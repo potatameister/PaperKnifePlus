@@ -125,7 +125,7 @@ fun RotateView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Rotate", "Fixed orientation", Icons.Filled.RotateRight, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Rotate", "Fixed orientation", ToolCatalog.icon("rotate"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -179,7 +179,7 @@ fun RotateView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.RotateRight,
+                            icon = ToolCatalog.icon("rotate"),
                             title = "Tap to enter file",
                             subtitle = "ROTATE ANY PDF DOCUMENT",
                             accentColor = accentColor,

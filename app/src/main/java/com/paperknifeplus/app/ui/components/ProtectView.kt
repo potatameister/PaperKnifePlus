@@ -127,7 +127,7 @@ fun ProtectView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Protect", "Encrypted", Icons.Outlined.Lock, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Protect", "Encrypted", ToolCatalog.icon("protect"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -181,7 +181,7 @@ fun ProtectView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Security,
+                            icon = ToolCatalog.icon("protect"),
                             title = "Tap to enter file",
                             subtitle = "PROTECT ANY PDF DOCUMENT",
                             accentColor = accentColor,

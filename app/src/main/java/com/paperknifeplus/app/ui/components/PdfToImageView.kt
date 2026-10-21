@@ -117,7 +117,7 @@ fun PdfToImageView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "PDF to Image", "${selectedPages.size} images", Icons.Outlined.BurstMode, saveUri)
+                        SessionManager.addEntry(fileName, "PDF to Image", "${selectedPages.size} images", ToolCatalog.icon("pdf2img"), saveUri)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -194,7 +194,7 @@ fun PdfToImageView(
                     SelectionGrid(
                         onSelect = { pickLauncher.launch("application/pdf") }, 
                         isDark = isDark,
-                        icon = Icons.Outlined.BurstMode,
+                        icon = ToolCatalog.icon("pdf2img"),
                         title = "Tap to select PDF",
                         subtitle = "CONVERT DOCUMENT TO IMAGES",
                         accentColor = accentColor,

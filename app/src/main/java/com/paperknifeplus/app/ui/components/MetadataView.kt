@@ -128,7 +128,7 @@ fun MetadataView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", Icons.Filled.Fingerprint, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", ToolCatalog.icon("metadata"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -209,7 +209,7 @@ fun MetadataView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Fingerprint,
+                            icon = ToolCatalog.icon("metadata"),
                             title = "Tap to enter file",
                             subtitle = "EDIT PDF PROPERTIES",
                             accentColor = accentColor,

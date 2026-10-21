@@ -116,14 +116,7 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
             }
         }
         
-        Text(
-            text = "ALL LOCAL SESSIONS",
-            fontSize = 8.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.Gray.copy(alpha = 0.6f),
-            letterSpacing = 1.5.sp,
-            modifier = Modifier.padding(top = 16.dp, bottom = 12.dp, start = 24.dp)
-        )
+        Spacer(modifier = Modifier.height(12.dp))
 
         if (filteredItems.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -171,15 +164,7 @@ fun HistoryView(onItemClick: (Uri, String, Int) -> Unit) {
 @Composable
 fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
-    val entryColor = remember(entry.tool) { 
-        when {
-            entry.tool.contains("Merge", true) || entry.tool.contains("Split", true) || entry.tool.contains("Delete", true) || entry.tool.contains("Rearrange", true) -> Color(0xFFF43F5E)
-            entry.tool.contains("Compress", true) || entry.tool.contains("ZIP", true) || entry.tool.contains("Grayscale", true) -> Color(0xFFF59E0B)
-            entry.tool.contains("Protect", true) || entry.tool.contains("Lock", true) || entry.tool.contains("Unlock", true) || entry.tool.contains("Metadata", true) -> Color(0xFF8B5CF6)
-            entry.tool.contains("Convert", true) || entry.tool.contains("PDF to", true) || entry.tool.contains("Img to", true) || entry.tool.contains("Extract", true) -> Color(0xFF10B981)
-            else -> PaperPink
-        }
-    }
+    val entryColor = remember(entry.tool) { ToolCatalog.colorFor(entry.tool) }
 
     Card(
         modifier = Modifier

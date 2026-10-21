@@ -192,7 +192,7 @@ fun PageNumbersView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.FormatListNumbered,
+                            icon = ToolCatalog.icon("page-numbers"),
                             title = "Tap to enter file",
                             subtitle = "ADD PAGE NUMBERS",
                             accentColor = accentColor,

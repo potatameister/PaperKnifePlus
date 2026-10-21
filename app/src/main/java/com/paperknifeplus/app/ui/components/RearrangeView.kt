@@ -104,7 +104,7 @@ fun RearrangeView(
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", Icons.Filled.GridView, saveUri, pageOrder.size)
+                        SessionManager.addEntry(fileName, "Rearrange", "Reordered pages", ToolCatalog.icon("rearrange"), saveUri, pageOrder.size)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -158,7 +158,7 @@ fun RearrangeView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.SwapVert,
+                            icon = ToolCatalog.icon("rearrange"),
                             title = "Tap to enter file",
                             subtitle = "REORDER PAGES RELIABLY",
                             accentColor = accentColor,

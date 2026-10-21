@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -39,45 +40,12 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 @Composable
 fun ToolsView(onToolClick: (String) -> Unit) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var isListView by rememberSaveable { mutableStateOf(false) }
+    var isListView by rememberSaveable { mutableStateOf(true) }
 
-    val allTools = remember {
-        listOf(
-            // EDIT - Rose
-            Tool(id = "merge", name = "Merge", description = "Combine PDFs", subtitle = "Join Files", icon = Icons.Outlined.Layers, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "split", name = "Split", description = "Extract pages", subtitle = "Extract Pages", icon = Icons.Outlined.ContentCut, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "delete", name = "Delete", description = "Remove pages", subtitle = "Wipe Pages", icon = Icons.Outlined.Delete, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "rearrange", name = "Rearrange", description = "Sort pages", subtitle = "Sort Order", icon = Icons.Outlined.SwapVert, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "rotate", name = "Rotate", description = "Fix orientation", subtitle = "Fix Angle", icon = Icons.Outlined.RotateRight, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "sign", name = "Sign", description = "Add signature", subtitle = "Add Signature", icon = Icons.Outlined.Draw, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "watermark", name = "Watermark", description = "Add overlay", subtitle = "Custom Overlay", icon = Icons.Outlined.TextFields, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "page-numbers", name = "Numbers", description = "Add pagination", subtitle = "Add Numbers", icon = Icons.Outlined.FormatListNumbered, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "bookmarks", name = "Bookmarks", description = "Edit bookmarks", subtitle = "Nav Anchors", icon = Icons.Outlined.BookmarkBorder, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
+    val categories = ToolCatalog.categories
 
-            // OPTIMIZE - Amber
-            Tool(id = "compress", name = "Compress", description = "Small size", subtitle = "Reduce Size", icon = Icons.Outlined.Bolt, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
-            Tool(id = "grayscale", name = "Grayscale", description = "Gray tones", subtitle = "Black & White", icon = Icons.Outlined.Palette, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
-            Tool(id = "repair", name = "Repair", description = "Fix corruption", subtitle = "Fix Defects", icon = Icons.Outlined.Build, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
-            Tool(id = "compare", name = "Compare", description = "Visual diff", subtitle = "Side-by-Side", icon = Icons.Outlined.Compare, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
-
-            // SECURE - Indigo
-            Tool(id = "protect", name = "Lock", description = "Password", subtitle = "Set Pass", icon = Icons.Outlined.Lock, category = "Secure", color = Color(0xFF6366F1), bgColor = Color(0xFFEEF2FF)),
-            Tool(id = "unlock", name = "Unlock", description = "Remove pass", subtitle = "Remove Pass", icon = Icons.Outlined.LockOpen, category = "Secure", color = Color(0xFF6366F1), bgColor = Color(0xFFEEF2FF)),
-            Tool(id = "metadata", name = "Metadata", description = "Edit props", subtitle = "Edit Info", icon = Icons.Outlined.Fingerprint, category = "Secure", color = Color(0xFF6366F1), bgColor = Color(0xFFEEF2FF)),
-
-            // CONVERT - Teal
-            Tool(id = "pdf2img", name = "PDF to Img", description = "High-res export", subtitle = "Export Frames", icon = Icons.Outlined.BurstMode, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA)),
-            Tool(id = "img2pdf", name = "Img to PDF", description = "Build from photos", subtitle = "Build PDF", icon = Icons.Outlined.PictureAsPdf, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA)),
-            Tool(id = "pdf2zip", name = "PDF to ZIP", description = "Archive docs", subtitle = "Zip Pages", icon = Icons.Outlined.FolderZip, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA)),
-            Tool(id = "extract-images", name = "Extract", description = "Save assets", subtitle = "Strip Raw", icon = Icons.Outlined.Collections, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA)),
-            Tool(id = "pdf2text", name = "PDF to Text", description = "Extract text", subtitle = "Plain Text", icon = Icons.Outlined.Article, category = "Convert", color = Color(0xFF14B8A6), bgColor = Color(0xFFF0FDFA))
-        )
-    }
-
-    val categories = remember { listOf("Edit", "Optimize", "Secure", "Convert") }
-
-    val groupedTools = remember(searchQuery, allTools) {
-        allTools
+    val groupedTools = remember(searchQuery) {
+        ToolCatalog.all
             .filter {
                 it.name.contains(searchQuery, ignoreCase = true) ||
                     it.description.contains(searchQuery, ignoreCase = true) ||
@@ -213,9 +181,10 @@ private fun ToolsHeader(
             Surface(
                 onClick = onToggleView,
                 modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = PaperPink.copy(alpha = 0.10f),
-                border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.30f))
+                shape = CircleShape,
+                color = PaperPink.copy(alpha = 0.12f),
+                border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.35f)),
+                shadowElevation = 1.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(

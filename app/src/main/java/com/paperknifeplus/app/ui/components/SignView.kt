@@ -245,7 +245,7 @@ fun SignView(
                     withContext(Dispatchers.Main) {
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
-                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Sign", "Document signed locally", Icons.Filled.Draw, saveUri, pageCount)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Sign", "Document signed locally", ToolCatalog.icon("sign"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -386,7 +386,7 @@ fun SignView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.Draw,
+                            icon = ToolCatalog.icon("sign"),
                             title = "Tap to enter file",
                             subtitle = "SIGN ANY PDF DOCUMENT",
                             accentColor = accentColor,

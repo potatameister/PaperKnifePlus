@@ -146,7 +146,7 @@ fun CompareView(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                            Icon(Icons.Filled.Compare, null, modifier = Modifier.size(48.dp).alpha(0.1f))
+                            Icon(ToolCatalog.icon("compare"), null, modifier = Modifier.size(48.dp).alpha(0.1f))
                             Spacer(Modifier.height(16.dp))
                             Text("Pick two files to begin comparison.", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
                         }

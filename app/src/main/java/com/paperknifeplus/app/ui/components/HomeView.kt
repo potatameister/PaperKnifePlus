@@ -63,14 +63,7 @@ fun HomeView(
         }
     }
 
-    val coreEngines = remember {
-        listOf(
-            Tool(id = "merge", name = "Merge", description = "COMBINE", subtitle = "Join Files", icon = Icons.Filled.Layers, category = "Edit", color = Color(0xFFF43F5E), bgColor = Color(0xFFFFF1F2)),
-            Tool(id = "compress", name = "Compress", description = "OPTIMIZE", subtitle = "Reduce Size", icon = Icons.Filled.Bolt, category = "Optimize", color = Color(0xFFF59E0B), bgColor = Color(0xFFFFFBEB)),
-            Tool(id = "unlock", name = "Unlock", description = "REMOVE LOCK", subtitle = "Remove Pass", icon = Icons.Filled.LockOpen, category = "Security", color = Color(0xFF8B5CF6), bgColor = Color(0xFFF5F3FF)),
-            Tool(id = "pdf_text", name = "PDF to Text", description = "EXTRACT", subtitle = "Plain Text", icon = Icons.AutoMirrored.Filled.Notes, category = "Convert", color = Color(0xFF10B981), bgColor = Color(0xFFECFDF5))
-        )
-    }
+    val coreEngines = ToolCatalog.core
 
     val history = SessionManager.history
 
@@ -343,14 +336,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
         } else {
             Spacer(Modifier.height(8.dp))
             history.take(2).forEach { entry ->
-                val entryColor = remember(entry.tool) {
-                    when {
-                        entry.tool.contains("Merge", true) || entry.tool.contains("Split", true) -> Color(0xFFF43F5E)
-                        entry.tool.contains("Compress", true) || entry.tool.contains("ZIP", true) -> Color(0xFFF59E0B)
-                        entry.tool.contains("Rearrange", true) -> Color(0xFF10B981)
-                        else -> PaperPink
-                    }
-                }
+                val entryColor = remember(entry.tool) { ToolCatalog.colorFor(entry.tool) }
                 Row(
                     modifier = Modifier
                         .padding(vertical = 3.dp)

@@ -28,42 +28,10 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 @Composable
 fun ToolPickerContent(onToolClick: (String) -> Unit) {
     var isExpanded by remember { mutableStateOf(false) }
-    
-    val allTools = remember {
-        listOf(
-            Tool("merge", "Merge", "Join PDFs", "Join Files", Icons.Outlined.Layers, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("split", "Split", "Extract pages", "Extract Pages", Icons.Outlined.ContentCut, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("delete", "Delete", "Remove pages", "Wipe Pages", Icons.Outlined.Delete, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rearrange", "Rearrange", "Sort pages", "Sort Order", Icons.Outlined.SwapVert, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("rotate", "Rotate", "Fix orientation", "Fix Angle", Icons.Outlined.RotateRight, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("sign", "Sign", "Add signature", "Add Signature", Icons.Outlined.Draw, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("watermark", "Watermark", "Add overlay", "Custom Overlay", Icons.Outlined.TextFields, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            Tool("page-numbers", "Numbers", "Add pagination", "Add Numbers", Icons.Outlined.FormatListNumbered, "Edit", Color(0xFFF43F5E), Color(0xFFFFF1F2)),
-            
-            Tool("compress", "Compress", "Small size", "Reduce Size", Icons.Outlined.Bolt, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("grayscale", "Grayscale", "Gray tones", "Black & White", Icons.Outlined.Palette, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("repair", "Repair", "Fix corruption", "Fix Defects", Icons.Outlined.Build, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            Tool("compare", "Compare", "Visual diff", "Side-by-Side", Icons.Outlined.Compare, "Optimize", Color(0xFFF59E0B), Color(0xFFFFFBEB)),
-            
-            Tool("protect", "Lock", "Password", "Set Pass", Icons.Outlined.Lock, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-            Tool("unlock", "Unlock", "Remove pass", "Remove Pass", Icons.Outlined.LockOpen, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-            Tool("metadata", "Metadata", "Edit props", "Edit Metadata", Icons.Outlined.Fingerprint, "Secure", Color(0xFF8B5CF6), Color(0xFFF5F3FF)),
-            
-            Tool("pdf2img", "PDF to Img", "High-res export", "Export Assets", Icons.Outlined.BurstMode, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
-            Tool("img2pdf", "Img to PDF", "Build from photos", "Build PDF", Icons.Outlined.PictureAsPdf, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
-            Tool("extract-images", "Extract", "Strip assets", "Strip Raw", Icons.Outlined.Collections, "Convert", Color(0xFF10B981), Color(0xFFECFDF5)),
-            Tool("pdf2text", "PDF to Text", "Extract text", "Plain Text", Icons.AutoMirrored.Outlined.Notes, "Convert", Color(0xFF10B981), Color(0xFFECFDF5))
-        )
-    }
 
-    val essentialIds = listOf("merge", "split", "compress", "sign", "protect", "pdf2img")
-    val categories = listOf("Edit", "Optimize", "Secure", "Convert")
-    val catDescriptions = mapOf(
-        "Edit" to "Organize & Modify",
-        "Optimize" to "Shrink & Repair",
-        "Secure" to "Protect & Unlock",
-        "Convert" to "Export Assets"
-    )
+    val allTools = ToolCatalog.all
+    val categories = ToolCatalog.categories
+    val catDescriptions = ToolCatalog.categoryDescriptions
     val isDark = MaterialTheme.colorScheme.background == Color.Black
 
     Column(
@@ -106,13 +74,13 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
         if (!isExpanded) {
             // Mode 1: Compact Essentials (Grid of 6)
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                essentialIds.chunked(3).forEach { rowIds ->
+                ToolCatalog.essentials.chunked(3).forEach { rowTools ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        rowIds.forEach { id ->
-                            val tool = allTools.find { it.id == id }
-                            if (tool != null) {
-                                ModernToolItem(tool, isDark, Modifier.weight(1f), onToolClick)
-                            }
+                        rowTools.forEach { tool ->
+                            ModernToolItem(tool, isDark, Modifier.weight(1f), onToolClick)
+                        }
+                        repeat(3 - rowTools.size) {
+                            Spacer(Modifier.weight(1f))
                         }
                     }
                     Spacer(Modifier.height(12.dp))

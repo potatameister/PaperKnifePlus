@@ -251,7 +251,7 @@ fun BookmarksView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.BookmarkBorder,
+                            icon = ToolCatalog.icon("bookmarks"),
                             title = "Tap to enter file",
                             subtitle = "MANAGE PDF BOOKMARKS",
                             accentColor = accentColor,
