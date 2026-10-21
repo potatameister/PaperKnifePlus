@@ -34,6 +34,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
+import kotlin.math.abs
 import java.util.zip.ZipOutputStream
 
 data class UriDetails(
@@ -520,7 +521,7 @@ suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? =
 
 data class TextMatch(
     val pageIndex: Int,
-    val rect: PDRectangle,
+    val rects: List<PDRectangle>,
     val snippet: String = ""
 )
 
@@ -564,28 +565,53 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                                 val pageWidth = first.pageWidth
                                 val pageHeight = first.pageHeight
 
-                                // NITRO 6.0: Percentage-Based Mapping (Normalized 0.0 - 1.0)
-                                // yDirAdj is the text baseline, not the visual top.
-                                val textHeight = first.heightDir
-                                val top = (first.yDirAdj - textHeight * 1.25f).coerceAtLeast(0f)
-                                val bottom = first.yDirAdj.coerceAtMost(pageHeight)
-                                val x = first.xDirAdj / pageWidth
-                                val y = top / pageHeight
-                                // Pull the right edge in slightly; the last glyph's advance
-                                // includes a little trailing bearing.
-                                val right = last.xDirAdj + last.widthDirAdj * 0.9f
-                                val w = (right - first.xDirAdj) / pageWidth
-                                val h = (bottom - top) / pageHeight
+                                // A match can span multiple lines. Build one rectangle per line,
+                                // like PDF viewers do, instead of one huge rectangle.
+                                val matchedPositions = expandedPositions.subList(index, endIndex + 1)
+                                val lines = mutableListOf<MutableList<TextPosition>>()
+                                var lineY = Float.NaN
+                                matchedPositions.forEach { position ->
+                                    if (lines.isNotEmpty() &&
+                                        abs(position.yDirAdj - lineY) > maxOf(position.heightDir, 1f) / 2f
+                                    ) {
+                                        lines.add(mutableListOf())
+                                        lineY = position.yDirAdj
+                                    }
+                                    if (lines.isEmpty()) {
+                                        lines.add(mutableListOf())
+                                        lineY = position.yDirAdj
+                                    }
+                                    lines.last().add(position)
+                                }
 
-                                val snippetStart = (index - 30).coerceAtLeast(0)
-                                val snippetEnd = (index + query.length + 30).coerceAtMost(text.length)
-                                val snippet = text.substring(snippetStart, snippetEnd).trim()
+                                val rects = lines.mapNotNull { line ->
+                                    if (line.isEmpty()) return@mapNotNull null
+                                    var minX = Float.MAX_VALUE
+                                    var maxX = -Float.MAX_VALUE
+                                    var minY = Float.MAX_VALUE
+                                    var maxY = -Float.MAX_VALUE
 
-                                matches.add(TextMatch(
-                                    currentPageNo - 1,
-                                    PDRectangle(x, y, x + w, y + h),
-                                    snippet
-                                ))
+                                    line.forEach { position ->
+                                        minX = minOf(minX, position.xDirAdj)
+                                        maxX = maxOf(maxX, position.xDirAdj + position.widthDirAdj * 0.95f)
+                                        minY = minOf(minY, position.yDirAdj - position.heightDir * 1.25f)
+                                        maxY = maxOf(maxY, position.yDirAdj)
+                                    }
+
+                                    val nx = (minX / pageWidth).coerceIn(0f, 1f)
+                                    val ny = (minY / pageHeight).coerceIn(0f, 1f)
+                                    val nx2 = (maxX / pageWidth).coerceIn(0f, 1f)
+                                    val ny2 = (maxY / pageHeight).coerceIn(0f, 1f)
+                                    if (nx2 <= nx || ny2 <= ny) null
+                                    else PDRectangle(nx, ny, nx2, ny2)
+                                }
+
+                                if (rects.isNotEmpty()) {
+                                    val snippetStart = (index - 30).coerceAtLeast(0)
+                                    val snippetEnd = (index + query.length + 30).coerceAtMost(text.length)
+                                    val snippet = text.substring(snippetStart, snippetEnd).trim()
+                                    matches.add(TextMatch(currentPageNo - 1, rects, snippet))
+                                }
                             }
                         }
                         index = text.indexOf(query, index + 1, ignoreCase = true)

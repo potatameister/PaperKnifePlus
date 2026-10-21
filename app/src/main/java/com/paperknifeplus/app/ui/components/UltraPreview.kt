@@ -800,27 +800,29 @@ fun PdfPageReaderItem(
             val offsetY = (boxHeight - drawHeight) / 2f
 
             searchMatches.forEach { match ->
-                val r = rotateNormalizedRect(
-                    match.rect.lowerLeftX,
-                    match.rect.lowerLeftY,
-                    match.rect.upperRightX,
-                    match.rect.upperRightY,
-                    rotation
-                )
-                val left = (offsetX + r[0] * drawWidth - 1f).coerceAtLeast(0f)
-                val top = (offsetY + r[1] * drawHeight - 1f).coerceAtLeast(0f)
-                val right = (offsetX + r[2] * drawWidth).coerceAtMost(boxWidth)
-                val bottom = (offsetY + r[3] * drawHeight).coerceAtMost(boxHeight)
                 val isActive = match === activeMatch
-                Box(
-                    modifier = Modifier
-                        .offset(x = left.dp, y = top.dp)
-                        .size(width = (right - left).dp, height = (bottom - top).dp)
-                        .background(
-                            if (isActive) Color(0xFFFF9800).copy(alpha = 0.5f)
-                            else Color(0xFFFFC107).copy(alpha = 0.3f)
-                        )
-                )
+                match.rects.forEach { rect ->
+                    val r = rotateNormalizedRect(
+                        rect.lowerLeftX,
+                        rect.lowerLeftY,
+                        rect.upperRightX,
+                        rect.upperRightY,
+                        rotation
+                    )
+                    val left = (offsetX + r[0] * drawWidth - 1f).coerceAtLeast(0f)
+                    val top = (offsetY + r[1] * drawHeight - 1f).coerceAtLeast(0f)
+                    val right = (offsetX + r[2] * drawWidth).coerceAtMost(boxWidth)
+                    val bottom = (offsetY + r[3] * drawHeight).coerceAtMost(boxHeight)
+                    Box(
+                        modifier = Modifier
+                            .offset(x = left.dp, y = top.dp)
+                            .size(width = (right - left).dp, height = (bottom - top).dp)
+                            .background(
+                                if (isActive) Color(0xFFFF9800).copy(alpha = 0.5f)
+                                else Color(0xFFFFC107).copy(alpha = 0.3f)
+                            )
+                    )
+                }
             }
 
             links.forEach { link ->
