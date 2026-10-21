@@ -185,6 +185,8 @@ class MainActivity : ComponentActivity() {
                                                     currentTool = "about"
                                                 } else if (it == "tools") {
                                                     scope.launch { pagerState.animateScrollToPage(1) }
+                                                } else if (it == "history") {
+                                                    scope.launch { pagerState.animateScrollToPage(2) }
                                                 } else {
                                                     currentTool = it 
                                                 }
