@@ -238,12 +238,15 @@ fun SettingsView(
 
 @Composable
 fun ThemeOption(label: String, icon: ImageVector, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val unselectedBackground = if (isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFF4F4F5)
+
     Surface(
         onClick = onClick,
         modifier = modifier.height(72.dp),
         shape = RoundedCornerShape(16.dp),
-        color = if (selected) PaperPink.copy(alpha = 0.1f) else Color.Transparent,
-        border = BorderStroke(1.dp, if (selected) PaperPink else Color.Gray.copy(alpha = 0.1f))
+        color = if (selected) PaperPink.copy(alpha = 0.1f) else unselectedBackground,
+        border = BorderStroke(1.dp, if (selected) PaperPink else Color.Transparent)
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(icon, null, modifier = Modifier.size(20.dp), tint = if (selected) PaperPink else Color.Gray)
