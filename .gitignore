@@ -16,6 +16,7 @@ local.properties
 /PaperKnife-reference/
 TODOS.md
 AGENTS.md
+changelog.md
 
 # Signing keys (NEVER commit)
 *.jks
