@@ -180,20 +180,16 @@ private fun ToolsHeader(
 
             Surface(
                 onClick = onToggleView,
-                modifier = Modifier.size(40.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 shape = CircleShape,
-                color = PaperPink.copy(alpha = 0.12f),
-                border = BorderStroke(1.dp, PaperPink.copy(alpha = 0.35f)),
-                shadowElevation = 1.dp
+                modifier = Modifier.size(36.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = if (isListView) Icons.Outlined.GridView else Icons.Outlined.FormatListBulleted,
-                        contentDescription = if (isListView) "Switch to grid view" else "Switch to list view",
-                        tint = PaperPink,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                Icon(
+                    imageVector = if (isListView) Icons.Outlined.GridView else Icons.Outlined.FormatListBulleted,
+                    contentDescription = if (isListView) "Switch to grid view" else "Switch to list view",
+                    modifier = Modifier.padding(8.dp).size(20.dp),
+                    tint = PaperPink
+                )
             }
         }
 

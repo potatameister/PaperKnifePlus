@@ -32,12 +32,14 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.paperknifeplus.app.R
 import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.launch
 
@@ -67,27 +69,33 @@ fun HomeView(
 
     val history = SessionManager.history
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val homeColumns = when {
+            maxWidth >= 1000.dp -> 5
+            maxWidth >= 700.dp -> 4
+            maxWidth >= 500.dp -> 3
+            else -> 2
+        }
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            columns = GridCells.Fixed(homeColumns),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            item(span = { GridItemSpan(2) }, key = "header") {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
                 HomeHeader(isDarkMode, onThemeToggle)
             }
 
-            item(span = { GridItemSpan(2) }, key = "hero") {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "hero") {
                 HeroCard(onSelectPdf = { pickLauncher.launch("application/pdf") })
             }
 
-            item(span = { GridItemSpan(2) }, key = "history") {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "history") {
                 MiniHistoryBar(history, onHistoryClick = { onToolClick("history") }, onOpenPreview = onOpenPreview)
             }
 
-            item(span = { GridItemSpan(2) }, key = "label") {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "label") {
                 Row(
                     modifier = Modifier.padding(top = 4.dp, bottom = 2.dp, start = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -106,56 +114,66 @@ fun HomeView(
                 BentoCard(tool = tool, onClick = { onToolClick(tool.id) })
             }
 
-            item(span = { GridItemSpan(2) }, key = "more") {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "more") {
                 MoreToolsCard(onClick = { onToolClick("tools") })
             }
 
-            item(span = { GridItemSpan(2) }, key = "footer") {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "footer") {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                val isDark = MaterialTheme.colorScheme.background == Color.Black
-                val coffeeBg = if (isDark) Color(0xFF3D3520) else Color(0xFFFFF9C4)
-                val coffeeBorder = if (isDark) Color(0xFF5D5020) else Color(0xFFFFEB3B)
-                val coffeeIconBg = if (isDark) Color(0xFF5D5020) else Color(0xFFFFEB3B)
-
-                // Support Buy Me a Coffee style Card
+                // GitHub-style support card
                 Surface(
                     onClick = {
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://buymeacoffee.com/potatameister"))
+                        val intent = android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            Uri.parse("https://potatameister.github.io/support")
+                        )
                         context.startActivity(intent)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 20.dp),
                     shape = RoundedCornerShape(20.dp),
-                    color = coffeeBg,
-                    border = BorderStroke(1.dp, coffeeBorder)
+                    color = Color(0xFF0D1117),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier = Modifier.size(36.dp).background(coffeeIconBg, CircleShape),
+                            modifier = Modifier.size(38.dp).background(Color.White.copy(alpha = 0.08f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Filled.Coffee, null, tint = if (isDark) Color(0xFFFFE082) else Color(0xFF795548), modifier = Modifier.size(20.dp))
+                            Icon(
+                                painter = painterResource(R.drawable.ic_github),
+                                contentDescription = "GitHub",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
-                        Spacer(Modifier.width(16.dp))
-                        Column {
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
                             Text(
-                                "Buy me a coffee",
-                                fontSize = 13.sp,
+                                "Support us",
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Black,
-                                color = if (isDark) Color(0xFFFFE082) else MaterialTheme.colorScheme.onSurface
+                                color = Color.White
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                "Help support PaperKnife+ development",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Gray
+                                "Help keep PaperKnife+ free and open",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF8B949E)
                             )
                         }
+                        Icon(
+                            Icons.Filled.ChevronRight,
+                            contentDescription = null,
+                            tint = Color(0xFF8B949E),
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
 
@@ -365,20 +383,20 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1.2f),
-        shape = RoundedCornerShape(24.dp),
+            .aspectRatio(1f),
+        shape = RoundedCornerShape(20.dp),
         color = containerColor,
         border = BorderStroke(1.dp, borderColor)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(12.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(32.dp)
                     .background(if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -386,7 +404,7 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
                     imageVector = tool.icon ?: Icons.Filled.Build,
                     contentDescription = null,
                     tint = tool.color,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(17.dp)
                 )
             }
 
@@ -401,9 +419,9 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
                 )
                 Text(
                     text = tool.description.uppercase(),
-                    fontSize = 7.sp,
+                    fontSize = 8.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Gray.copy(alpha = 0.5f),
+                    color = Color.Gray.copy(alpha = 0.55f),
                     letterSpacing = 0.2.sp
                 )
             }
