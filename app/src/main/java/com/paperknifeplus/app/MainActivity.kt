@@ -176,7 +176,7 @@ class MainActivity : ComponentActivity() {
                                 .background(MaterialTheme.colorScheme.background)
                                 .navigationBarsPadding()
                         ) {
-                            Column(modifier = Modifier.fillMaxSize().padding(bottom = 104.dp)) {
+                            Column(modifier = Modifier.fillMaxSize()) {
                                 androidx.compose.foundation.pager.HorizontalPager(
                                     state = pagerState,
                                     modifier = Modifier.weight(1f),
@@ -352,8 +352,21 @@ fun FixedTitanBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.Transparent,
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.92f)
+                        )
+                    )
+                )
+        )
+
         Surface(
             modifier = Modifier.fillMaxWidth().height(68.dp),
             shape = RoundedCornerShape(28.dp),
