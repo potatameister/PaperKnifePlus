@@ -770,12 +770,15 @@ fun PdfPageReaderItem(
             val boxWidth = maxWidth.value
             val boxHeight = maxHeight.value
 
-            val intrinsic = if (highResPainter.state is AsyncImagePainter.State.Success) {
-                highResPainter.intrinsicSize
-            } else {
-                lowResPainter.intrinsicSize
-            }
+            val intrinsic = runCatching {
+                when {
+                    highResPainter.state is AsyncImagePainter.State.Success -> highResPainter.intrinsicSize
+                    lowResPainter.state is AsyncImagePainter.State.Success -> lowResPainter.intrinsicSize
+                    else -> null
+                }
+            }.getOrNull()
             val imageAspect = if (
+                intrinsic != null &&
                 intrinsic.width > 0f && intrinsic.height > 0f &&
                 !intrinsic.width.isNaN() && !intrinsic.height.isNaN()
             ) {
