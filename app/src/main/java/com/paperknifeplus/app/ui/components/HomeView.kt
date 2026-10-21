@@ -36,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,12 +71,7 @@ fun HomeView(
     val history = SessionManager.history
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val homeColumns = when {
-            maxWidth >= 1000.dp -> 5
-            maxWidth >= 700.dp -> 4
-            maxWidth >= 500.dp -> 3
-            else -> 2
-        }
+        val homeColumns = if (maxWidth >= 700.dp) 4 else 2
         LazyVerticalGrid(
             columns = GridCells.Fixed(homeColumns),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -383,20 +379,20 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f),
-        shape = RoundedCornerShape(20.dp),
+            .heightIn(min = 92.dp),
+        shape = RoundedCornerShape(18.dp),
         color = containerColor,
         border = BorderStroke(1.dp, borderColor)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(34.dp)
                     .background(if (isDark) tool.color.copy(alpha = 0.12f) else tool.bgColor, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -404,25 +400,31 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
                     imageVector = tool.icon ?: Icons.Filled.Build,
                     contentDescription = null,
                     tint = tool.color,
-                    modifier = Modifier.size(17.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
-            Column {
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = tool.name,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.3).sp,
-                    lineHeight = 14.sp
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(1.dp))
                 Text(
                     text = tool.description.uppercase(),
-                    fontSize = 8.sp,
+                    fontSize = 7.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Gray.copy(alpha = 0.55f),
-                    letterSpacing = 0.2.sp
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                    letterSpacing = 0.2.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
