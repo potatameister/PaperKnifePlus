@@ -53,13 +53,31 @@ Get the latest APK: [PaperKnife+ v1.1](https://github.com/potatameister/PaperKni
 
 ---
 
+## Verify the APK
+
+Signing certificate SHA-256 for GitHub release APKs:
+
+```text
+6B:AD:1D:71:9A:8B:B9:7C:73:FA:60:AA:08:B2:B0:D7:33:C7:75:3B:0F:C6:74:A1:30:6F:CD:94:62:23:8A:F8
+```
+
+Verify a downloaded APK with:
+
+```bash
+apksigner verify --print-certs PaperKnife+.apk
+```
+
+This confirms the APK was signed by the PaperKnife+ signing key. It verifies the signer, not the exact file contents.
+
+---
+
 ## Support
 
 <a href="https://github.com/sponsors/potatameister">
   <img src="https://img.shields.io/badge/GitHub_Sponsors-sponsor-red?style=for-the-badge&logo=github" alt="GitHub Sponsor">
 </a>
-<a href="https://buymeacoffee.com/potatameister">
-  <img src="https://img.shields.io/badge/Buy_Me_a_Coffee-support-orange?style=for-the-badge&logo=buymeacoffee" alt="Buy Me Coffee">
+<a href="https://potatameister.github.io/support">
+  <img src="https://img.shields.io/badge/Support-us-pink?style=for-the-badge&logo=github" alt="Support PaperKnife+">
 </a>
 
 ---
