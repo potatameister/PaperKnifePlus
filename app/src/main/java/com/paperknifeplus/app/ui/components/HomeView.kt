@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -40,7 +39,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.paperknifeplus.app.R
 import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.launch
 
@@ -138,14 +136,14 @@ fun HomeView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier = Modifier.size(38.dp).background(Color.White.copy(alpha = 0.08f), CircleShape),
+                            modifier = Modifier.size(38.dp).background(Color(0xFFEA4AAA), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_github),
-                                contentDescription = "GitHub",
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = "GitHub Sponsors",
                                 tint = Color.White,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                         Spacer(Modifier.width(14.dp))

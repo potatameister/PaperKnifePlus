@@ -68,7 +68,7 @@ object ToolCatalog {
     ).mapNotNull { byId[it] }
 
     val core: List<Tool> = listOf(
-        "merge", "compress", "unlock", "pdf2text"
+        "merge", "compress", "protect", "pdf2text"
     ).mapNotNull { byId[it] }
 
     fun icon(id: String): ImageVector = byId[id]?.icon ?: Icons.Outlined.Build
