@@ -540,13 +540,23 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
             val stripper = object : PDFTextStripper() {
                 override fun writeString(text: String?, textPositions: MutableList<TextPosition>?) {
                     if (text == null || textPositions == null) return
-                    
+
+                    // A single TextPosition can cover multiple characters (ligatures,
+                    // spaces, etc.), so indexing textPositions by letter index can
+                    // point at a completely different glyph/line. Expand first.
+                    val expandedPositions = ArrayList<TextPosition>(text.length)
+                    textPositions.forEach { tp ->
+                        repeat(tp.unicode.length.coerceAtLeast(1)) {
+                            expandedPositions.add(tp)
+                        }
+                    }
+
                     var index = text.indexOf(query, 0, ignoreCase = true)
                     while (index != -1) {
                         val endIndex = index + query.length - 1
-                        if (endIndex in textPositions.indices) {
-                            val first = textPositions[index]
-                            val last = textPositions[endIndex]
+                        if (endIndex in expandedPositions.indices) {
+                            val first = expandedPositions[index]
+                            val last = expandedPositions[endIndex]
 
                             if (first != null && last != null) {
                                 // Use the same page dimensions the text stripper used.
