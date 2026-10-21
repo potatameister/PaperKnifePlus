@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.paperknifeplus.app.R
 import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.launch
 
@@ -115,7 +117,13 @@ fun HomeView(
             item(span = { GridItemSpan(maxLineSpan) }, key = "footer") {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // GitHub-style support card
+                // PaperKnife-style support card
+                val supportDark = MaterialTheme.colorScheme.background == Color.Black
+                val supportCard = if (supportDark) Color.White else Color(0xFF09090B)
+                val supportText = if (supportDark) Color.Black else Color.White
+                val supportSub = if (supportDark) Color(0xFF52525B) else Color(0xFFA1A1AA)
+                val supportIconBg = if (supportDark) Color.Black.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.10f)
+
                 Surface(
                     onClick = {
                         val intent = android.content.Intent(
@@ -127,47 +135,53 @@ fun HomeView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 20.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFF0D1117),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                    shape = RoundedCornerShape(28.dp),
+                    color = supportCard,
+                    shadowElevation = 4.dp
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier = Modifier.size(38.dp).background(Color(0xFFEA4AAA), CircleShape),
+                            modifier = Modifier.size(40.dp).background(supportIconBg, RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Favorite,
-                                contentDescription = "GitHub Sponsors",
-                                tint = Color.White,
+                                contentDescription = "Support PaperKnife",
+                                tint = Color(0xFFF43F5E),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
-                                "Support us",
+                                "Support PaperKnife",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Black,
-                                color = Color.White
+                                color = supportText
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                "Help keep PaperKnife+ free and open",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF8B949E)
+                                "HELP FUEL DEVELOPMENT",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = supportSub,
+                                letterSpacing = 1.sp
                             )
                         }
-                        Icon(
-                            Icons.Filled.ChevronRight,
-                            contentDescription = null,
-                            tint = Color(0xFF8B949E),
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Box(
+                            modifier = Modifier.size(32.dp).background(supportIconBg, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_github),
+                                contentDescription = "GitHub",
+                                tint = supportText,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
 
