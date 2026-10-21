@@ -88,7 +88,7 @@ fun UltraPreview(
     var showJumpDialog by remember { mutableStateOf(false) }
     var jumpPageInput by remember { mutableStateOf("") }
     var showToolPicker by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var showMoreMenu by remember { mutableStateOf(false) }
     var showSearchBar by remember { mutableStateOf(false) }

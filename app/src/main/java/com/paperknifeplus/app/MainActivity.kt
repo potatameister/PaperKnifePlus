@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -92,7 +94,7 @@ class MainActivity : ComponentActivity() {
 
             CompositionLocalProvider(coil.compose.LocalImageLoader provides nitroImageLoader) {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
-                    val sheetState = rememberModalBottomSheetState()
+                    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                     var showToolPicker by remember { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
 
@@ -418,13 +420,17 @@ fun NavItem(
         targetValue = if (selected) PaperPink.copy(alpha = 0.10f) else Color.Transparent,
         label = "navBackground"
     )
+    val haptics = LocalHapticFeedback.current
 
     Column(
         modifier = modifier
             .padding(horizontal = 2.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(background)
-            .clickable(onClick = onClick)
+            .clickable {
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
             .padding(vertical = 6.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
