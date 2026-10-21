@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -40,7 +39,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.paperknifeplus.app.R
 import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.launch
 
@@ -157,7 +155,7 @@ fun HomeView(
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
-                                "Support PaperKnife",
+                                "Support PaperKnife+",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Black,
                                 color = supportText
@@ -171,17 +169,12 @@ fun HomeView(
                                 letterSpacing = 1.sp
                             )
                         }
-                        Box(
-                            modifier = Modifier.size(32.dp).background(supportIconBg, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_github),
-                                contentDescription = "GitHub",
-                                tint = supportText,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                        Icon(
+                            Icons.Filled.ChevronRight,
+                            contentDescription = null,
+                            tint = supportSub,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
 
