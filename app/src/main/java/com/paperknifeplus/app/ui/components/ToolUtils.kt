@@ -555,10 +555,14 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                                 val pageHeight = first.pageHeight
 
                                 // NITRO 6.0: Percentage-Based Mapping (Normalized 0.0 - 1.0)
+                                // yDirAdj is the text baseline, not the visual top.
+                                val textHeight = first.heightDir
+                                val top = (first.yDirAdj - textHeight * 1.25f).coerceAtLeast(0f)
+                                val bottom = (first.yDirAdj + textHeight * 0.15f).coerceAtMost(pageHeight)
                                 val x = first.xDirAdj / pageWidth
-                                val y = first.yDirAdj / pageHeight
+                                val y = top / pageHeight
                                 val w = ((last.xDirAdj + last.widthDirAdj) - first.xDirAdj) / pageWidth
-                                val h = first.heightDir / pageHeight
+                                val h = (bottom - top) / pageHeight
 
                                 val snippetStart = (index - 30).coerceAtLeast(0)
                                 val snippetEnd = (index + query.length + 30).coerceAtMost(text.length)
