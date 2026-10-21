@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -163,7 +164,7 @@ class MainActivity : ComponentActivity() {
                                 .background(MaterialTheme.colorScheme.background)
                                 .navigationBarsPadding()
                         ) {
-                            Column(modifier = Modifier.fillMaxSize().padding(bottom = 84.dp)) {
+                            Column(modifier = Modifier.fillMaxSize().padding(bottom = 104.dp)) {
                                 androidx.compose.foundation.pager.HorizontalPager(
                                     state = pagerState,
                                     modifier = Modifier.weight(1f),
@@ -339,89 +340,107 @@ fun FixedTitanBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.98f))
-            .height(84.dp),
-        contentAlignment = Alignment.BottomCenter
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .offset(y = (-32).dp)
-                .size(40.dp)
-                .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.4f), Color.Transparent)))
-        )
-
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp),
+            modifier = Modifier.fillMaxWidth().height(68.dp),
+            shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-            tonalElevation = 8.dp
+            shadowElevation = 12.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
         ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(bottom = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        NavItem(Icons.Outlined.Home, "Home", currentScreen == "home") { onNavigate("home") }
-                        NavItem(Icons.Outlined.GridView, "Tools", currentScreen == "tools") { onNavigate("tools") }
-                    }
-                    
-                    Spacer(modifier = Modifier.width(72.dp))
-                    
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        NavItem(Icons.Outlined.History, "History", currentScreen == "history") { onNavigate("history") }
-                        NavItem(Icons.Outlined.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
-                    }
-                }
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                NavItem(
+                    icon = if (currentScreen == "home") Icons.Filled.Home else Icons.Outlined.Home,
+                    label = "Home",
+                    selected = currentScreen == "home",
+                    modifier = Modifier.weight(1f)
+                ) { onNavigate("home") }
+
+                NavItem(
+                    icon = if (currentScreen == "tools") Icons.Filled.GridView else Icons.Outlined.GridView,
+                    label = "Tools",
+                    selected = currentScreen == "tools",
+                    modifier = Modifier.weight(1f)
+                ) { onNavigate("tools") }
+
+                Spacer(modifier = Modifier.width(72.dp))
+
+                NavItem(
+                    icon = if (currentScreen == "history") Icons.Filled.History else Icons.Outlined.History,
+                    label = "History",
+                    selected = currentScreen == "history",
+                    modifier = Modifier.weight(1f)
+                ) { onNavigate("history") }
+
+                NavItem(
+                    icon = if (currentScreen == "settings" || currentScreen == "about") Icons.Filled.Settings else Icons.Outlined.Settings,
+                    label = "Settings",
+                    selected = currentScreen == "settings" || currentScreen == "about",
+                    modifier = Modifier.weight(1f)
+                ) { onNavigate("settings") }
             }
         }
 
         Surface(
+            onClick = onPlusClick,
             modifier = Modifier
-                .offset(y = (-34).dp)
+                .align(Alignment.TopCenter)
+                .offset(y = (-18).dp)
                 .size(58.dp)
-                .border(2.5.dp, if (MaterialTheme.colorScheme.background == Color.Black) Color.Black else Color.White, RoundedCornerShape(20.dp))
-                .shadow(elevation = 12.dp, shape = RoundedCornerShape(20.dp), spotColor = PaperPink)
-                .clickable { onPlusClick() },
+                .shadow(14.dp, RoundedCornerShape(20.dp), spotColor = PaperPink),
             shape = RoundedCornerShape(20.dp),
             color = PaperPink
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(28.dp))
             }
         }
     }
 }
 
 @Composable
-fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+fun NavItem(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val tint by animateColorAsState(
+        targetValue = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+        label = "navTint"
+    )
+    val background by animateColorAsState(
+        targetValue = if (selected) PaperPink.copy(alpha = 0.10f) else Color.Transparent,
+        label = "navBackground"
+    )
+
     Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+        modifier = modifier
+            .padding(horizontal = 2.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(background)
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp, horizontal = 16.dp),
+            .padding(vertical = 6.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-            modifier = Modifier.size(24.dp)
+            tint = tint,
+            modifier = Modifier.size(22.dp)
         )
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
             fontSize = 10.sp,
             fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
-            color = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            color = tint,
             letterSpacing = 0.2.sp
         )
     }
