@@ -107,6 +107,7 @@ class MainActivity : ComponentActivity() {
                     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                     var showToolPicker by remember { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
+                    val haptics = LocalHapticFeedback.current
 
                     Box(Modifier.fillMaxSize()) {
                         var currentTool by remember { mutableStateOf<String?>(null) }
@@ -246,7 +247,10 @@ class MainActivity : ComponentActivity() {
                                             scope.launch { pagerState.scrollToPage(index) }
                                         }
                                     },
-                                    onPlusClick = { showToolPicker = true }
+                                    onPlusClick = {
+                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        showToolPicker = true
+                                    }
                                 )
                             }
 
@@ -417,7 +421,8 @@ fun FixedTitanBottomBar(
                 .offset(y = (-18).dp)
                 .size(58.dp),
             shape = RoundedCornerShape(20.dp),
-            color = PaperPink
+            color = PaperPink,
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(28.dp))
@@ -443,6 +448,10 @@ fun NavItem(
         label = "navBackground"
     )
     val haptics = LocalHapticFeedback.current
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1.08f else 1f,
+        label = "navIconScale"
+    )
 
     Column(
         modifier = modifier
@@ -461,7 +470,12 @@ fun NavItem(
             imageVector = icon,
             contentDescription = label,
             tint = tint,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier
+                .size(22.dp)
+                .graphicsLayer {
+                    scaleX = iconScale
+                    scaleY = iconScale
+                }
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
