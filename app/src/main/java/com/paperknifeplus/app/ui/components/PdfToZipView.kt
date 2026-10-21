@@ -179,7 +179,7 @@ fun PdfToZipView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("PDF to ZIP", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("PAGES TO ARCHIVE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("PAGES TO ARCHIVE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -229,7 +229,7 @@ fun PdfToZipView(
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
 
                             Spacer(Modifier.height(20.dp))
-                            Text("ARCHIVE INFO", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Text("ARCHIVE INFO", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Text(
                                 "Bundle all document pages as individual PDFs into a single ZIP archive.", 
                                 fontSize = 11.sp, 

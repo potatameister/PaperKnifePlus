@@ -158,7 +158,7 @@ fun CompressView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Compress", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("OPTIMIZE PDF SIZE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("OPTIMIZE PDF SIZE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -208,7 +208,7 @@ fun CompressView(
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
                             Spacer(Modifier.height(24.dp))
-                            Text("OPTIMIZATION LEVEL", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Spacer(Modifier.height(12.dp))
                             
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

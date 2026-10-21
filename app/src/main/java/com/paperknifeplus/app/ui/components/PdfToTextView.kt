@@ -163,7 +163,7 @@ fun PdfToTextView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("PDF to Text", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("EXTRACT RAW CONTENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("EXTRACT RAW CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -248,7 +248,7 @@ fun PdfToTextView(
                             ) {
                                 Column {
                                     Text("EXTRACTED CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                                    Text("${extractedText.length} CHARACTERS FOUND", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                                    Text("${extractedText.length} CHARACTERS FOUND", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                                 }
                                 Row {
                                     IconButton(onClick = { 

@@ -176,7 +176,7 @@ fun PdfToImageView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("PDF to Image", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("NATIVE EXPORT ENGINE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("NATIVE EXPORT ENGINE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -212,7 +212,7 @@ fun PdfToImageView(
                             shape = RoundedCornerShape(24.dp)
                         ) {
                             Column(Modifier.padding(16.dp)) {
-                                Text("EXPORT CONFIGURATION", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
+                                Text("EXPORT CONFIGURATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
                                 Spacer(Modifier.height(12.dp))
                                 
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -260,7 +260,7 @@ fun PdfToImageView(
                         }
 
                         Spacer(Modifier.height(16.dp))
-                        Text("SELECT PAGES TO EXPORT", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp))
+                        Text("SELECT PAGES TO EXPORT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp))
                         Spacer(Modifier.height(8.dp))
 
                         Box(modifier = Modifier.weight(1f)) {

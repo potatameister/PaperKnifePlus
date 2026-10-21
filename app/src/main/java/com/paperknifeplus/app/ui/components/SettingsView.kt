@@ -97,9 +97,9 @@ fun SettingsView(
             item {
                 SettingsGroup("USER PROFILE") {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                        Text("DEFAULT AUTHOR", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                        Text("DEFAULT AUTHOR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                         Spacer(Modifier.height(4.dp))
-                        Text("This name is automatically added to the 'Author' field in the metadata of every PDF you save.", fontSize = 10.sp, color = Color.Gray)
+                        Text("This name is automatically added to the 'Author' field in the metadata of every PDF you save.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                         Spacer(Modifier.height(12.dp))
                         TextField(
                             value = autoAuthor,
@@ -180,7 +180,7 @@ fun SettingsView(
 
             item {
                 Column(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("PaperKnife+ V1.2", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Text("PaperKnife+ V1.2", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                 }
             }
         }

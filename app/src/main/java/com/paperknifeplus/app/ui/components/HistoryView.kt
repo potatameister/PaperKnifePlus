@@ -193,7 +193,7 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Uni
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(entry.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-                Text("${entry.tool.uppercase()} • ${entry.size}", fontSize = 11.sp, color = Color.Gray)
+                Text("${entry.tool.uppercase()} • ${entry.size}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             }
             
             IconButton(onClick = onDownload, modifier = Modifier.size(32.dp)) {
@@ -213,7 +213,7 @@ fun HistoryItem(entry: ActivityEntry, onClick: () -> Unit, onDownload: () -> Uni
                 Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
                     Text(
                         "OPEN",
-                        fontSize = 9.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
                         letterSpacing = 0.5.sp

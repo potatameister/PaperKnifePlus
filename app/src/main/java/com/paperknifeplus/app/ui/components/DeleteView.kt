@@ -218,7 +218,7 @@ fun DeleteView(
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("Delete", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("REMOVE PAGES FROM PDF", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        Text("REMOVE PAGES FROM PDF", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                 }
             }
@@ -250,7 +250,7 @@ fun DeleteView(
                             ) {
                                 Column {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                                    Text("${pagesToDeleteSet.size} / $pageCount MARKED FOR DELETION", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                    Text("${pagesToDeleteSet.size} / $pageCount MARKED FOR DELETION", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
                                 
                                 TextButton(onClick = { showRangeInput = !showRangeInput }) {

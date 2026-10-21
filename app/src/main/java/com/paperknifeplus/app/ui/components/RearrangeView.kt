@@ -137,7 +137,7 @@ fun RearrangeView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Rearrange", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("MOVE PAGES TO NEW SLOTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("MOVE PAGES TO NEW SLOTS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -174,7 +174,7 @@ fun RearrangeView(
                             ) {
                                 Column {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                                    Text("${pageOrder.size} PAGES • TAP TO SELECT", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                    Text("${pageOrder.size} PAGES • TAP TO SELECT", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
                                 IconButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING; selectedPageIndex = null }) { 
                                     Icon(Icons.Filled.Close, "Clear", tint = Color.Gray, modifier = Modifier.size(20.dp)) 

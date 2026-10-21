@@ -160,7 +160,7 @@ fun UnifiedPdfPreview(
                 Text(
                     "DRAG & DROP COMING SOON",
                     color = Color.White,
-                    fontSize = 8.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Black,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     letterSpacing = 1.sp

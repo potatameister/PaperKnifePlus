@@ -98,9 +98,9 @@ fun HomeView(
                 ) {
                     Text(
                         text = "CORE TOOLS",
-                        fontSize = 8.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color.Gray.copy(alpha = 0.6f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         letterSpacing = 1.2.sp
                     )
                 }
@@ -268,7 +268,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 )
                 Text(
                     text = "TAP TO LOAD FROM DEVICE",
-                    fontSize = 8.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Black,
                     color = subTextColor,
                     letterSpacing = 0.5.sp
@@ -302,7 +302,7 @@ fun HeroCard(onSelectPdf: () -> Unit) {
                 Text(
                     text = "START SESSION",
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                    fontSize = 7.5.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
                     letterSpacing = 0.8.sp
@@ -332,10 +332,10 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.History, null, modifier = Modifier.size(11.dp), tint = Color.Gray)
                 Spacer(Modifier.width(6.dp))
-                Text("RECENT ACTIVITY", fontSize = 7.5.sp, fontWeight = FontWeight.Black, color = Color.Gray.copy(alpha = 0.6f), letterSpacing = 0.8.sp)
+                Text("RECENT ACTIVITY", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), letterSpacing = 0.8.sp)
             }
             if (history.isNotEmpty()) {
-                Text("VIEW ALL", fontSize = 7.5.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 0.8.sp)
+                Text("VIEW ALL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 0.8.sp)
             }
         }
 
@@ -343,7 +343,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
             Spacer(Modifier.height(8.dp))
             Text(
                 "NO RECENT SESSIONS",
-                fontSize = 9.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Gray.copy(alpha = 0.3f)
             )
@@ -362,7 +362,7 @@ fun MiniHistoryBar(history: List<ActivityEntry>, onHistoryClick: () -> Unit, onO
                     Icon(entry.icon, null, modifier = Modifier.size(12.dp), tint = entryColor.copy(alpha = 0.6f))
                     Spacer(Modifier.width(10.dp))
                     Text(entry.name, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f), maxLines = 1)
-                    Text(entry.tool.uppercase(), fontSize = 7.sp, fontWeight = FontWeight.Black, color = entryColor.copy(alpha = 0.5f))
+                    Text(entry.tool.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Black, color = entryColor.copy(alpha = 0.75f))
                 }
             }
         }
@@ -419,9 +419,9 @@ fun BentoCard(tool: Tool, onClick: () -> Unit) {
                 Spacer(modifier = Modifier.height(1.dp))
                 Text(
                     text = tool.description.uppercase(),
-                    fontSize = 7.5.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     letterSpacing = 0.2.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -472,7 +472,7 @@ fun MoreToolsCard(onClick: () -> Unit) {
                         )
                         Text(
                             text = "FULL CATALOG",
-                            fontSize = 7.5.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White.copy(alpha = 0.7f),
                             letterSpacing = 0.8.sp

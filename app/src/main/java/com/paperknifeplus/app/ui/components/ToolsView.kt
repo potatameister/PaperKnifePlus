@@ -297,9 +297,9 @@ private fun PremiumGridItem(tool: Tool, onClick: () -> Unit) {
 
             Text(
                 text = tool.description.uppercase(),
-                fontSize = 8.5.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 letterSpacing = 0.3.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

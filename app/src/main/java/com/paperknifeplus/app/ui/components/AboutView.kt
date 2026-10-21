@@ -81,7 +81,7 @@ fun AboutView(initialPage: String = "main", isFromSettings: Boolean = false, onB
                         fontWeight = FontWeight.Black,
                         letterSpacing = (-0.5).sp
                     )
-                    Text("SECURE PDF ENGINE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                    Text("SECURE PDF ENGINE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                 }
             }
         }
@@ -113,7 +113,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                 Logo(modifier = Modifier.size(64.dp), partColor = if (isDark) Color.White else Color.Black)
                 Spacer(Modifier.height(16.dp))
                 Text("PaperKnife+", fontSize = 24.sp, fontWeight = FontWeight.Black)
-                Text("NATIVE PDF WORKSHOP", fontSize = 9.sp, color = PaperPink, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                Text("NATIVE PDF WORKSHOP", fontSize = 10.sp, color = PaperPink, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
             }
         }
 
@@ -197,7 +197,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
         
         item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("PaperKnife+ V1.2", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text("PaperKnife+ V1.2", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
             }
         }
         
@@ -218,7 +218,7 @@ fun SocialIcon(painter: androidx.compose.ui.graphics.painter.Painter, label: Str
             Icon(painter, null, tint = color, modifier = Modifier.size(24.dp))
         }
         Spacer(Modifier.height(4.dp))
-        Text(label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
     }
 }
 
@@ -335,7 +335,7 @@ fun LibrariesPage() {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("PDFBox-Android", fontWeight = FontWeight.Black, fontSize = 14.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("[Apache 2.0]", fontSize = 9.sp, color = PaperPink, fontWeight = FontWeight.Bold)
+                            Text("[Apache 2.0]", fontSize = 10.sp, color = PaperPink, fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.height(4.dp))
                         Text("The native heart of our engine", fontSize = 11.sp, color = Color.Gray)
@@ -362,7 +362,7 @@ fun LibrariesPage() {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Kotlin Coroutines", fontWeight = FontWeight.Black, fontSize = 14.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("[Apache 2.0]", fontSize = 9.sp, color = PaperPink, fontWeight = FontWeight.Bold)
+                            Text("[Apache 2.0]", fontSize = 10.sp, color = PaperPink, fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.height(4.dp))
                         Text("Powering our multi-threaded rendering engine", fontSize = 11.sp, color = Color.Gray)
@@ -398,7 +398,7 @@ fun LibrariesPage() {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Jetpack Compose", fontWeight = FontWeight.Black, fontSize = 14.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("[Apache 2.0]", fontSize = 9.sp, color = Color(0xFF8B5CF6), fontWeight = FontWeight.Bold)
+                            Text("[Apache 2.0]", fontSize = 10.sp, color = Color(0xFF8B5CF6), fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.height(4.dp))
                         Text("Modern UI toolkit for native Android", fontSize = 11.sp, color = Color.Gray)
@@ -425,7 +425,7 @@ fun LibrariesPage() {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Material 3", fontWeight = FontWeight.Black, fontSize = 14.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("[Apache 2.0]", fontSize = 9.sp, color = Color(0xFF8B5CF6), fontWeight = FontWeight.Bold)
+                            Text("[Apache 2.0]", fontSize = 10.sp, color = Color(0xFF8B5CF6), fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.height(4.dp))
                         Text("Modern design system implementation", fontSize = 11.sp, color = Color.Gray)
@@ -461,7 +461,7 @@ fun LibrariesPage() {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Coil", fontWeight = FontWeight.Black, fontSize = 14.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("[MIT]", fontSize = 9.sp, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+                            Text("[MIT]", fontSize = 10.sp, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.height(4.dp))
                         Text("High-performance image loading engine", fontSize = 11.sp, color = Color.Gray)
@@ -522,7 +522,7 @@ fun HallOfFamePage(onNavigate: (String) -> Unit) {
             }
             Spacer(Modifier.height(16.dp))
             Text("The Legends", fontWeight = FontWeight.Black, fontSize = 20.sp)
-            Text("PEOPLE WHO MADE THIS POSSIBLE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.5.sp)
+            Text("PEOPLE WHO MADE THIS POSSIBLE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.5.sp)
         }
         
         item {

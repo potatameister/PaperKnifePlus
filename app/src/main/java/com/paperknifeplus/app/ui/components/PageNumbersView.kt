@@ -171,7 +171,7 @@ fun PageNumbersView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Page Numbers", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("CUSTOM PAGINATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("CUSTOM PAGINATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -353,7 +353,7 @@ fun PageNumbersView(
                             OutlinedTextField(
                                 value = format,
                                 onValueChange = { format = it },
-                                label = { Text("Format ({n})", fontSize = 9.sp) },
+                                label = { Text("Format ({n})", fontSize = 10.sp) },
                                 modifier = Modifier.weight(1.5f),
                                 shape = RoundedCornerShape(12.dp),
                                 singleLine = true,
@@ -369,7 +369,7 @@ fun PageNumbersView(
                                 Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                                     Box(Modifier.size(16.dp).clip(CircleShape).background(numberColor).border(1.dp, Color.Gray.copy(0.3f), CircleShape))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("COLOR", fontSize = 9.sp, fontWeight = FontWeight.Black)
+                                    Text("COLOR", fontSize = 10.sp, fontWeight = FontWeight.Black)
                                 }
                             }
                         }
@@ -398,7 +398,7 @@ fun PageNumbersView(
                                 Icon(Icons.Filled.Place, null, tint = accentColor, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(16.dp))
                                 Column {
-                                    Text("POSITION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                                    Text("POSITION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
                                     Text(position.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                                 }
                                 Spacer(Modifier.weight(1f))

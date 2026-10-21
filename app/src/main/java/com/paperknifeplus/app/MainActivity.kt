@@ -419,7 +419,7 @@ fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> 
         )
         Text(
             text = label,
-            fontSize = 9.sp,
+            fontSize = 10.sp,
             fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
             color = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
             letterSpacing = 0.2.sp

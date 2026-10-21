@@ -110,7 +110,7 @@ fun CompareView(
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f)) {
                         Text("Compare", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                        Text(if (isComparing) "SYNCHRONIZED VIEW" else "VISUAL DIFFERENCE TOOL", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                        Text(if (isComparing) "SYNCHRONIZED VIEW" else "VISUAL DIFFERENCE TOOL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                     }
                     if (!isComparing && (fileA != null || fileB != null)) {
                         TextButton(onClick = { fileA = null; fileB = null; nameA = ""; nameB = ""; passA = ""; passB = "" }) {
@@ -262,7 +262,7 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: 
                             )
                         } else {
                             Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(Color.Gray.copy(0.05f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                Text("END OF FILE A", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
+                                Text("END OF FILE A", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
                             }
                         }
                     }
@@ -283,7 +283,7 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: 
                             )
                         } else {
                             Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(Color.Gray.copy(0.05f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                Text("END OF FILE B", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
+                                Text("END OF FILE B", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
                             }
                         }
                     }
@@ -323,7 +323,7 @@ fun CompareFileCard(label: String, name: String, isSelected: Boolean, color: Col
                 modifier = Modifier.size(28.dp)
             )
             Spacer(Modifier.height(12.dp))
-            Text(label, fontSize = 8.sp, fontWeight = FontWeight.Black, color = if (isSelected) color else Color.Gray, letterSpacing = 1.sp)
+            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Black, color = if (isSelected) color else Color.Gray, letterSpacing = 1.sp)
             Spacer(Modifier.height(4.dp))
             Text(if (isSelected) name else "Select File", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }

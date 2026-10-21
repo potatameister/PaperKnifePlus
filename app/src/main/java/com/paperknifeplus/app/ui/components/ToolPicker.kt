@@ -108,7 +108,7 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     category.uppercase(),
-                                    fontSize = 9.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Black,
                                     color = catColor,
                                     letterSpacing = 1.5.sp,
@@ -117,7 +117,7 @@ fun ToolPickerContent(onToolClick: (String) -> Unit) {
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     catDescriptions[category] ?: "",
-                                    fontSize = 8.sp,
+                                    fontSize = 10.sp,
                                     color = Color.Gray,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -168,7 +168,7 @@ fun ModernToolItem(tool: Tool, isDark: Boolean, modifier: Modifier = Modifier, o
             Column {
                 Text(
                     tool.name, 
-                    fontSize = 9.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Black, 
                     color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.2).sp,

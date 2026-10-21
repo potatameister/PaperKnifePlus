@@ -158,7 +158,7 @@ fun RotateView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Rotate", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("FIX DOCUMENT ORIENTATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("FIX DOCUMENT ORIENTATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -196,7 +196,7 @@ fun RotateView(
                                 Column {
                                     Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                                     val changed = pageRotations.values.count { it != 0 }
-                                    Text("$changed / $pageCount PAGES MODIFIED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                    Text("$changed / $pageCount PAGES MODIFIED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
                                 
                                 TextButton(onClick = { 

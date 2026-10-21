@@ -161,7 +161,7 @@ fun UnlockView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Unlock", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("REMOVE PDF RESTRICTIONS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("REMOVE PDF RESTRICTIONS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUri != null && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
@@ -211,7 +211,7 @@ fun UnlockView(
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
                             Spacer(Modifier.height(20.dp))
-                            Text("DOCUMENT UNLOCKED", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
+                            Text("DOCUMENT UNLOCKED", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
                             Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 11.sp)
                             
                             Spacer(Modifier.height(32.dp))

@@ -21,10 +21,10 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 
 @Composable
 fun SelectionGrid(
-    onSelect: () -> Unit, 
-    isDark: Boolean, 
-    icon: ImageVector, 
-    title: String, 
+    onSelect: () -> Unit,
+    isDark: Boolean,
+    icon: ImageVector,
+    title: String,
     subtitle: String,
     accentColor: Color = Color.Gray,
     modifier: Modifier = Modifier
@@ -40,18 +40,18 @@ fun SelectionGrid(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
-                imageVector = icon, 
-                contentDescription = null, 
-                modifier = Modifier.size(64.dp).alpha(0.1f), 
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp).alpha(0.1f),
                 tint = accentColor
             )
             Spacer(Modifier.height(16.dp))
             Text(title, fontWeight = FontWeight.Black, fontSize = 18.sp, color = if (isDark) Color.LightGray else Color.DarkGray)
             Text(
-                subtitle, 
-                fontSize = 10.sp, 
-                fontWeight = FontWeight.Black, 
-                color = Color.Gray.copy(alpha = 0.6f), 
+                subtitle,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 letterSpacing = 1.sp
             )
         }

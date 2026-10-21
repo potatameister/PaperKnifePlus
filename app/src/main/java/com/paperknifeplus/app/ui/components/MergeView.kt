@@ -190,7 +190,7 @@ fun MergeView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Merge", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("JOIN MULTIPLE DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("JOIN MULTIPLE DOCUMENTS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedFiles.isNotEmpty() && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { selectedFiles = emptyList(); currentState = ToolState.SELECTING }) {
@@ -421,7 +421,7 @@ fun MergeFileListItem(
                     color = Color.Black.copy(0.6f),
                     shape = CircleShape
                 ) {
-                    Text("${index + 1}", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
+                    Text("${index + 1}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
                 }
             }
             
@@ -430,7 +430,7 @@ fun MergeFileListItem(
                 Text(file.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
                 Text(file.size, fontSize = 11.sp, color = Color.Gray)
                 if (file.isLocked && !file.isUnlocked) {
-                    Text("LOCKED", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor)
+                    Text("LOCKED", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
                 }
             }
             

@@ -119,7 +119,7 @@ fun ImageToPdfView(
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Image to PDF", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("PHOTO TO DOCUMENT CONVERTER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                            Text("PHOTO TO DOCUMENT CONVERTER", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                         }
                         if (selectedUris.isNotEmpty() && currentState == ToolState.CONFIGURING) {
                             TextButton(onClick = { pickLauncher.launch("image/*") }) {
@@ -151,8 +151,8 @@ fun ImageToPdfView(
                         
                         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column {
-                                Text("REORDER ASSETS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
-                                Text("${selectedUris.size} IMAGES SELECTED", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                Text("REORDER ASSETS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                                Text("${selectedUris.size} IMAGES SELECTED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 FilterChip(
