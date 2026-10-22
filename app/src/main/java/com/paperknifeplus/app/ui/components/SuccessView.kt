@@ -85,7 +85,7 @@ fun SuccessView(
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
             ) {
-                Text("PROCESS MORE FILES", fontWeight = FontWeight.Black, color = Color.White, letterSpacing = 0.5.sp)
+                Text("PROCESS ANOTHER FILE", fontWeight = FontWeight.Black, color = Color.White, letterSpacing = 0.5.sp)
             }
 
             if (showPreviewButton) {

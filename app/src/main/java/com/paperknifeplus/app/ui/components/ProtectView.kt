@@ -127,7 +127,7 @@ fun ProtectView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Protect", "Encrypted", ToolCatalog.icon("protect"), saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Lock", "Encrypted", ToolCatalog.icon("protect"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {

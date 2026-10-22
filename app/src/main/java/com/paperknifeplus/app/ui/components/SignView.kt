@@ -245,7 +245,7 @@ fun SignView(
                     withContext(Dispatchers.Main) {
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
-                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Sign", "Document signed locally", ToolCatalog.icon("sign"), saveUri, pageCount)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Sign PDF", "Document signed locally", ToolCatalog.icon("sign"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
