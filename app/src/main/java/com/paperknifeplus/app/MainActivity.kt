@@ -336,17 +336,17 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                    }
 
-                    if (showHomeEditor) {
-                        HomeToolsSheet(
-                            selectedIds = homeToolIds,
-                            onDismiss = { showHomeEditor = false },
-                            onChanged = { ids ->
-                                homeToolIds = ids
-                                PreferencesManager.setHomeToolIds(applicationContext, ids)
-                            }
-                        )
+                        if (showHomeEditor) {
+                            HomeToolsSheet(
+                                selectedIds = homeToolIds,
+                                onDismiss = { showHomeEditor = false },
+                                onChanged = { ids ->
+                                    homeToolIds = ids
+                                    PreferencesManager.setHomeToolIds(applicationContext, ids)
+                                }
+                            )
+                        }
                     }
                 }
             }
