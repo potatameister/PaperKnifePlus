@@ -113,7 +113,7 @@ PaperKnife+ is free, ad-free, and built in spare time. If it saves you a little 
   <img src="https://img.shields.io/badge/Buy_Me_a_Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee">
 </a>
 
-<p align="center">
+<p>
   <a href="https://potatameister.github.io/support">
     <img src="https://img.shields.io/badge/More_ways_to_support-Donate-E11D48?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="More ways to support">
   </a>
