@@ -76,6 +76,18 @@ object PreferencesManager {
         val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
         return prefs.getInt("history_retention", 0) // 0: Unlimited, 1, 7, 30
     }
+
+    fun setHomeToolIds(context: Context, ids: List<String>) {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("home_tool_ids", ids.joinToString(",")).apply()
+    }
+
+    fun getHomeToolIds(context: Context): List<String> {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        val raw = prefs.getString("home_tool_ids", null)
+        val ids = raw?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+        return ids.ifEmpty { ToolCatalog.core.map { it.id } }
+    }
 }
 
 // Shared UI Math Engine

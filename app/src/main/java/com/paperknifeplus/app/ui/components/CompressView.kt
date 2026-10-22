@@ -196,7 +196,7 @@ fun CompressView(
                             }
 
                             Spacer(Modifier.height(16.dp))
-                            Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Text("COMPRESSION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Spacer(Modifier.height(8.dp))
 
                             Row(
@@ -207,39 +207,40 @@ fun CompressView(
                                     val isSelected = compressionLevel == level
                                     Surface(
                                         onClick = { compressionLevel = level },
-                                        color = if (isSelected) accentColor.copy(alpha = 0.1f) else Color.Transparent,
-                                        shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(1.dp, if (isSelected) accentColor else Color.Gray.copy(0.1f)),
-                                        modifier = Modifier.weight(1f).height(92.dp)
+                                        color = if (isSelected) accentColor else Color.Transparent,
+                                        shape = RoundedCornerShape(14.dp),
+                                        border = BorderStroke(
+                                            1.dp,
+                                            if (isSelected) accentColor else Color.Gray.copy(alpha = 0.15f)
+                                        ),
+                                        modifier = Modifier.weight(1f).height(46.dp)
                                     ) {
-                                        Column(
-                                            modifier = Modifier.fillMaxSize().padding(8.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center
-                                        ) {
-                                            RadioButton(
-                                                selected = isSelected,
-                                                onClick = null,
-                                                modifier = Modifier.size(20.dp),
-                                                colors = RadioButtonDefaults.colors(selectedColor = accentColor)
-                                            )
-                                            Spacer(Modifier.height(4.dp))
-                                            Text(level, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, maxLines = 1)
+                                        Box(contentAlignment = Alignment.Center) {
                                             Text(
-                                                text = when (level) {
-                                                    "Extreme" -> "Smallest size"
-                                                    "Recommended" -> "Best balance"
-                                                    else -> "High fidelity"
-                                                },
-                                                fontSize = 9.sp,
-                                                color = Color.Gray,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                text = level,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                                                maxLines = 1
                                             )
                                         }
                                     }
                                 }
                             }
+
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = when (compressionLevel) {
+                                    "Extreme" -> "Smallest file, lower image quality"
+                                    "Recommended" -> "Best balance of size and quality"
+                                    else -> "Keeps high visual fidelity"
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
 
                             Spacer(Modifier.weight(1f))
 

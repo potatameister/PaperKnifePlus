@@ -23,9 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +64,10 @@ fun PageLightbox(
     val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val navBarPadding = with(density) {
+        WindowInsets.navigationBars.getBottom(density).toDp()
+    }
     
     var showJumpDialog by remember { mutableStateOf(false) }
     var jumpPageInput by remember { mutableStateOf("") }
@@ -128,21 +135,6 @@ fun PageLightbox(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
-                        scale = (scale * zoomChange).coerceIn(1f, 4f)
-                        if (scale > 1f) {
-                            val maxX = (constraints.maxWidth * (scale - 1) / 2)
-                            val maxY = (constraints.maxHeight * (scale - 1) / 2)
-                            val newOffset = offset + offsetChange
-                            offset = androidx.compose.ui.geometry.Offset(
-                                newOffset.x.coerceIn(-maxX, maxX),
-                                newOffset.y.coerceIn(-maxY, maxY)
-                            )
-                        } else {
-                            offset = androidx.compose.ui.geometry.Offset.Zero
-                        }
-                    }
-
                     Box(
                         Modifier
                             .fillMaxSize()
@@ -151,17 +143,55 @@ fun PageLightbox(
                                     onDoubleTap = { tapOffset ->
                                         if (scale > 1.01f) {
                                             scale = 1f
-                                            offset = androidx.compose.ui.geometry.Offset.Zero
+                                            offset = Offset.Zero
                                         } else {
                                             scale = 2.5f
                                             val x = (size.width / 2 - tapOffset.x) * (2.5f - 1f)
                                             val y = (size.height / 2 - tapOffset.y) * (2.5f - 1f)
-                                            offset = androidx.compose.ui.geometry.Offset(x, y)
+                                            offset = Offset(x, y)
                                         }
                                     }
                                 )
                             }
-                            .then(if (scale > 1.01f) Modifier.transformable(state) else Modifier),
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val pressedCount = event.changes.count { it.pressed }
+
+                                        if (pressedCount >= 2) {
+                                            val zoom = event.calculateZoom()
+                                            val pan = event.calculatePan()
+                                            val newScale = (scale * zoom).coerceIn(1f, 4f)
+                                            scale = newScale
+                                            if (newScale > 1f) {
+                                                val maxX = size.width * (newScale - 1) / 2f
+                                                val maxY = size.height * (newScale - 1) / 2f
+                                                val newOffset = offset + pan
+                                                offset = Offset(
+                                                    newOffset.x.coerceIn(-maxX, maxX),
+                                                    newOffset.y.coerceIn(-maxY, maxY)
+                                                )
+                                            } else {
+                                                offset = Offset.Zero
+                                            }
+                                            event.changes.forEach { it.consume() }
+                                        } else if (pressedCount == 1 && scale > 1.01f) {
+                                            val pan = event.calculatePan()
+                                            if (pan != Offset.Zero) {
+                                                val maxX = size.width * (scale - 1) / 2f
+                                                val maxY = size.height * (scale - 1) / 2f
+                                                val newOffset = offset + pan
+                                                offset = Offset(
+                                                    newOffset.x.coerceIn(-maxX, maxX),
+                                                    newOffset.y.coerceIn(-maxY, maxY)
+                                                )
+                                                event.changes.forEach { it.consume() }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         val painter = rememberAsyncImagePainter(request, imageLoader)
@@ -317,7 +347,7 @@ fun PageLightbox(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .navigationBarsPadding()
+                        .padding(bottom = navBarPadding)
                 ) {
                     bottomBar?.invoke(this, pagerState.currentPage)
                 }
@@ -328,8 +358,7 @@ fun PageLightbox(
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = 24.dp)
+                        .padding(bottom = navBarPadding + 24.dp)
                         .background(Color.Black.copy(0.5f), RoundedCornerShape(24.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),

@@ -41,8 +41,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -328,24 +330,50 @@ fun UltraPreview(
                                 onDoubleTap = { _ ->
                                     if (targetScale > 1.01f) {
                                         targetScale = 1f
-                                        targetOffset = androidx.compose.ui.geometry.Offset.Zero
+                                        targetOffset = Offset.Zero
                                     } else {
                                         targetScale = 3f
-                                        targetOffset = androidx.compose.ui.geometry.Offset.Zero
+                                        targetOffset = Offset.Zero
                                     }
                                 }
                             )
                         }
                         .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                val newScale = (targetScale * zoom).coerceIn(1f, 10f)
-                                
-                                if (newScale > 1f) {
-                                    targetScale = newScale
-                                    targetOffset = targetOffset + pan
-                                } else {
-                                    targetScale = 1f
-                                    targetOffset = androidx.compose.ui.geometry.Offset.Zero
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    val pressedCount = event.changes.count { it.pressed }
+
+                                    if (pressedCount >= 2) {
+                                        val zoom = event.calculateZoom()
+                                        val pan = event.calculatePan()
+                                        val newScale = (targetScale * zoom).coerceIn(1f, 10f)
+                                        targetScale = newScale
+                                        if (newScale > 1f) {
+                                            val maxX = size.width * (newScale - 1) / 2f
+                                            val maxY = size.height * (newScale - 1) / 2f
+                                            val newOffset = targetOffset + pan
+                                            targetOffset = Offset(
+                                                newOffset.x.coerceIn(-maxX, maxX),
+                                                newOffset.y.coerceIn(-maxY, maxY)
+                                            )
+                                        } else {
+                                            targetOffset = Offset.Zero
+                                        }
+                                        event.changes.forEach { it.consume() }
+                                    } else if (pressedCount == 1 && targetScale > 1.01f) {
+                                        val pan = event.calculatePan()
+                                        if (pan != Offset.Zero) {
+                                            val maxX = size.width * (targetScale - 1) / 2f
+                                            val maxY = size.height * (targetScale - 1) / 2f
+                                            val newOffset = targetOffset + pan
+                                            targetOffset = Offset(
+                                                newOffset.x.coerceIn(-maxX, maxX),
+                                                newOffset.y.coerceIn(-maxY, maxY)
+                                            )
+                                            event.changes.forEach { it.consume() }
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -64,7 +64,11 @@ fun HomeView(
         }
     }
 
-    val coreEngines = ToolCatalog.core
+    var homeToolIds by remember { mutableStateOf(PreferencesManager.getHomeToolIds(context)) }
+    var showHomeEditor by remember { mutableStateOf(false) }
+    val coreEngines = remember(homeToolIds) {
+        homeToolIds.mapNotNull { ToolCatalog.byId[it] }
+    }
 
     val history = SessionManager.history
 
@@ -96,7 +100,10 @@ fun HomeView(
 
             item(span = { GridItemSpan(maxLineSpan) }, key = "label") {
                 Row(
-                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp, start = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 2.dp, start = 4.dp, end = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -106,6 +113,25 @@ fun HomeView(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         letterSpacing = 1.2.sp
                     )
+                    TextButton(
+                        onClick = { showHomeEditor = true },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Tune,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = PaperPink
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "EDIT",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            color = PaperPink,
+                            letterSpacing = 0.8.sp
+                        )
+                    }
                 }
             }
 
@@ -186,6 +212,17 @@ fun HomeView(
                 Spacer(modifier = Modifier.height(220.dp))
             }
         }
+    }
+
+    if (showHomeEditor) {
+        HomeToolsSheet(
+            selectedIds = homeToolIds,
+            onDismiss = { showHomeEditor = false },
+            onChanged = { ids ->
+                homeToolIds = ids
+                PreferencesManager.setHomeToolIds(context, ids)
+            }
+        )
     }
 }
 
