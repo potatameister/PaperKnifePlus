@@ -13,8 +13,10 @@ import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -68,6 +70,19 @@ data class PlacedWatermark(
     val opacity: Float
 )
 
+private val WATERMARK_COLORS = listOf(
+    Color.Black,
+    Color.DarkGray,
+    Color.Gray,
+    Color.White,
+    Color.Red,
+    Color.Blue,
+    Color(0xFF10B981),
+    Color(0xFF8B5CF6),
+    Color(0xFFF59E0B),
+    Color(0xFFEC4899)
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatermarkView(
@@ -104,6 +119,7 @@ fun WatermarkView(
     
     var showWatermarkOptions by remember { mutableStateOf(false) }
     var showTextInput by remember { mutableStateOf(false) }
+    var templateColor by remember { mutableStateOf(Color.Gray) }
 
     val imageLoader = coil.compose.LocalImageLoader.current
 
@@ -452,7 +468,7 @@ fun WatermarkView(
                 zoomEnabled = false,
                 bottomBar = { currentPage ->
                     Surface(
-                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                         shape = RoundedCornerShape(24.dp),
                         color = Color.Black.copy(0.85f),
                         border = BorderStroke(1.dp, Color.White.copy(0.1f))
@@ -463,61 +479,93 @@ fun WatermarkView(
                                     Text("Opacity", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(50.dp))
                                     Slider(value = activeOpacity, onValueChange = { activeOpacity = it }, modifier = Modifier.weight(1f), colors = SliderDefaults.colors(thumbColor = accentColor, activeTrackColor = accentColor))
                                 }
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    TextButton(onClick = { isFocusMode = false; activeWatermarkBitmap = null }, modifier = Modifier.weight(0.8f)) {
-                                        Text("CANCEL", color = Color.LightGray, fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    TextButton(
+                                        onClick = { isFocusMode = false; activeWatermarkBitmap = null },
+                                        modifier = Modifier.weight(0.9f).height(44.dp),
+                                        contentPadding = PaddingValues(horizontal = 6.dp)
+                                    ) {
+                                        Text(
+                                            "CANCEL",
+                                            color = Color.LightGray,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 9.5.sp,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
-                                    Row(Modifier.weight(2.5f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Button(
-                                            onClick = { 
-                                                activeWatermarkBitmap?.let {
-                                                    val pageW = previewPageSize.width.toFloat()
-                                                    val pageH = previewPageSize.height.toFloat()
-                                                    val nx = if (pageW > 0f) 0.5f + activeOffset.x / pageW else 0.5f
-                                                    val ny = if (pageH > 0f) 0.5f + activeOffset.y / pageH else 0.5f
-                                                    
-                                                    placedWatermarks = placedWatermarks + PlacedWatermark(
-                                                        pageIndex = -1,
-                                                        bitmap = it,
-                                                        normalizedX = nx,
-                                                        normalizedY = ny,
-                                                        normalizedWidth = 0.5f * activeScale,
-                                                        rotation = activeRotation,
-                                                        opacity = activeOpacity
-                                                    )
-                                                }
-                                                isFocusMode = false
-                                                activeWatermarkBitmap = null
-                                            },
-                                            modifier = Modifier.weight(1f).height(50.dp),
-                                            shape = RoundedCornerShape(16.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
-                                        ) { Text("APPLY TO ALL", fontSize = 10.sp, fontWeight = FontWeight.Black) }
-                                        Button(
-                                            onClick = { 
-                                                activeWatermarkBitmap?.let {
-                                                    val pageW = previewPageSize.width.toFloat()
-                                                    val pageH = previewPageSize.height.toFloat()
-                                                    val nx = if (pageW > 0f) 0.5f + activeOffset.x / pageW else 0.5f
-                                                    val ny = if (pageH > 0f) 0.5f + activeOffset.y / pageH else 0.5f
-                                                    
-                                                    placedWatermarks = placedWatermarks + PlacedWatermark(
-                                                        pageIndex = currentPage,
-                                                        bitmap = it,
-                                                        normalizedX = nx,
-                                                        normalizedY = ny,
-                                                        normalizedWidth = 0.5f * activeScale,
-                                                        rotation = activeRotation,
-                                                        opacity = activeOpacity
-                                                    )
-                                                }
-                                                isFocusMode = false
-                                                activeWatermarkBitmap = null
-                                            },
-                                            modifier = Modifier.weight(1f).height(50.dp),
-                                            shape = RoundedCornerShape(16.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
-                                        ) { Text("APPLY", fontSize = 10.sp, fontWeight = FontWeight.Black) }
+                                    OutlinedButton(
+                                        onClick = { 
+                                            activeWatermarkBitmap?.let {
+                                                val pageW = previewPageSize.width.toFloat()
+                                                val pageH = previewPageSize.height.toFloat()
+                                                val nx = if (pageW > 0f) 0.5f + activeOffset.x / pageW else 0.5f
+                                                val ny = if (pageH > 0f) 0.5f + activeOffset.y / pageH else 0.5f
+                                                
+                                                placedWatermarks = placedWatermarks + PlacedWatermark(
+                                                    pageIndex = -1,
+                                                    bitmap = it,
+                                                    normalizedX = nx,
+                                                    normalizedY = ny,
+                                                    normalizedWidth = 0.5f * activeScale,
+                                                    rotation = activeRotation,
+                                                    opacity = activeOpacity
+                                                )
+                                            }
+                                            isFocusMode = false
+                                            activeWatermarkBitmap = null
+                                        },
+                                        modifier = Modifier.weight(1.35f).height(44.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        border = BorderStroke(1.dp, Color.White.copy(0.3f)),
+                                        contentPadding = PaddingValues(horizontal = 6.dp)
+                                    ) {
+                                        Text(
+                                            "ALL PAGES",
+                                            color = Color.White,
+                                            fontSize = 9.5.sp,
+                                            fontWeight = FontWeight.Black,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
+                                    Button(
+                                        onClick = { 
+                                            activeWatermarkBitmap?.let {
+                                                val pageW = previewPageSize.width.toFloat()
+                                                val pageH = previewPageSize.height.toFloat()
+                                                val nx = if (pageW > 0f) 0.5f + activeOffset.x / pageW else 0.5f
+                                                val ny = if (pageH > 0f) 0.5f + activeOffset.y / pageH else 0.5f
+                                                
+                                                placedWatermarks = placedWatermarks + PlacedWatermark(
+                                                    pageIndex = currentPage,
+                                                    bitmap = it,
+                                                    normalizedX = nx,
+                                                    normalizedY = ny,
+                                                    normalizedWidth = 0.5f * activeScale,
+                                                    rotation = activeRotation,
+                                                    opacity = activeOpacity
+                                                )
+                                            }
+                                            isFocusMode = false
+                                            activeWatermarkBitmap = null
+                                        },
+                                        modifier = Modifier.weight(1f).height(44.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        contentPadding = PaddingValues(horizontal = 6.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
+                                    ) {
+                                        Text(
+                                            "APPLY",
+                                            fontSize = 9.5.sp,
+                                            fontWeight = FontWeight.Black,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
                                 }
                             } else {
@@ -541,7 +589,7 @@ fun WatermarkView(
                                             modifier = Modifier.weight(1f).height(50.dp),
                                             shape = RoundedCornerShape(16.dp),
                                             border = BorderStroke(1.dp, Color.White.copy(0.3f))
-                                        ) { Text("SIGN MORE", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Black) }
+                                        ) { Text("ADD MORE", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Black) }
                                         Button(
                                             onClick = { 
                                                 lightboxPage = null
@@ -566,13 +614,38 @@ fun WatermarkView(
             onDismissRequest = { showWatermarkOptions = false },
             title = { Text("Select Watermark", fontWeight = FontWeight.Black) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("COLOR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(WATERMARK_COLORS) { color ->
+                            Surface(
+                                onClick = { templateColor = color },
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .border(
+                                        2.dp,
+                                        if (templateColor == color) accentColor else Color.Transparent,
+                                        CircleShape
+                                    ),
+                                shape = CircleShape,
+                                color = color
+                            ) {
+                                if (color == Color.White) {
+                                    Box(Modifier.fillMaxSize().border(1.dp, Color.Gray.copy(0.3f), CircleShape))
+                                }
+                            }
+                        }
+                    }
+
                     Text("TEMPLATES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("DRAFT", "CONFIDENTIAL", "APPROVED").forEach { template ->
                             Surface(
                                 onClick = {
-                                    activeWatermarkBitmap = createTextBitmap(template, Color.Gray)
+                                    activeWatermarkBitmap = createTextBitmap(template, templateColor)
                                     activeOffset = androidx.compose.ui.geometry.Offset.Zero
                                     activeScale = 1f
                                     activeRotation = 0f
@@ -611,9 +684,8 @@ fun WatermarkView(
             text = {
                 Column {
                     Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val colors = listOf(Color.Black, Color.DarkGray, Color.Gray, Color.White, Color.Red, Color.Blue, Color(0xFF10B981), Color(0xFF8B5CF6), Color(0xFFF59E0B), Color(0xFFEC4899))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(colors) { color ->
+                            items(WATERMARK_COLORS) { color ->
                                 Surface(
                                     onClick = { selectedColor = color },
                                     modifier = Modifier.size(32.dp).border(2.dp, if (selectedColor == color) accentColor else Color.Transparent, CircleShape),

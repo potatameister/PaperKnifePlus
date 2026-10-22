@@ -175,23 +175,35 @@ fun RepairView(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Spacer(Modifier.height(12.dp))
-                            
-                            Box(modifier = Modifier.fillMaxWidth(0.5f).aspectRatio(0.707f)) {
-                                UnifiedPdfPreview(
-                                    uri = selectedUri!!,
-                                    pageCount = pageCount,
-                                    mode = PreviewMode.COVER,
-                                    password = if (unlockPassword.isEmpty()) null else unlockPassword,
-                                    accentColor = accentColor
-                                )
-                            }
-                            
+
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("repair"),
+                                accentColor = accentColor
+                            )
+
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
-                            
-                            Spacer(Modifier.height(20.dp))
-                            
+
+                            BoxWithConstraints(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val previewWidth = minOf(maxWidth * 0.72f, maxHeight * 0.707f)
+                                Box(modifier = Modifier.width(previewWidth).aspectRatio(0.707f)) {
+                                    UnifiedPdfPreview(
+                                        uri = selectedUri!!,
+                                        pageCount = pageCount,
+                                        mode = PreviewMode.COVER,
+                                        password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                        accentColor = accentColor
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
                             Text("READY TO REPAIR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Text(
                                 "PaperKnife+ will rebuild the PDF index and cross-reference table to restore accessibility.", 
@@ -201,7 +213,7 @@ fun RepairView(
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                             
-                            Spacer(Modifier.weight(1f))
+                            Spacer(Modifier.height(16.dp))
                             
                             Button(
                                 onClick = { 

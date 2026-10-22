@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -64,6 +65,7 @@ fun HomeToolsSheet(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
         ) {
                 Row(
                     modifier = Modifier
@@ -249,12 +251,13 @@ private fun HomeToolCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = tool.category.uppercase(),
+                        text = tool.description.uppercase(),
                         fontSize = 8.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = tool.color,
-                        letterSpacing = 0.6.sp,
-                        maxLines = 1
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                        letterSpacing = 0.4.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

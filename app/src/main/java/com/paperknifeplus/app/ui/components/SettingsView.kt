@@ -175,7 +175,7 @@ fun SettingsView(
             item {
                 SettingsGroup("COMMUNITY") {
                     SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Our mission and how it works") { onNavigateToAbout("main") }
-                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help support development", accentColor = Color(0xFFF59E0B)) {
+                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help support development", accentColor = Color(0xFFE11D48)) {
                         try {
                             context.startActivity(
                                 Intent(Intent.ACTION_VIEW, Uri.parse("https://potatameister.github.io/support"))

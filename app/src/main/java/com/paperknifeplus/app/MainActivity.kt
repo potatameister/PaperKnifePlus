@@ -319,17 +319,6 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        if (showHomeEditor) {
-                            HomeToolsSheet(
-                                selectedIds = homeToolIds,
-                                onDismiss = { showHomeEditor = false },
-                                onChanged = { ids ->
-                                    homeToolIds = ids
-                                    PreferencesManager.setHomeToolIds(applicationContext, ids)
-                                }
-                            )
-                        }
-
                         androidx.compose.animation.AnimatedVisibility(
                             visible = !isInitialized,
                             exit = androidx.compose.animation.fadeOut(animationSpec = tween(500))
@@ -347,6 +336,17 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
+                    }
+
+                    if (showHomeEditor) {
+                        HomeToolsSheet(
+                            selectedIds = homeToolIds,
+                            onDismiss = { showHomeEditor = false },
+                            onChanged = { ids ->
+                                homeToolIds = ids
+                                PreferencesManager.setHomeToolIds(applicationContext, ids)
+                            }
+                        )
                     }
                 }
             }

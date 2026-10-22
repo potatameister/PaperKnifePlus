@@ -200,7 +200,7 @@ fun AboutMain(onNavigate: (String) -> Unit) {
                     Icons.Filled.Favorite,
                     "Support PaperKnife+",
                     "Help keep the workshop free",
-                    accentColor = Color(0xFFF59E0B)
+                    accentColor = Color(0xFFE11D48)
                 ) {
                     openUrl("https://potatameister.github.io/support")
                 }
