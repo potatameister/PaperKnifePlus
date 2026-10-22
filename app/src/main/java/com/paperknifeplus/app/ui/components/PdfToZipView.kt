@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -208,7 +209,7 @@ fun PdfToZipView(
                             }
                             
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
 
                             Spacer(Modifier.height(20.dp))

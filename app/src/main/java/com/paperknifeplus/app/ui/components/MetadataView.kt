@@ -206,57 +206,44 @@ fun MetadataView(
                         ) {
                             Spacer(Modifier.height(10.dp))
 
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("metadata"),
+                                accentColor = accentColor
+                            )
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState()),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = ToolCatalog.icon("metadata"),
-                                        contentDescription = null,
-                                        tint = accentColor,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(Modifier.width(10.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            fileName,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                        )
-                                        Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
-                                    }
+                                MetadataGroup("CORE METADATA") {
+                                    MetadataEditField("Title", title, accentColor) { title = it }
+                                    MetadataEditField("Author", author, accentColor) { author = it }
                                 }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                MetadataGroup("ADDITIONAL TAGS") {
+                                    MetadataEditField("Subject", subject, accentColor) { subject = it }
+                                    MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                MetadataGroup("SOURCE ENGINE") {
+                                    MetadataEditField("Creator", creator, accentColor) { creator = it }
+                                    MetadataEditField("Producer", producer, accentColor) { producer = it }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
                             }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            MetadataGroup("CORE METADATA") {
-                                MetadataEditField("Title", title, accentColor) { title = it }
-                                MetadataEditField("Author", author, accentColor) { author = it }
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            MetadataGroup("ADDITIONAL TAGS") {
-                                MetadataEditField("Subject", subject, accentColor) { subject = it }
-                                MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            MetadataGroup("SOURCE ENGINE") {
-                                MetadataEditField("Creator", creator, accentColor) { creator = it }
-                                MetadataEditField("Producer", producer, accentColor) { producer = it }
-                            }
-
-                            Spacer(Modifier.weight(1f))
 
                             Button(
                                 onClick = { 
@@ -365,7 +352,7 @@ fun MetadataEditField(label: String, value: String, accentColor: Color, onValueC
         TextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
@@ -373,7 +360,8 @@ fun MetadataEditField(label: String, value: String, accentColor: Color, onValueC
                 cursorColor = accentColor
             ),
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),
-            singleLine = true
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp)
         )
     }
 }

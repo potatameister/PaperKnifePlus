@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -232,8 +233,8 @@ fun SplitView(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
-                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text("${selectedPages.size} / $pageCount PAGES SELECTED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
                                 

@@ -84,6 +84,7 @@ fun WatermarkView(
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
@@ -111,6 +112,7 @@ fun WatermarkView(
             selectedUri = initialUri
             val details = getUriDetails(context, initialUri)
             fileName = details.name
+            fileSize = details.size
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, initialUri)
@@ -136,6 +138,7 @@ fun WatermarkView(
             selectedUri = it
             val details = getUriDetails(context, it)
             fileName = details.name
+            fileSize = details.size
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEnc = checkIsEncryptedLocal(context, it)
@@ -340,6 +343,14 @@ fun WatermarkView(
                             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Spacer(Modifier.height(12.dp))
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("watermark"),
+                                accentColor = accentColor
+                            )
                             Spacer(Modifier.height(12.dp))
                             Box(modifier = Modifier.weight(1f)) {
                                 UnifiedPdfPreview(

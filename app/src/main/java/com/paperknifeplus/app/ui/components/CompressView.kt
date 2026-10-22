@@ -175,72 +175,67 @@ fun CompressView(
                         ) {
                             Spacer(Modifier.height(12.dp))
 
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("compress"),
+                                accentColor = accentColor
+                            )
+
+                            Spacer(Modifier.height(16.dp))
+
+                            Box(modifier = Modifier.fillMaxWidth(0.5f).aspectRatio(0.707f)) {
+                                UnifiedPdfPreview(
+                                    uri = selectedUri!!,
+                                    pageCount = pageCount,
+                                    mode = PreviewMode.COVER,
+                                    password = null,
+                                    accentColor = accentColor
+                                )
+                            }
+
+                            Spacer(Modifier.height(16.dp))
+                            Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                            Spacer(Modifier.height(8.dp))
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalAlignment = Alignment.Top
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Box(modifier = Modifier.width(110.dp).aspectRatio(0.707f)) {
-                                    UnifiedPdfPreview(
-                                        uri = selectedUri!!,
-                                        pageCount = pageCount,
-                                        mode = PreviewMode.COVER,
-                                        password = null,
-                                        accentColor = accentColor
-                                    )
-                                }
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        fileName,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
-
-                                    Spacer(Modifier.height(14.dp))
-                                    Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                                    Spacer(Modifier.height(8.dp))
-
-                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        listOf("Basic", "Recommended", "Extreme").forEach { level ->
-                                            val isSelected = compressionLevel == level
-                                            Surface(
-                                                onClick = { compressionLevel = level },
-                                                color = if (isSelected) accentColor.copy(alpha = 0.1f) else Color.Transparent,
-                                                shape = RoundedCornerShape(14.dp),
-                                                border = BorderStroke(1.dp, if (isSelected) accentColor else Color.Gray.copy(0.1f)),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Row(
-                                                    Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    RadioButton(
-                                                        selected = isSelected,
-                                                        onClick = null,
-                                                        modifier = Modifier.size(20.dp),
-                                                        colors = RadioButtonDefaults.colors(selectedColor = accentColor)
-                                                    )
-                                                    Spacer(Modifier.width(8.dp))
-                                                    Column {
-                                                        Text(level, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                                        Text(
-                                                            text = when (level) {
-                                                                "Extreme" -> "Max reduction, lower quality"
-                                                                "Recommended" -> "Best size / quality balance"
-                                                                else -> "Keeps high fidelity"
-                                                            },
-                                                            fontSize = 9.5.sp,
-                                                            color = Color.Gray,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
-                                                    }
-                                                }
-                                            }
+                                listOf("Basic", "Recommended", "Extreme").forEach { level ->
+                                    val isSelected = compressionLevel == level
+                                    Surface(
+                                        onClick = { compressionLevel = level },
+                                        color = if (isSelected) accentColor.copy(alpha = 0.1f) else Color.Transparent,
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(1.dp, if (isSelected) accentColor else Color.Gray.copy(0.1f)),
+                                        modifier = Modifier.weight(1f).height(92.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            RadioButton(
+                                                selected = isSelected,
+                                                onClick = null,
+                                                modifier = Modifier.size(20.dp),
+                                                colors = RadioButtonDefaults.colors(selectedColor = accentColor)
+                                            )
+                                            Spacer(Modifier.height(4.dp))
+                                            Text(level, fontWeight = FontWeight.Bold, fontSize = 11.5.sp, maxLines = 1)
+                                            Text(
+                                                text = when (level) {
+                                                    "Extreme" -> "Smallest size"
+                                                    "Recommended" -> "Best balance"
+                                                    else -> "High fidelity"
+                                                },
+                                                fontSize = 9.sp,
+                                                color = Color.Gray,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
                                         }
                                     }
                                 }

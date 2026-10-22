@@ -165,6 +165,16 @@ fun GrayscaleView(
                         ) {
                             Spacer(Modifier.height(16.dp))
                             
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("grayscale"),
+                                accentColor = accentColor,
+                                modifier = Modifier.padding(horizontal = 20.dp)
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            
                             Box(modifier = Modifier.weight(1f).padding(horizontal = 20.dp)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,

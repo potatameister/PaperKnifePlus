@@ -85,7 +85,10 @@ fun PageLightbox(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
         Box(
             modifier = Modifier
@@ -310,7 +313,14 @@ fun PageLightbox(
 
             // Custom Tool Bottom Bar (e.g. Sign controls)
             Box(Modifier.fillMaxSize()) {
-                bottomBar?.invoke(this, pagerState.currentPage)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                ) {
+                    bottomBar?.invoke(this, pagerState.currentPage)
+                }
             }
 
             // Navigation

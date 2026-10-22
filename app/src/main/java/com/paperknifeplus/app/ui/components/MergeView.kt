@@ -32,6 +32,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
@@ -410,7 +411,7 @@ fun MergeFileListItem(
             
             // Info
             Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
-                Text(file.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                Text(file.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(file.size, fontSize = 11.sp, color = Color.Gray)
                 if (file.isLocked && !file.isUnlocked) {
                     Text("LOCKED", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
