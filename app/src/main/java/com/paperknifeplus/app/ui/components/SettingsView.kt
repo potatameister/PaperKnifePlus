@@ -1,5 +1,7 @@
 package com.paperknifeplus.app.ui.components
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -173,7 +175,15 @@ fun SettingsView(
             item {
                 SettingsGroup("COMMUNITY") {
                     SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Our mission and how it works") { onNavigateToAbout("main") }
-                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help support development", accentColor = Color(0xFFF43F5E)) { onNavigateToAbout("support") }
+                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help support development", accentColor = Color(0xFFF59E0B)) {
+                        try {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse("https://potatameister.github.io/support"))
+                            )
+                        } catch (_: Exception) {
+                            Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                     SettingsItem(Icons.Outlined.StarOutline, "Hall of Fame", "The legends who made this possible", accentColor = Color(0xFFFFD700)) { onNavigateToAbout("hall") }
                 }
             }

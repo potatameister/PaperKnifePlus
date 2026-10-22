@@ -121,14 +121,14 @@ fun HomeView(
                             imageVector = Icons.Filled.Tune,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = PaperPink
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
                             text = "EDIT",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
-                            color = PaperPink,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             letterSpacing = 0.8.sp
                         )
                     }

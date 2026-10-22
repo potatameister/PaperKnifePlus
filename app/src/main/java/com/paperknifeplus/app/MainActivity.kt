@@ -182,7 +182,7 @@ class MainActivity : ComponentActivity() {
                                             onToolClick = { 
                                                 toolInitialUri = null
                                                 if (it == "about") {
-                                                    aboutInitialPage = "support"
+                                                    aboutInitialPage = "main"
                                                     isAboutFromSettings = false
                                                     currentTool = "about"
                                                 } else if (it == "tools") {

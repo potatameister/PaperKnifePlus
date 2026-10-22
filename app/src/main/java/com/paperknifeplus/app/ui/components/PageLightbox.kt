@@ -354,7 +354,7 @@ fun PageLightbox(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .padding(bottom = navBarPadding)
+                        .padding(bottom = navBarPadding + 12.dp)
                 ) {
                     bottomBar?.invoke(this, pagerState.currentPage)
                 }
@@ -365,7 +365,7 @@ fun PageLightbox(
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = navBarPadding + 24.dp)
+                        .padding(bottom = navBarPadding + 36.dp)
                         .background(Color.Black.copy(0.5f), RoundedCornerShape(24.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
