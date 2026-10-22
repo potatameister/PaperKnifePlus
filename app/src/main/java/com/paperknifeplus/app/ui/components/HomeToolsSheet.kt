@@ -88,24 +88,9 @@ fun HomeToolsSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 20.dp, end = 16.dp, top = 12.dp),
+                        .padding(start = 16.dp, end = 12.dp, top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Home tools",
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            letterSpacing = (-0.6).sp
-                        )
-                        Text(
-                            text = "${selectedIds.size} of $MAX_HOME_TOOLS selected",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                        )
-                    }
                     Surface(
                         onClick = onDismiss,
                         modifier = Modifier.size(40.dp),
@@ -121,20 +106,63 @@ fun HomeToolsSheet(
                             )
                         }
                     }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Home tools",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            letterSpacing = (-0.5).sp
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 2.dp)
+                        ) {
+                            Text(
+                                text = "Choose up to $MAX_HOME_TOOLS",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ) {
+                                Text(
+                                    text = "${selectedIds.size}/$MAX_HOME_TOOLS",
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                                )
+                            }
+                        }
+                    }
+                    val isDefault = selectedIds == ToolCatalog.core.map { it.id }
+                    TextButton(
+                        onClick = { onChanged(ToolCatalog.core.map { it.id }) },
+                        enabled = !isDefault
+                    ) {
+                        Text(
+                            text = "RESET",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (isDefault) {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                            },
+                            letterSpacing = 0.8.sp
+                        )
+                    }
                 }
-
-                Text(
-                    text = "Tap a tool to add or remove it. The default four can be restored with Reset.",
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
 
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(150.dp),
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -159,39 +187,19 @@ fun HomeToolsSheet(
                     }
                 }
 
-                Row(
+                Button(
+                    onClick = onDismiss,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.onSurface,
+                        contentColor = MaterialTheme.colorScheme.background
+                    )
                 ) {
-                    TextButton(
-                        onClick = { onChanged(ToolCatalog.core.map { it.id }) },
-                        enabled = selectedIds != ToolCatalog.core.map { it.id }
-                    ) {
-                        Text(
-                            text = "RESET",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            color = if (selectedIds != ToolCatalog.core.map { it.id }) {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
-                            },
-                            letterSpacing = 0.8.sp
-                        )
-                    }
-                    Spacer(Modifier.weight(1f))
-                    Button(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.onSurface,
-                            contentColor = MaterialTheme.colorScheme.background
-                        )
-                    ) {
-                        Text("DONE", fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 0.8.sp)
-                    }
+                    Text("DONE", fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 0.8.sp)
                 }
             }
         }
@@ -230,8 +238,11 @@ private fun HomeToolCard(
             }
         )
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxSize().padding(12.dp)
+            ) {
                 Box(
                     modifier = Modifier
                         .size(38.dp)
@@ -249,7 +260,7 @@ private fun HomeToolCard(
                     )
                 }
                 Spacer(Modifier.width(10.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f).padding(end = 20.dp)) {
                     Text(
                         text = tool.name,
                         fontSize = 12.5.sp,
@@ -273,15 +284,18 @@ private fun HomeToolCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .size(20.dp)
+                        .padding(8.dp)
+                        .size(18.dp)
                         .background(MaterialTheme.colorScheme.onSurface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = order.toString(),
-                        fontSize = 9.sp,
+                        fontSize = 8.5.sp,
+                        lineHeight = 9.sp,
                         fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.background
+                        color = MaterialTheme.colorScheme.background,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
             }

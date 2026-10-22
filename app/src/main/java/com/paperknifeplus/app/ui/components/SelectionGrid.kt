@@ -33,8 +33,11 @@ fun SelectionGrid(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(32.dp))
-            .background(if (isDark) Color(0xFF09090B) else Color.White)
-            .border(BorderStroke(1.dp, Color.Gray.copy(0.1f)), RoundedCornerShape(32.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+                RoundedCornerShape(32.dp)
+            )
             .clickable { onSelect() },
         contentAlignment = Alignment.Center
     ) {

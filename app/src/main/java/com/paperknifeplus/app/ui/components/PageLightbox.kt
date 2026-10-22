@@ -143,29 +143,52 @@ fun PageLightbox(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    val containerWidth = constraints.maxWidth.toFloat()
-                    val containerHeight = constraints.maxHeight.toFloat()
+                    val containerWidth = if (constraints.hasBoundedWidth) {
+                        constraints.maxWidth.toFloat()
+                    } else {
+                        1f
+                    }
+                    val containerHeight = if (constraints.hasBoundedHeight) {
+                        constraints.maxHeight.toFloat()
+                    } else {
+                        1f
+                    }
                     val painter = rememberAsyncImagePainter(request, imageLoader)
                     val intrinsic = painter.intrinsicSize
-                    val pageAspect = if (
+                    val rawPageAspect = if (
+                        intrinsic.width.isFinite() &&
+                        intrinsic.height.isFinite() &&
                         intrinsic.width > 0f &&
-                        intrinsic.height > 0f &&
-                        !intrinsic.width.isNaN() &&
-                        !intrinsic.height.isNaN()
+                        intrinsic.height > 0f
                     ) {
                         intrinsic.width / intrinsic.height
                     } else {
+                        0f
+                    }
+                    val pageAspect = rawPageAspect.takeIf { it.isFinite() && it > 0f } ?: 0.707f
+                    val containerAspect = if (
+                        containerWidth.isFinite() &&
+                        containerHeight.isFinite() &&
+                        containerHeight > 0f
+                    ) {
+                        containerWidth / containerHeight
+                    } else {
                         0.707f
                     }
-                    val containerAspect = if (containerHeight > 0f) containerWidth / containerHeight else 0.707f
-                    val fitWidth = if (containerAspect > pageAspect) containerHeight * pageAspect else containerWidth
-                    val fitHeight = if (containerAspect > pageAspect) {
+                    val rawFitWidth = if (containerAspect > pageAspect) {
+                        containerHeight * pageAspect
+                    } else {
+                        containerWidth
+                    }
+                    val rawFitHeight = if (containerAspect > pageAspect) {
                         containerHeight
                     } else if (pageAspect > 0f) {
                         containerWidth / pageAspect
                     } else {
                         containerWidth
                     }
+                    val fitWidth = rawFitWidth.takeIf { it.isFinite() && it > 0f } ?: 1f
+                    val fitHeight = rawFitHeight.takeIf { it.isFinite() && it > 0f } ?: 1f
 
                     val gestureModifier = if (zoomEnabled) {
                         Modifier

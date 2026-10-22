@@ -262,8 +262,8 @@ fun WatermarkView(
                     contentDescription = null,
                     modifier = Modifier
                         .requiredSize(
-                            width = (pageWidth * wm.normalizedWidth).dp / LocalDensity.current.density,
-                            height = (pageWidth * wm.normalizedWidth * (wm.bitmap.height.toFloat() / wm.bitmap.width.toFloat())).dp / LocalDensity.current.density
+                            width = (pageWidth * wm.normalizedWidth).coerceAtLeast(1f).dp / LocalDensity.current.density,
+                            height = (pageWidth * wm.normalizedWidth * (wm.bitmap.height.toFloat() / wm.bitmap.width.toFloat())).coerceAtLeast(1f).dp / LocalDensity.current.density
                         )
                         .graphicsLayer {
                             translationX = pageWidth * (wm.normalizedX - 0.5f)
@@ -295,8 +295,8 @@ fun WatermarkView(
                         contentDescription = null,
                         modifier = Modifier
                             .requiredSize(
-                                width = (baseWidth * activeScale).dp / LocalDensity.current.density,
-                                height = (baseWidth * activeScale * (bitmap.height.toFloat() / bitmap.width.toFloat())).dp / LocalDensity.current.density
+                                width = (baseWidth * activeScale).coerceAtLeast(1f).dp / LocalDensity.current.density,
+                                height = (baseWidth * activeScale * (bitmap.height.toFloat() / bitmap.width.toFloat())).coerceAtLeast(1f).dp / LocalDensity.current.density
                             )
                             .graphicsLayer {
                                 translationX = activeOffset.x

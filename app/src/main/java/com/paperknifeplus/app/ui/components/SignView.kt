@@ -303,8 +303,8 @@ fun SignView(
                     contentDescription = null,
                     modifier = Modifier
                         .requiredSize(
-                            width = (pageWidth * sig.normalizedWidth).dp / LocalDensity.current.density,
-                            height = (pageWidth * sig.normalizedWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())).dp / LocalDensity.current.density
+                            width = (pageWidth * sig.normalizedWidth).coerceAtLeast(1f).dp / LocalDensity.current.density,
+                            height = (pageWidth * sig.normalizedWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())).coerceAtLeast(1f).dp / LocalDensity.current.density
                         )
                         .graphicsLayer {
                             translationX = pageWidth * (sig.normalizedX - 0.5f)
@@ -336,8 +336,8 @@ fun SignView(
                         contentDescription = null,
                         modifier = Modifier
                             .requiredSize(
-                                width = (baseWidth * activeScale).dp / LocalDensity.current.density,
-                                height = (baseWidth * activeScale * (bitmap.height.toFloat() / bitmap.width.toFloat())).dp / LocalDensity.current.density
+                                width = (baseWidth * activeScale).coerceAtLeast(1f).dp / LocalDensity.current.density,
+                                height = (baseWidth * activeScale * (bitmap.height.toFloat() / bitmap.width.toFloat())).coerceAtLeast(1f).dp / LocalDensity.current.density
                             )
                             .graphicsLayer {
                                 translationX = activeOffset.x

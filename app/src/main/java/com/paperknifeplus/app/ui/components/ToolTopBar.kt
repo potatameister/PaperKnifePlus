@@ -45,8 +45,8 @@ fun ToolTopBar(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-        tonalElevation = 2.dp
+        color = MaterialTheme.colorScheme.background,
+        tonalElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
