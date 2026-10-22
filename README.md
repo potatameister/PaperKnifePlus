@@ -19,10 +19,10 @@ A privacy-first PDF utility for Android. Works 100% offline - no internet, no tr
 ## Screenshots
 
 <p float="left">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="24%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="24%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="24%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.jpg" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" width="24%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.jpg" width="24%" />
 </p>
 
 ---
