@@ -11,8 +11,8 @@
 <a href="https://github.com/potatameister/PaperKnifePlus/releases/latest">
   <img src="https://img.shields.io/badge/Download-APK-2ea44f?style=for-the-badge&logo=android&logoColor=white" alt="Download APK">
 </a>
-<a href="https://github.com/potatameister/PaperKnifePlus">
-  <img src="https://img.shields.io/badge/GitHub-Source-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
+<a href="https://apt.izzysoft.de/packages/com.paperknifeplus.app">
+  <img src="https://img.shields.io/badge/dynamic/json?url=https://dlstats.izzyondroid.org/iod-stats-collector/stats/basic/yearly/rolling.json&amp;query=%24.%5B%27com.paperknifeplus.app%27%5D&amp;label=IzzyOnDroid%20yearly%20downloads&amp;style=for-the-badge" alt="IzzyOnDroid yearly downloads">
 </a>
 <a href="https://discord.gg/7538nAWYx">
   <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
@@ -55,13 +55,6 @@ It works on a plane, in a basement, or anywhere else with no signal.
 | **Secure** | Lock with a password, remove passwords, edit metadata |
 | **Convert** | PDF to images, images to PDF, PDF to ZIP, extract embedded images, PDF to text |
 | **Viewer** | Find in document, print, pinch zoom, jump to page, open any tool directly on the current PDF |
-
-Also included:
-
-- Customizable Home tools (choose 0–8 tools)
-- Searchable History that opens PDF, ZIP, and text outputs correctly
-- Redesigned password prompt with show/hide and inline errors
-- Dark mode and edge-to-edge layout
 
 ---
 
@@ -110,6 +103,14 @@ This confirms the signer identity. It does not verify the exact file contents. F
 
 PaperKnife+ is free, ad-free, and built in spare time. If it saves you a little work, you can help keep it going:
 
+<p align="center">
+  <a href="https://potatameister.github.io/support">
+    <img src="https://img.shields.io/badge/Donate-Support_PaperKnife+-E11D48?style=for-the-badge" alt="Donate">
+  </a>
+</p>
+
+Or choose a platform:
+
 <a href="https://github.com/sponsors/potatameister">
   <img src="https://img.shields.io/badge/GitHub_Sponsors-Support-EA4AAA?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Sponsors">
 </a>
@@ -119,15 +120,8 @@ PaperKnife+ is free, ad-free, and built in spare time. If it saves you a little 
 <a href="https://buymeacoffee.com/potatameister">
   <img src="https://img.shields.io/badge/Buy_Me_a_Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee">
 </a>
-<a href="https://ko-fi.com/potatameister">
-  <img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white" alt="Ko-fi">
-</a>
 
-<a href="https://potatameister.github.io/support">
-  <img src="https://img.shields.io/badge/More_ways_to_support-181717?style=for-the-badge&logo=github&logoColor=white" alt="More ways to support">
-</a>
-
-You can also help by reporting bugs, suggesting tools, sharing the app, or joining the Play testing group when it opens.
+Every contribution helps keep PaperKnife+ free and offline. You can also help by reporting bugs, suggesting tools, sharing the app, or joining the Play testing group when it opens.
 
 ---
 
