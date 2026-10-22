@@ -128,7 +128,7 @@ fun MetadataView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", Icons.Filled.Fingerprint, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Metadata", "Edited properties", ToolCatalog.icon("metadata"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -173,30 +173,13 @@ fun MetadataView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Metadata", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("EDIT DOCUMENT PROPERTIES", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "metadata",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -209,7 +192,7 @@ fun MetadataView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Fingerprint,
+                            icon = ToolCatalog.icon("metadata"),
                             title = "Tap to enter file",
                             subtitle = "EDIT PDF PROPERTIES",
                             accentColor = accentColor,
@@ -217,50 +200,51 @@ fun MetadataView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        // NITRO: Fully scrollable single-column overhaul
                         Column(
-                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                            modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
-                            
-                            Box(modifier = Modifier.fillMaxWidth(0.6f).aspectRatio(0.707f)) {
-                                UnifiedPdfPreview(
-                                    uri = selectedUri!!,
-                                    pageCount = pageCount,
-                                    mode = PreviewMode.COVER,
-                                    password = unlockPassword.ifEmpty { null },
-                                    accentColor = accentColor
-                                )
-                            }
-                            
-                            Spacer(Modifier.height(16.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
-                            
-                            Spacer(Modifier.height(24.dp))
-                            
-                            MetadataGroup("CORE METADATA") {
-                                MetadataEditField("Title", title, accentColor) { title = it }
-                                MetadataEditField("Author", author, accentColor) { author = it }
-                            }
-                            
-                            Spacer(Modifier.height(16.dp))
-                            
-                            MetadataGroup("ADDITIONAL TAGS") {
-                                MetadataEditField("Subject", subject, accentColor) { subject = it }
-                                MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
+                            Spacer(Modifier.height(10.dp))
+
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("metadata"),
+                                accentColor = accentColor
+                            )
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState()),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                MetadataGroup("CORE METADATA") {
+                                    MetadataEditField("Title", title, accentColor) { title = it }
+                                    MetadataEditField("Author", author, accentColor) { author = it }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                MetadataGroup("ADDITIONAL TAGS") {
+                                    MetadataEditField("Subject", subject, accentColor) { subject = it }
+                                    MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                MetadataGroup("SOURCE ENGINE") {
+                                    MetadataEditField("Creator", creator, accentColor) { creator = it }
+                                    MetadataEditField("Producer", producer, accentColor) { producer = it }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
                             }
 
-                            Spacer(Modifier.height(16.dp))
-
-                            MetadataGroup("SOURCE ENGINE") {
-                                MetadataEditField("Creator", creator, accentColor) { creator = it }
-                                MetadataEditField("Producer", producer, accentColor) { producer = it }
-                            }
-                            
-                            Spacer(Modifier.height(32.dp))
-                            
                             Button(
                                 onClick = { 
                                     val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
@@ -272,7 +256,7 @@ fun MetadataView(
                             ) {
                                 Text("SAVE PROPERTIES", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            Spacer(Modifier.height(100.dp))
+                            Spacer(Modifier.height(16.dp))
                         }
                     }
                     ToolState.PROCESSING -> {
@@ -351,7 +335,7 @@ fun MetadataGroup(title: String, content: @Composable () -> Unit) {
     ) {
         Text(
             text = title,
-            fontSize = 8.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Black,
             color = Color.Gray,
             letterSpacing = 1.2.sp,
@@ -368,7 +352,7 @@ fun MetadataEditField(label: String, value: String, accentColor: Color, onValueC
         TextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
@@ -376,7 +360,8 @@ fun MetadataEditField(label: String, value: String, accentColor: Color, onValueC
                 cursorColor = accentColor
             ),
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),
-            singleLine = true
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp)
         )
     }
 }

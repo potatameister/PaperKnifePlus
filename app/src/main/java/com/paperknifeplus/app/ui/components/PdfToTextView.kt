@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -111,7 +112,7 @@ fun PdfToTextView(
                 extractedText = text
                 processingTime = time
                 withContext(Dispatchers.Main) {
-                    SessionManager.addEntry(fileName, "To Text", "${text.length} chars", Icons.Outlined.Description)
+                    SessionManager.addEntry(fileName, "PDF to Text", "${text.length} chars", ToolCatalog.icon("pdf2text"), mimeType = "text/plain", textContent = text)
                     currentState = ToolState.SUCCESS
                 }
             }
@@ -148,30 +149,13 @@ fun PdfToTextView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("PDF to Text", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("EXTRACT RAW CONTENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "pdf2text",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -184,7 +168,7 @@ fun PdfToTextView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Description,
+                            icon = ToolCatalog.icon("pdf2text"),
                             title = "Tap to select PDF",
                             subtitle = "EXTRACT TEXT DATA",
                             accentColor = accentColor,
@@ -207,7 +191,7 @@ fun PdfToTextView(
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             
                             Spacer(Modifier.height(24.dp))
                             Text("READY TO EXTRACT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
@@ -248,7 +232,7 @@ fun PdfToTextView(
                             ) {
                                 Column {
                                     Text("EXTRACTED CONTENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
-                                    Text("${extractedText.length} CHARACTERS FOUND", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                                    Text("${extractedText.length} CHARACTERS FOUND", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                                 }
                                 Row {
                                     IconButton(onClick = { 

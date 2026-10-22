@@ -61,7 +61,7 @@ fun SynchronizedComparison(
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Comparison Preview", fontWeight = FontWeight.Black, fontSize = 16.sp)
-                    Text("BEFORE (LEFT) VS AFTER (RIGHT)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
+                    Text("BEFORE (LEFT) VS AFTER (RIGHT)", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
                 }
                 
                 Button(
@@ -81,7 +81,7 @@ fun SynchronizedComparison(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 120.dp)
+                contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 items(maxPages) { index ->
                     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {

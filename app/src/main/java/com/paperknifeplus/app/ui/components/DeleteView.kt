@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -169,7 +170,7 @@ fun DeleteView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Delete", "${pagesToDeleteSet.size} pages removed", Icons.Filled.Delete, saveUri, finalCount)
+                        SessionManager.addEntry(fileName, "Delete", "${pagesToDeleteSet.size} pages removed", ToolCatalog.icon("delete"), saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -208,19 +209,10 @@ fun DeleteView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBack, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Delete", fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-                        Text("REMOVE PAGES FROM PDF", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                    }
-                }
+                ToolTopBar(
+                    toolId = "delete",
+                    onBack = onBack
+                )
             }
         }
     ) { padding ->
@@ -233,7 +225,7 @@ fun DeleteView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.Delete,
+                            icon = ToolCatalog.icon("delete"),
                             title = "Tap to enter file",
                             subtitle = "DELETE PAGES INSTANTLY",
                             accentColor = accentColor,
@@ -248,9 +240,9 @@ fun DeleteView(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
-                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                                    Text("${pagesToDeleteSet.size} / $pageCount MARKED FOR DELETION", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text("${pagesToDeleteSet.size} / $pageCount MARKED FOR DELETION", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 }
                                 
                                 TextButton(onClick = { showRangeInput = !showRangeInput }) {

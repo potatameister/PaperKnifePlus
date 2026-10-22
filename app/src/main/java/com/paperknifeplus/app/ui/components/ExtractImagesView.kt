@@ -177,7 +177,7 @@ fun ExtractImagesView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Extract Image", "$extractedCount assets", Icons.Filled.Collections, saveUri)
+                        SessionManager.addEntry(fileName, "Extract Images", "$extractedCount assets", ToolCatalog.icon("extract-images"), saveUri, mimeType = "application/zip")
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -221,30 +221,13 @@ fun ExtractImagesView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Extract Image", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("EXTRACT ASSETS FROM PDFS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "extract-images",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -257,7 +240,7 @@ fun ExtractImagesView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.PhotoLibrary,
+                            icon = ToolCatalog.icon("extract-images"),
                             title = "Tap to enter file",
                             subtitle = "EXTRACT ASSETS FROM PDF",
                             accentColor = accentColor,
@@ -266,12 +249,12 @@ fun ExtractImagesView(
                     }
                     ToolState.CONFIGURING -> {
                         Column(
-                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                            modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
                             
-                            Box(modifier = Modifier.fillMaxWidth(0.6f).aspectRatio(0.707f)) {
+                            Box(modifier = Modifier.fillMaxWidth(0.5f).aspectRatio(0.707f)) {
                                 UnifiedPdfPreview(
                                     uri = selectedUri!!,
                                     pageCount = pageCount,
@@ -285,11 +268,11 @@ fun ExtractImagesView(
                             Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(24.dp))
+                            Spacer(Modifier.height(20.dp))
                             Text("READY TO STRIP ASSETS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Text("Strip and save all raw image files from the document.", fontSize = 12.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(32.dp))
+                            Spacer(Modifier.weight(1f))
                             
                             Button(
                                 onClick = { 
@@ -302,7 +285,7 @@ fun ExtractImagesView(
                             ) {
                                 Text("EXTRACT IMAGES (ZIP)", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            Spacer(Modifier.height(100.dp))
+                            Spacer(Modifier.height(16.dp))
                         }
                     }
                     ToolState.PROCESSING -> {

@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -91,6 +92,7 @@ fun SignView(
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
@@ -104,6 +106,7 @@ fun SignView(
     var activeRotation by remember { mutableFloatStateOf(0f) }
     var isFocusMode by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
+    var previewPageSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
     
     var showSignOptions by remember { mutableStateOf(false) }
     var showSignaturePad by remember { mutableStateOf(false) }
@@ -137,6 +140,7 @@ fun SignView(
             selectedUri = initialUri
             val details = getUriDetails(context, initialUri)
             fileName = details.name
+            fileSize = details.size
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, initialUri)
@@ -161,6 +165,7 @@ fun SignView(
             selectedUri = it
             val details = getUriDetails(context, it)
             fileName = details.name
+            fileSize = details.size
             isFileLoading = true
             scope.launch(Dispatchers.IO) {
                 val isEncrypted = checkIsEncryptedLocal(context, it)
@@ -217,15 +222,16 @@ fun SignView(
                                 PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
                                     sigs.forEach { sig ->
                                         val pdImage = LosslessFactory.createFromImage(document, sig.bitmap)
-                                        val pdfWidth = page.mediaBox.width
-                                        val pdfHeight = page.mediaBox.height
+                                        val crop = page.cropBox
+                                        val pdfWidth = crop.width
+                                        val pdfHeight = crop.height
                                         
                                         // 1:1 NATIVE MAPPING
                                         val drawWidth = pdfWidth * sig.normalizedWidth
                                         val drawHeight = drawWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())
                                         
-                                        val xPos = (sig.normalizedX * pdfWidth) - (drawWidth / 2)
-                                        val yPos = (pdfHeight - (sig.normalizedY * pdfHeight)) - (drawHeight / 2)
+                                        val xPos = crop.lowerLeftX + (sig.normalizedX * pdfWidth) - (drawWidth / 2)
+                                        val yPos = crop.lowerLeftY + ((1f - sig.normalizedY) * pdfHeight) - (drawHeight / 2)
                                         
                                         cs.saveGraphicsState()
                                         val matrix = Matrix()
@@ -245,7 +251,7 @@ fun SignView(
                     withContext(Dispatchers.Main) {
                         processingTime = String.format("%.1fs", (endTime - startTime) / 1000.0)
                         outputUri = saveUri
-                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Sign", "Document signed locally", Icons.Filled.Draw, saveUri, pageCount)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Sign PDF", "Document signed locally", ToolCatalog.icon("sign"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -282,14 +288,13 @@ fun SignView(
     }
 
     val signatureOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val containerWidth = constraints.maxWidth.toFloat()
-            val containerHeight = constraints.maxHeight.toFloat()
-            // GOLDEN BOUND: Map relative to Aspect-Fit content
-            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
-            
-            val pageWidth = fitRect.width()
-            val pageHeight = fitRect.height()
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { previewPageSize = it.size }
+        ) {
+            val pageWidth = constraints.maxWidth.toFloat()
+            val pageHeight = constraints.maxHeight.toFloat()
 
             // Render confirmed signatures
             placedSignatures.filter { it.pageIndex == pageIndex }.forEach { sig ->
@@ -298,23 +303,23 @@ fun SignView(
                     contentDescription = null,
                     modifier = Modifier
                         .requiredSize(
-                            width = (pageWidth * sig.normalizedWidth).dp / LocalDensity.current.density,
-                            height = (pageWidth * sig.normalizedWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())).dp / LocalDensity.current.density
+                            width = (pageWidth * sig.normalizedWidth).coerceAtLeast(1f).dp / LocalDensity.current.density,
+                            height = (pageWidth * sig.normalizedWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())).coerceAtLeast(1f).dp / LocalDensity.current.density
                         )
                         .graphicsLayer {
-                            translationX = fitRect.left + (sig.normalizedX * pageWidth) - (containerWidth / 2)
-                            translationY = fitRect.top + (sig.normalizedY * pageHeight) - (containerHeight / 2)
+                            translationX = pageWidth * (sig.normalizedX - 0.5f)
+                            translationY = pageHeight * (sig.normalizedY - 0.5f)
                             rotationZ = sig.rotation
                         }
                         .align(Alignment.Center)
                 )
             }
-            
+
             // Render active signature in Focus Mode
             if (isFocusMode && activeSignatureBitmap != null && (lightboxPage == pageIndex || lightboxPage == null)) {
                 val bitmap = activeSignatureBitmap!!
                 val baseWidth = pageWidth * 0.4f
-                
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -331,8 +336,8 @@ fun SignView(
                         contentDescription = null,
                         modifier = Modifier
                             .requiredSize(
-                                width = (baseWidth * activeScale).dp / LocalDensity.current.density,
-                                height = (baseWidth * activeScale * (bitmap.height.toFloat() / bitmap.width.toFloat())).dp / LocalDensity.current.density
+                                width = (baseWidth * activeScale).coerceAtLeast(1f).dp / LocalDensity.current.density,
+                                height = (baseWidth * activeScale * (bitmap.height.toFloat() / bitmap.width.toFloat())).coerceAtLeast(1f).dp / LocalDensity.current.density
                             )
                             .graphicsLayer {
                                 translationX = activeOffset.x
@@ -350,30 +355,13 @@ fun SignView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Sign PDF", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("SECURE SIGNATURE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING; placedSignatures = emptyList() }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "sign",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING; placedSignatures = emptyList() },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -386,7 +374,7 @@ fun SignView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.Draw,
+                            icon = ToolCatalog.icon("sign"),
                             title = "Tap to enter file",
                             subtitle = "SIGN ANY PDF DOCUMENT",
                             accentColor = accentColor,
@@ -398,6 +386,14 @@ fun SignView(
                             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Spacer(Modifier.height(12.dp))
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("sign"),
+                                accentColor = accentColor
+                            )
                             Spacer(Modifier.height(12.dp))
                             Box(modifier = Modifier.weight(1f)) {
                                 UnifiedPdfPreview(
@@ -489,10 +485,6 @@ fun SignView(
     if (lightboxPage != null) {
         val pageIdx = lightboxPage!!
         BoxWithConstraints {
-            val containerWidth = constraints.maxWidth.toFloat()
-            val containerHeight = constraints.maxHeight.toFloat()
-            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
-            
             PageLightbox(
                 uri = selectedUri!!,
                 initialPage = pageIdx,
@@ -500,6 +492,7 @@ fun SignView(
                 password = unlockPassword.ifEmpty { null },
                 onDismiss = { lightboxPage = null; isFocusMode = false; activeSignatureBitmap = null },
                 itemOverlay = signatureOverlay,
+                zoomEnabled = false,
                 bottomBar = { currentPage ->
                     Surface(
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
@@ -515,16 +508,18 @@ fun SignView(
                                 Button(
                                     onClick = { 
                                         activeSignatureBitmap?.let {
-                                            // Normalizing relative to the fit-box
-                                            val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width()
-                                            val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height()
-                                            
+                                            // Normalize against the actual on-screen page bounds.
+                                            val pageW = previewPageSize.width.toFloat()
+                                            val pageH = previewPageSize.height.toFloat()
+                                            val nx = if (pageW > 0f) 0.5f + activeOffset.x / pageW else 0.5f
+                                            val ny = if (pageH > 0f) 0.5f + activeOffset.y / pageH else 0.5f
+
                                             placedSignatures = placedSignatures + PlacedSignature(
                                                 pageIndex = currentPage,
                                                 bitmap = it,
                                                 normalizedX = nx,
                                                 normalizedY = ny,
-                                                normalizedWidth = (fitRect.width() * 0.4f * activeScale) / fitRect.width(),
+                                                normalizedWidth = 0.4f * activeScale,
                                                 rotation = activeRotation
                                             )
                                         }
@@ -595,7 +590,7 @@ fun SignView(
                     
                     if (savedSignatures.isNotEmpty()) {
                         Spacer(Modifier.height(24.dp))
-                        Text("SAVED SIGNATURES", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                        Text("SAVED SIGNATURES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
                         Spacer(Modifier.height(12.dp))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(savedSignatures) { file ->

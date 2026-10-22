@@ -23,14 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.isSpecified
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import coil.ImageLoader
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
@@ -56,11 +63,20 @@ fun PageLightbox(
     onToggleSelection: ((Int) -> Unit)? = null,
     isGrayscale: Boolean = false,
     itemOverlay: @Composable (BoxScope.(Int) -> Unit)? = null,
-    bottomBar: @Composable (BoxScope.(Int) -> Unit)? = null
+    bottomBar: @Composable (BoxScope.(Int) -> Unit)? = null,
+    zoomEnabled: Boolean = true
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val view = LocalView.current
+    val navBarPx = remember(view) {
+        ViewCompat.getRootWindowInsets(view)
+            ?.getInsets(WindowInsetsCompat.Type.navigationBars())
+            ?.bottom ?: 0
+    }
+    val navBarPadding = with(density) { navBarPx.toDp() }
     
     var showJumpDialog by remember { mutableStateOf(false) }
     var jumpPageInput by remember { mutableStateOf("") }
@@ -85,7 +101,10 @@ fun PageLightbox(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
         Box(
             modifier = Modifier
@@ -125,47 +144,129 @@ fun PageLightbox(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
-                        scale = (scale * zoomChange).coerceIn(1f, 4f)
-                        if (scale > 1f) {
-                            val maxX = (constraints.maxWidth * (scale - 1) / 2)
-                            val maxY = (constraints.maxHeight * (scale - 1) / 2)
-                            val newOffset = offset + offsetChange
-                            offset = androidx.compose.ui.geometry.Offset(
-                                newOffset.x.coerceIn(-maxX, maxX),
-                                newOffset.y.coerceIn(-maxY, maxY)
-                            )
-                        } else {
-                            offset = androidx.compose.ui.geometry.Offset.Zero
-                        }
+                    val containerWidth = if (constraints.hasBoundedWidth) {
+                        constraints.maxWidth.toFloat()
+                    } else {
+                        1f
                     }
+                    val containerHeight = if (constraints.hasBoundedHeight) {
+                        constraints.maxHeight.toFloat()
+                    } else {
+                        1f
+                    }
+                    val painter = rememberAsyncImagePainter(request, imageLoader)
+                    val intrinsic = painter.intrinsicSize
+                    val rawPageAspect = if (intrinsic.isSpecified) {
+                        val intrinsicWidth = intrinsic.width
+                        val intrinsicHeight = intrinsic.height
+                        if (
+                            intrinsicWidth.isFinite() &&
+                            intrinsicHeight.isFinite() &&
+                            intrinsicWidth > 0f &&
+                            intrinsicHeight > 0f
+                        ) {
+                            intrinsicWidth / intrinsicHeight
+                        } else {
+                            0f
+                        }
+                    } else {
+                        0f
+                    }
+                    val pageAspect = rawPageAspect.takeIf { it.isFinite() && it > 0f } ?: 0.707f
+                    val containerAspect = if (
+                        containerWidth.isFinite() &&
+                        containerHeight.isFinite() &&
+                        containerHeight > 0f
+                    ) {
+                        containerWidth / containerHeight
+                    } else {
+                        0.707f
+                    }
+                    val rawFitWidth = if (containerAspect > pageAspect) {
+                        containerHeight * pageAspect
+                    } else {
+                        containerWidth
+                    }
+                    val rawFitHeight = if (containerAspect > pageAspect) {
+                        containerHeight
+                    } else if (pageAspect > 0f) {
+                        containerWidth / pageAspect
+                    } else {
+                        containerWidth
+                    }
+                    val fitWidth = rawFitWidth.takeIf { it.isFinite() && it > 0f } ?: 1f
+                    val fitHeight = rawFitHeight.takeIf { it.isFinite() && it > 0f } ?: 1f
 
-                    Box(
+                    val gestureModifier = if (zoomEnabled) {
                         Modifier
-                            .fillMaxSize()
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onDoubleTap = { tapOffset ->
                                         if (scale > 1.01f) {
                                             scale = 1f
-                                            offset = androidx.compose.ui.geometry.Offset.Zero
+                                            offset = Offset.Zero
                                         } else {
                                             scale = 2.5f
                                             val x = (size.width / 2 - tapOffset.x) * (2.5f - 1f)
                                             val y = (size.height / 2 - tapOffset.y) * (2.5f - 1f)
-                                            offset = androidx.compose.ui.geometry.Offset(x, y)
+                                            offset = Offset(x, y)
                                         }
                                     }
                                 )
                             }
-                            .then(if (scale > 1.01f) Modifier.transformable(state) else Modifier),
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val pressedCount = event.changes.count { it.pressed }
+
+                                        if (pressedCount >= 2) {
+                                            val zoom = event.calculateZoom()
+                                            val pan = event.calculatePan()
+                                            val newScale = (scale * zoom).coerceIn(1f, 4f)
+                                            scale = newScale
+                                            if (newScale > 1f) {
+                                                val maxX = fitWidth * (newScale - 1) / 2f
+                                                val maxY = fitHeight * (newScale - 1) / 2f
+                                                val newOffset = offset + pan
+                                                offset = Offset(
+                                                    newOffset.x.coerceIn(-maxX, maxX),
+                                                    newOffset.y.coerceIn(-maxY, maxY)
+                                                )
+                                            } else {
+                                                offset = Offset.Zero
+                                            }
+                                            event.changes.forEach { it.consume() }
+                                        } else if (pressedCount == 1 && scale > 1.01f) {
+                                            val pan = event.calculatePan()
+                                            if (pan != Offset.Zero) {
+                                                val maxX = fitWidth * (scale - 1) / 2f
+                                                val maxY = fitHeight * (scale - 1) / 2f
+                                                val newOffset = offset + pan
+                                                offset = Offset(
+                                                    newOffset.x.coerceIn(-maxX, maxX),
+                                                    newOffset.y.coerceIn(-maxY, maxY)
+                                                )
+                                                event.changes.forEach { it.consume() }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                    } else {
+                        Modifier
+                    }
+
+                    Box(
+                        Modifier.fillMaxSize().then(gestureModifier),
                         contentAlignment = Alignment.Center
                     ) {
-                        val painter = rememberAsyncImagePainter(request, imageLoader)
-                        
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
+                                .size(
+                                    width = with(density) { fitWidth.toDp() },
+                                    height = with(density) { fitHeight.toDp() }
+                                )
                                 .graphicsLayer(
                                     scaleX = animatedScale,
                                     scaleY = animatedScale,
@@ -178,11 +279,11 @@ fun PageLightbox(
                                 painter = painter,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit,
+                                contentScale = ContentScale.FillBounds,
                                 colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null
                             )
-                            
-                            // PRO: Apply tool overlay (page numbers, etc) inside the zoomable layer
+
+                            // The overlay now receives the exact page bounds, not the screen bounds.
                             itemOverlay?.invoke(this, pageIndex)
                         }
 
@@ -310,7 +411,14 @@ fun PageLightbox(
 
             // Custom Tool Bottom Bar (e.g. Sign controls)
             Box(Modifier.fillMaxSize()) {
-                bottomBar?.invoke(this, pagerState.currentPage)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(bottom = navBarPadding + 12.dp)
+                ) {
+                    bottomBar?.invoke(this, pagerState.currentPage)
+                }
             }
 
             // Navigation
@@ -318,8 +426,7 @@ fun PageLightbox(
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = 24.dp)
+                        .padding(bottom = navBarPadding + 36.dp)
                         .background(Color.Black.copy(0.5f), RoundedCornerShape(24.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),

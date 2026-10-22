@@ -127,7 +127,7 @@ fun ProtectView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Protect", "Encrypted", Icons.Outlined.Lock, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Lock", "Encrypted", ToolCatalog.icon("protect"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -145,30 +145,13 @@ fun ProtectView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Protect", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("ENCRYPT YOUR DOCUMENT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "protect",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -181,7 +164,7 @@ fun ProtectView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Security,
+                            icon = ToolCatalog.icon("protect"),
                             title = "Tap to enter file",
                             subtitle = "PROTECT ANY PDF DOCUMENT",
                             accentColor = accentColor,
@@ -193,7 +176,7 @@ fun ProtectView(
                             modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(8.dp))
                             
                             Box(modifier = Modifier.weight(1f).fillMaxWidth(0.7f)) {
                                 UnifiedPdfPreview(
@@ -205,19 +188,20 @@ fun ProtectView(
                                 )
                             }
                             
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(8.dp))
                             Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
-                            Spacer(Modifier.height(24.dp))
-                            Text("SET PROTECTION", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
+                            Spacer(Modifier.height(16.dp))
+                            Text("SET PROTECTION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
                             Spacer(Modifier.height(8.dp))
                             
                             OutlinedTextField(
                                 value = protectPassword,
                                 onValueChange = { protectPassword = it },
                                 label = { Text("New Password", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
-                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
                                 shape = RoundedCornerShape(16.dp),
                                 colors = TextFieldDefaults.colors(
                                     focusedIndicatorColor = accentColor,
@@ -227,7 +211,7 @@ fun ProtectView(
                                 )
                             )
                             
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(10.dp))
                             Surface(color = Color(0xFFFFF1F2), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.Warning, null, tint = Color(0xFFF43F5E), modifier = Modifier.size(16.dp))
@@ -236,7 +220,7 @@ fun ProtectView(
                                 }
                             }
                             
-                            Spacer(Modifier.height(24.dp))
+                            Spacer(Modifier.height(16.dp))
                             Button(
                                 onClick = { 
                                     val defaultName = fileName.replace(".pdf", "", true) + "-protected.pdf"
@@ -249,7 +233,7 @@ fun ProtectView(
                             ) {
                                 Text("PROTECT & SAVE", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            Spacer(Modifier.height(32.dp))
+                            Spacer(Modifier.height(16.dp))
                         }
                     }
                     ToolState.PROCESSING -> {

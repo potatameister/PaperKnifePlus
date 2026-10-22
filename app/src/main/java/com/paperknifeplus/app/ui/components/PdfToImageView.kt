@@ -117,7 +117,7 @@ fun PdfToImageView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "PDF to Image", "${selectedPages.size} images", Icons.Outlined.BurstMode, saveUri)
+                        SessionManager.addEntry(fileName, "PDF to Image", "${selectedPages.size} images", ToolCatalog.icon("pdf2img"), saveUri, mimeType = "application/zip")
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -161,30 +161,13 @@ fun PdfToImageView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("PDF to Image", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("NATIVE EXPORT ENGINE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "pdf2img",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -194,7 +177,7 @@ fun PdfToImageView(
                     SelectionGrid(
                         onSelect = { pickLauncher.launch("application/pdf") }, 
                         isDark = isDark,
-                        icon = Icons.Outlined.BurstMode,
+                        icon = ToolCatalog.icon("pdf2img"),
                         title = "Tap to select PDF",
                         subtitle = "CONVERT DOCUMENT TO IMAGES",
                         accentColor = accentColor,
@@ -212,7 +195,7 @@ fun PdfToImageView(
                             shape = RoundedCornerShape(24.dp)
                         ) {
                             Column(Modifier.padding(16.dp)) {
-                                Text("EXPORT CONFIGURATION", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
+                                Text("EXPORT CONFIGURATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.2.sp)
                                 Spacer(Modifier.height(12.dp))
                                 
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -260,7 +243,7 @@ fun PdfToImageView(
                         }
 
                         Spacer(Modifier.height(16.dp))
-                        Text("SELECT PAGES TO EXPORT", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp))
+                        Text("SELECT PAGES TO EXPORT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp))
                         Spacer(Modifier.height(8.dp))
 
                         Box(modifier = Modifier.weight(1f)) {
@@ -269,7 +252,7 @@ fun PdfToImageView(
                                 modifier = Modifier.fillMaxSize(),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                                contentPadding = PaddingValues(bottom = 100.dp)
+                                contentPadding = PaddingValues(bottom = 32.dp)
                             ) {
                                 items(pageCount, key = { it }) { index ->
                                     val isSelected = selectedPages.contains(index)

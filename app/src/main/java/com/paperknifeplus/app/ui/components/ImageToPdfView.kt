@@ -86,7 +86,7 @@ fun ImageToPdfView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         outputUri = saveUri
-                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Image to PDF", "${selectedUris.size} images", Icons.Filled.Description, saveUri, selectedUris.size)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Image to PDF", "${selectedUris.size} images", ToolCatalog.icon("img2pdf"), saveUri, selectedUris.size)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -104,32 +104,10 @@ fun ImageToPdfView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Image to PDF", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("PHOTO TO DOCUMENT CONVERTER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUris.isNotEmpty() && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { pickLauncher.launch("image/*") }) {
-                                Icon(Icons.Filled.Add, null, modifier = Modifier.size(14.dp), tint = accentColor)
-                                Spacer(Modifier.width(4.dp))
-                                Text("ADD", fontSize = 11.sp, fontWeight = FontWeight.Black, color = accentColor)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "img2pdf",
+                    onBack = onBack,
+                )
             }
         }
     ) { padding ->
@@ -140,7 +118,7 @@ fun ImageToPdfView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("image/*") },
                             isDark = isDark,
-                            icon = Icons.Outlined.PictureAsPdf,
+                            icon = ToolCatalog.icon("img2pdf"),
                             title = "Tap to select images",
                             subtitle = "JPG, PNG, OR WEBP",
                             accentColor = accentColor,
@@ -151,8 +129,8 @@ fun ImageToPdfView(
                         
                         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column {
-                                Text("REORDER ASSETS", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
-                                Text("${selectedUris.size} IMAGES SELECTED", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                Text("REORDER ASSETS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, letterSpacing = 1.sp)
+                                Text("${selectedUris.size} IMAGES SELECTED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 FilterChip(

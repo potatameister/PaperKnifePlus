@@ -3,21 +3,19 @@ package com.paperknifeplus.app
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -26,11 +24,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,7 +45,16 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            )
+        )
         com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
@@ -91,8 +97,6 @@ class MainActivity : ComponentActivity() {
 
             CompositionLocalProvider(coil.compose.LocalImageLoader provides nitroImageLoader) {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
-                    val sheetState = rememberModalBottomSheetState()
-                    var showToolPicker by remember { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
 
                     Box(Modifier.fillMaxSize()) {
@@ -102,6 +106,10 @@ class MainActivity : ComponentActivity() {
                         var toolInitialPassword by remember { mutableStateOf<String?>(null) }
                         var aboutInitialPage by remember { mutableStateOf("main") }
                         var isAboutFromSettings by remember { mutableStateOf(false) }
+                        var homeToolIds by remember {
+                            mutableStateOf(PreferencesManager.getHomeToolIds(applicationContext))
+                        }
+                        var showHomeEditor by remember { mutableStateOf(false) }
                         
                         val mainScreens = listOf("home", "tools", "history", "settings")
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
@@ -146,10 +154,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        BackHandler(enabled = currentTool != null || pagerState.currentPage != 0 || showToolPicker) {
-                            if (showToolPicker) {
-                                scope.launch { sheetState.hide() }.invokeOnCompletion { showToolPicker = false }
-                            } else if (currentTool != null) {
+                        BackHandler(enabled = currentTool != null || pagerState.currentPage != 0) {
+                            if (currentTool != null) {
                                 currentTool = null
                             } else if (pagerState.currentPage != 0) {
                                 scope.launch { pagerState.animateScrollToPage(0) }
@@ -163,7 +169,7 @@ class MainActivity : ComponentActivity() {
                                 .background(MaterialTheme.colorScheme.background)
                                 .navigationBarsPadding()
                         ) {
-                            Column(modifier = Modifier.fillMaxSize().padding(bottom = 84.dp)) {
+                            Column(modifier = Modifier.fillMaxSize()) {
                                 androidx.compose.foundation.pager.HorizontalPager(
                                     state = pagerState,
                                     modifier = Modifier.weight(1f),
@@ -173,6 +179,8 @@ class MainActivity : ComponentActivity() {
                                     when (mainScreens[page]) {
                                         "home" -> HomeView(
                                             isDarkMode = isDarkMode,
+                                            homeToolIds = homeToolIds,
+                                            onEditHomeTools = { showHomeEditor = true },
                                             onThemeToggle = { 
                                                 themePreference = if (isDarkMode) 1 else 2
                                                 PreferencesManager.setTheme(applicationContext, themePreference)
@@ -180,11 +188,13 @@ class MainActivity : ComponentActivity() {
                                             onToolClick = { 
                                                 toolInitialUri = null
                                                 if (it == "about") {
-                                                    aboutInitialPage = "support"
+                                                    aboutInitialPage = "main"
                                                     isAboutFromSettings = false
                                                     currentTool = "about"
                                                 } else if (it == "tools") {
                                                     scope.launch { pagerState.animateScrollToPage(1) }
+                                                } else if (it == "history") {
+                                                    scope.launch { pagerState.animateScrollToPage(2) }
                                                 } else {
                                                     currentTool = it 
                                                 }
@@ -199,10 +209,38 @@ class MainActivity : ComponentActivity() {
                                             toolInitialPassword = null
                                             currentTool = it 
                                         })
-                                        "history" -> HistoryView(onItemClick = { uri, name, count ->
-                                            previewData = Triple(uri, name, count)
-                                            toolInitialPassword = null
-                                            currentTool = "ultra_preview"
+                                        "history" -> HistoryView(onItemClick = { entry ->
+                                            entry.uri?.let { uri ->
+                                                val isPdf = entry.mimeType == "application/pdf" ||
+                                                    entry.name.endsWith(".pdf", ignoreCase = true)
+                                                if (isPdf) {
+                                                    previewData = Triple(uri, entry.name, entry.pageCount)
+                                                    toolInitialPassword = null
+                                                    currentTool = "ultra_preview"
+                                                } else {
+                                                    try {
+                                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                                            setDataAndType(uri, entry.mimeType)
+                                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                        }
+                                                        startActivity(android.content.Intent.createChooser(intent, "Open with"))
+                                                    } catch (e: Exception) {
+                                                        try {
+                                                            val fallback = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                                                setDataAndType(uri, "*/*")
+                                                                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                            }
+                                                            startActivity(android.content.Intent.createChooser(fallback, "Open with"))
+                                                        } catch (e2: Exception) {
+                                                            android.widget.Toast.makeText(
+                                                                applicationContext,
+                                                                "No app can open this file",
+                                                                android.widget.Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         })
                                         "settings" -> SettingsView(
                                             isDarkMode = isDarkMode,
@@ -221,7 +259,7 @@ class MainActivity : ComponentActivity() {
                             }
 
                             if (currentTool == null) {
-                                FixedTitanBottomBar(
+                                PaperKnifeBottomBar(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter),
                                     currentScreen = mainScreens[pagerState.currentPage],
@@ -230,30 +268,8 @@ class MainActivity : ComponentActivity() {
                                         if (index != -1) {
                                             scope.launch { pagerState.scrollToPage(index) }
                                         }
-                                    },
-                                    onPlusClick = { showToolPicker = true }
+                                    }
                                 )
-                            }
-
-                            if (showToolPicker) {
-                                ModalBottomSheet(
-                                    onDismissRequest = { showToolPicker = false },
-                                    sheetState = sheetState,
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray.copy(0.2f)) },
-                                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-                                ) {
-                                    ToolPickerContent(
-                                        onToolClick = { tool ->
-                                            scope.launch { sheetState.hide() }.invokeOnCompletion { 
-                                                showToolPicker = false
-                                                toolInitialUri = previewData?.first
-                                                toolInitialPassword = null
-                                                currentTool = tool 
-                                            }
-                                        }
-                                    )
-                                }
                             }
 
                             androidx.compose.animation.AnimatedVisibility(
@@ -320,6 +336,17 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
+
+                        if (showHomeEditor) {
+                            HomeToolsSheet(
+                                selectedIds = homeToolIds,
+                                onDismiss = { showHomeEditor = false },
+                                onChanged = { ids ->
+                                    homeToolIds = ids
+                                    PreferencesManager.setHomeToolIds(applicationContext, ids)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -328,99 +355,110 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun FixedTitanBottomBar(
+fun PaperKnifeBottomBar(
     modifier: Modifier = Modifier,
     currentScreen: String,
-    onNavigate: (String) -> Unit,
-    onPlusClick: () -> Unit
+    onNavigate: (String) -> Unit
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.98f))
-            .height(84.dp),
-        contentAlignment = Alignment.BottomCenter
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Box(
             modifier = Modifier
-                .offset(y = (-32).dp)
-                .size(40.dp)
-                .background(Brush.radialGradient(listOf(PaperPink.copy(alpha = 0.4f), Color.Transparent)))
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.10f))
         )
 
-        Surface(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(68.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-            tonalElevation = 8.dp
+                .height(72.dp)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(bottom = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        NavItem(Icons.Outlined.Home, "Home", currentScreen == "home") { onNavigate("home") }
-                        NavItem(Icons.Outlined.GridView, "Tools", currentScreen == "tools") { onNavigate("tools") }
-                    }
-                    
-                    Spacer(modifier = Modifier.width(72.dp))
-                    
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        NavItem(Icons.Outlined.History, "History", currentScreen == "history") { onNavigate("history") }
-                        NavItem(Icons.Outlined.Settings, "Settings", currentScreen == "settings" || currentScreen == "about") { onNavigate("settings") }
-                    }
-                }
-            }
-        }
+            NavItem(
+                icon = if (currentScreen == "home") Icons.Filled.Home else Icons.Outlined.Home,
+                label = "Home",
+                selected = currentScreen == "home",
+                modifier = Modifier.weight(1f)
+            ) { onNavigate("home") }
 
-        Surface(
-            modifier = Modifier
-                .offset(y = (-34).dp)
-                .size(58.dp)
-                .border(2.5.dp, if (MaterialTheme.colorScheme.background == Color.Black) Color.Black else Color.White, RoundedCornerShape(20.dp))
-                .shadow(elevation = 12.dp, shape = RoundedCornerShape(20.dp), spotColor = PaperPink)
-                .clickable { onPlusClick() },
-            shape = RoundedCornerShape(20.dp),
-            color = PaperPink
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(32.dp))
-            }
+            NavItem(
+                icon = if (currentScreen == "tools") Icons.Filled.GridView else Icons.Outlined.GridView,
+                label = "Tools",
+                selected = currentScreen == "tools",
+                modifier = Modifier.weight(1f)
+            ) { onNavigate("tools") }
+
+            NavItem(
+                icon = if (currentScreen == "history") Icons.Filled.History else Icons.Outlined.History,
+                label = "History",
+                selected = currentScreen == "history",
+                modifier = Modifier.weight(1f)
+            ) { onNavigate("history") }
+
+            NavItem(
+                icon = if (currentScreen == "settings" || currentScreen == "about") Icons.Filled.Settings else Icons.Outlined.Settings,
+                label = "Settings",
+                selected = currentScreen == "settings" || currentScreen == "about",
+                modifier = Modifier.weight(1f)
+            ) { onNavigate("settings") }
         }
     }
 }
 
 @Composable
-fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+fun NavItem(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val tint by animateColorAsState(
+        targetValue = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+        label = "navTint"
+    )
+    val haptics = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+
     Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp, horizontal = 16.dp),
+        modifier = modifier
+            .fillMaxHeight()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) {
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
+            .padding(horizontal = 2.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-            modifier = Modifier.size(24.dp)
+            tint = tint,
+            modifier = Modifier.size(23.dp)
         )
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = label,
-            fontSize = 9.sp,
+            fontSize = 10.5.sp,
             fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
-            color = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            color = tint,
             letterSpacing = 0.2.sp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .size(3.dp)
+                .clip(CircleShape)
+                .background(if (selected) PaperPink else Color.Transparent)
         )
     }
 }

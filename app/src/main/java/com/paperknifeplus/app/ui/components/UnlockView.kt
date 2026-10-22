@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.paperknifeplus.app.ui.theme.PaperPink
@@ -110,7 +111,7 @@ fun UnlockView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Unlock", "Decrypted", Icons.Outlined.LockOpen, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Unlock", "Decrypted", ToolCatalog.icon("unlock"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -146,30 +147,13 @@ fun UnlockView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Unlock", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("REMOVE PDF RESTRICTIONS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "unlock",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -182,7 +166,7 @@ fun UnlockView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.LockOpen,
+                            icon = ToolCatalog.icon("unlock"),
                             title = "Tap to select locked file",
                             subtitle = "REMOVE PASSWORD PROTECTION",
                             accentColor = accentColor,
@@ -207,11 +191,11 @@ fun UnlockView(
                             }
                             
                             Spacer(Modifier.height(12.dp))
-                            Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
+                            Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
                             
                             Spacer(Modifier.height(20.dp))
-                            Text("DOCUMENT UNLOCKED", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
+                            Text("DOCUMENT UNLOCKED", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.2.sp)
                             Text("Ready to save without restrictions.", color = Color.Gray, fontSize = 11.sp)
                             
                             Spacer(Modifier.height(32.dp))

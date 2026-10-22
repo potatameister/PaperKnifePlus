@@ -105,7 +105,7 @@ fun RepairView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Repair", "Restored", Icons.Outlined.Build, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Repair", "Restored", ToolCatalog.icon("repair"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -143,30 +143,13 @@ fun RepairView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Repair", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("RECOVER CORRUPT DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "repair",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -179,7 +162,7 @@ fun RepairView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Build,
+                            icon = ToolCatalog.icon("repair"),
                             title = "Tap to enter file",
                             subtitle = "REPAIR BROKEN PDF STRUCTURE",
                             accentColor = accentColor,
@@ -187,29 +170,40 @@ fun RepairView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        // NITRO: Fully scrollable overhaul
                         Column(
-                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                            modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
-                            
-                            Box(modifier = Modifier.fillMaxWidth(0.65f).aspectRatio(0.707f)) {
-                                UnifiedPdfPreview(
-                                    uri = selectedUri!!,
-                                    pageCount = pageCount,
-                                    mode = PreviewMode.COVER,
-                                    password = if (unlockPassword.isEmpty()) null else unlockPassword,
-                                    accentColor = accentColor
-                                )
+                            Spacer(Modifier.height(12.dp))
+
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("repair"),
+                                accentColor = accentColor
+                            )
+
+                            Spacer(Modifier.height(12.dp))
+
+                            BoxWithConstraints(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val previewWidth = minOf(maxWidth * 0.72f, maxHeight * 0.707f)
+                                Box(modifier = Modifier.width(previewWidth).aspectRatio(0.707f)) {
+                                    UnifiedPdfPreview(
+                                        uri = selectedUri!!,
+                                        pageCount = pageCount,
+                                        mode = PreviewMode.COVER,
+                                        password = if (unlockPassword.isEmpty()) null else unlockPassword,
+                                        accentColor = accentColor
+                                    )
+                                }
                             }
-                            
-                            Spacer(Modifier.height(16.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
-                            
-                            Spacer(Modifier.height(32.dp))
-                            
+
+                            Spacer(Modifier.height(12.dp))
+
                             Text("READY TO REPAIR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Text(
                                 "PaperKnife+ will rebuild the PDF index and cross-reference table to restore accessibility.", 
@@ -219,7 +213,7 @@ fun RepairView(
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                             
-                            Spacer(Modifier.height(32.dp))
+                            Spacer(Modifier.height(16.dp))
                             
                             Button(
                                 onClick = { 
@@ -232,7 +226,7 @@ fun RepairView(
                             ) {
                                 Text("REPAIR & SAVE PDF", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            Spacer(Modifier.height(100.dp))
+                            Spacer(Modifier.height(16.dp))
                         }
                     }
                     ToolState.PROCESSING -> {

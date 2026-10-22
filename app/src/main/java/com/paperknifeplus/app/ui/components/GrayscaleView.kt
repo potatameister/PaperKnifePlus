@@ -114,7 +114,7 @@ fun GrayscaleView(
                         processingTime = timeStr
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Grayscale", "Converted to B&W", Icons.Outlined.Palette, saveUri, pageCount)
+                        SessionManager.addEntry(fileName, "Grayscale", "Converted to B&W", ToolCatalog.icon("grayscale"), saveUri, pageCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -132,30 +132,13 @@ fun GrayscaleView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Grayscale", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("CONVERT PDF TO B&W", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "grayscale",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -168,7 +151,7 @@ fun GrayscaleView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Outlined.Palette,
+                            icon = ToolCatalog.icon("grayscale"),
                             title = "Tap to enter file",
                             subtitle = "GRAYSCALE ANY PDF DOCUMENT",
                             accentColor = accentColor,
@@ -181,6 +164,16 @@ fun GrayscaleView(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Spacer(Modifier.height(16.dp))
+                            
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("grayscale"),
+                                accentColor = accentColor,
+                                modifier = Modifier.padding(horizontal = 20.dp)
+                            )
+                            Spacer(Modifier.height(12.dp))
                             
                             Box(modifier = Modifier.weight(1f).padding(horizontal = 20.dp)) {
                                 UnifiedPdfPreview(

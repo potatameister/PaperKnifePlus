@@ -34,6 +34,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
+import kotlin.math.abs
 import java.util.zip.ZipOutputStream
 
 data class UriDetails(
@@ -74,6 +75,17 @@ object PreferencesManager {
     fun getHistoryRetention(context: Context): Int {
         val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
         return prefs.getInt("history_retention", 0) // 0: Unlimited, 1, 7, 30
+    }
+
+    fun setHomeToolIds(context: Context, ids: List<String>) {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("home_tool_ids", ids.joinToString(",")).apply()
+    }
+
+    fun getHomeToolIds(context: Context): List<String> {
+        val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
+        val raw = prefs.getString("home_tool_ids", null) ?: return ToolCatalog.core.map { it.id }
+        return raw.split(",").filter { it.isNotBlank() }
     }
 }
 
@@ -148,7 +160,7 @@ object BitmapPool {
                 pool[randomKey]?.removeFirstOrNull()?.recycle()
                 currentCount--
             }
-            val key = Triple(bitmap.width, bitmap.height, bitmap.config)
+            val key = Triple(bitmap.width, bitmap.height, bitmap.config ?: android.graphics.Bitmap.Config.ARGB_8888)
             pool.getOrPut(key) { mutableListOf() }.add(bitmap)
             currentCount++
         }
@@ -518,9 +530,22 @@ suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? =
     }
 }
 
+/**
+ * Page-space rectangle with a top-left origin and coordinates normalized to 0..1.
+ * Keeping this separate from [PDRectangle] avoids confusing PDF's bottom-left
+ * origin and its `(x, y, width, height)` constructor with edge coordinates.
+ */
+data class NormalizedRect(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float
+)
+
 data class TextMatch(
     val pageIndex: Int,
-    val rect: PDRectangle
+    val rects: List<NormalizedRect>,
+    val snippet: String = ""
 )
 
 /**
@@ -539,26 +564,79 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
             val stripper = object : PDFTextStripper() {
                 override fun writeString(text: String?, textPositions: MutableList<TextPosition>?) {
                     if (text == null || textPositions == null) return
-                    
+
+                    // A single TextPosition can cover multiple characters (ligatures,
+                    // spaces, etc.), so indexing textPositions by letter index can
+                    // point at a completely different glyph/line. Expand first.
+                    val expandedPositions = ArrayList<TextPosition>(text.length)
+                    textPositions.forEach { tp ->
+                        repeat(tp.unicode.length.coerceAtLeast(1)) {
+                            expandedPositions.add(tp)
+                        }
+                    }
+
                     var index = text.indexOf(query, 0, ignoreCase = true)
                     while (index != -1) {
-                        val first = textPositions[index]
-                        val last = textPositions[index + query.length - 1]
-                        
-                        val page = document.getPage(currentPageNo - 1)
-                        val pageWidth = page.mediaBox.width
-                        val pageHeight = page.mediaBox.height
-                        
-                        // NITRO 6.0: Percentage-Based Mapping (Normalized 0.0 - 1.0)
-                        val x = first.xDirAdj / pageWidth
-                        val y = first.yDirAdj / pageHeight
-                        val w = ((last.xDirAdj + last.widthDirAdj) - first.xDirAdj) / pageWidth
-                        val h = first.heightDir / pageHeight
-                        
-                        matches.add(TextMatch(
-                            currentPageNo - 1,
-                            PDRectangle(x, y, x + w, y + h) 
-                        ))
+                        val endIndex = index + query.length - 1
+                        if (endIndex in expandedPositions.indices) {
+                            val first = expandedPositions[index]
+                            val last = expandedPositions[endIndex]
+
+                            if (first != null && last != null) {
+                                // Use the same page dimensions the text stripper used.
+                                // The rendered page below is based on the crop box, not the media box.
+                                val pageWidth = first.pageWidth
+                                val pageHeight = first.pageHeight
+
+                                // A match can span multiple lines. Build one rectangle per line,
+                                // like PDF viewers do, instead of one huge rectangle.
+                                val matchedPositions = expandedPositions.subList(index, endIndex + 1)
+                                val lines = mutableListOf<MutableList<TextPosition>>()
+                                var lineY = Float.NaN
+                                matchedPositions.forEach { position ->
+                                    if (lines.isNotEmpty() &&
+                                        abs(position.yDirAdj - lineY) > maxOf(position.heightDir, 1f) / 2f
+                                    ) {
+                                        lines.add(mutableListOf())
+                                        lineY = position.yDirAdj
+                                    }
+                                    if (lines.isEmpty()) {
+                                        lines.add(mutableListOf())
+                                        lineY = position.yDirAdj
+                                    }
+                                    lines.last().add(position)
+                                }
+
+                                val rects = lines.mapNotNull { line ->
+                                    if (line.isEmpty()) return@mapNotNull null
+                                    var minX = Float.MAX_VALUE
+                                    var maxX = -Float.MAX_VALUE
+                                    var minY = Float.MAX_VALUE
+                                    var maxY = -Float.MAX_VALUE
+
+                                    line.forEach { position ->
+                                        minX = minOf(minX, position.xDirAdj)
+                                        maxX = maxOf(maxX, position.xDirAdj + position.widthDirAdj)
+                                        minY = minOf(minY, position.yDirAdj - position.heightDir * 1.25f)
+                                        maxY = maxOf(maxY, position.yDirAdj)
+                                    }
+
+                                    val nx = (minX / pageWidth).coerceIn(0f, 1f)
+                                    val ny = (minY / pageHeight).coerceIn(0f, 1f)
+                                    val nx2 = (maxX / pageWidth).coerceIn(0f, 1f)
+                                    val ny2 = (maxY / pageHeight).coerceIn(0f, 1f)
+                                    if (nx2 <= nx || ny2 <= ny) null
+                                    else NormalizedRect(nx, ny, nx2, ny2)
+                                }
+
+                                if (rects.isNotEmpty()) {
+                                    val snippetStart = (index - 30).coerceAtLeast(0)
+                                    val snippetEnd = (index + query.length + 30).coerceAtMost(text.length)
+                                    val snippet = text.substring(snippetStart, snippetEnd).trim()
+                                    matches.add(TextMatch(currentPageNo - 1, rects, snippet))
+                                }
+                            }
+                        }
                         index = text.indexOf(query, index + 1, ignoreCase = true)
                     }
                 }

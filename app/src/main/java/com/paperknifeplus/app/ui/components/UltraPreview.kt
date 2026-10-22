@@ -1,7 +1,16 @@
 package com.paperknifeplus.app.ui.components
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Bundle
+import android.os.CancellationSignal
+import android.os.ParcelFileDescriptor
+import android.print.PageRange
+import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
+import android.print.PrintDocumentInfo
+import android.print.PrintManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -13,7 +22,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,15 +39,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,10 +64,14 @@ import com.paperknifeplus.app.data.image.PdfPageFetcher
 import com.paperknifeplus.app.data.image.PdfPageRequest
 import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.Image
 import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,14 +85,22 @@ fun UltraPreview(
     onOpenInTool: (String, Uri, String?) -> Unit
 ) {
     val context = LocalContext.current
-    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     
     var showJumpDialog by remember { mutableStateOf(false) }
     var jumpPageInput by remember { mutableStateOf("") }
-    var showToolPicker by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    var showNewTask by remember { mutableStateOf(false) }
+
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showSearchBar by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<TextMatch>>(emptyList()) }
+    var activeMatchIndex by remember { mutableIntStateOf(-1) }
+    var isSearching by remember { mutableStateOf(false) }
+    var searchJob by remember { mutableStateOf<Job?>(null) }
+    val searchFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var targetScale by remember { mutableFloatStateOf(1f) }
     var targetOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
@@ -116,6 +147,68 @@ fun UltraPreview(
         }
     }
 
+    fun sharePdf() {
+        try {
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share PDF"))
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot share file", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun printPdf() {
+        try {
+            val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+            printManager.print("PaperKnife+", PdfPrintAdapter(context, activeUri), null)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot print file", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun runSearch() {
+        searchJob?.cancel()
+        if (searchQuery.isBlank()) {
+            searchResults = emptyList()
+            activeMatchIndex = -1
+            isSearching = false
+            return
+        }
+        searchJob = scope.launch {
+            isSearching = true
+            val results = findAllTextMatches(context, activeUri, activePassword, searchQuery)
+            searchResults = results
+            isSearching = false
+            if (results.isNotEmpty()) {
+                activeMatchIndex = 0
+                listState.scrollToItem(results.first().pageIndex)
+            } else {
+                activeMatchIndex = -1
+            }
+        }
+    }
+
+    fun goToMatch(delta: Int) {
+        if (searchResults.isEmpty()) return
+        val next = if (activeMatchIndex < 0) 0
+        else (activeMatchIndex + delta + searchResults.size) % searchResults.size
+        activeMatchIndex = next
+        scope.launch { listState.scrollToItem(searchResults[next].pageIndex) }
+    }
+
+    fun closeSearch() {
+        searchJob?.cancel()
+        showSearchBar = false
+        searchQuery = ""
+        searchResults = emptyList()
+        activeMatchIndex = -1
+        isSearching = false
+        keyboardController?.hide()
+    }
+
     fun initializeReader(targetUri: Uri, targetPass: String?) {
         scope.launch(Dispatchers.IO) {
             isInitializing = true
@@ -158,7 +251,11 @@ fun UltraPreview(
                     val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputStream)
                     val count = document.numberOfPages
                     val sizes = document.pages.mapIndexed { index, page ->
-                        index to (page.mediaBox.width to page.mediaBox.height)
+                        val crop = page.cropBox
+                        val pageRotation = ((page.rotation % 360) + 360) % 360
+                        val width = if (pageRotation % 180 == 0) crop.width else crop.height
+                        val height = if (pageRotation % 180 == 0) crop.height else crop.width
+                        index to (width to height)
                     }.toMap()
                     
                     val extractedLinks = mutableListOf<PdfLink>()
@@ -188,6 +285,28 @@ fun UltraPreview(
         }
     }
 
+    LaunchedEffect(showSearchBar) {
+        if (showSearchBar) {
+            delay(120)
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
+    BackHandler(enabled = showSearchBar) { closeSearch() }
+
+    LaunchedEffect(searchQuery, showSearchBar) {
+        if (!showSearchBar) return@LaunchedEffect
+        if (searchQuery.isBlank()) {
+            searchResults = emptyList()
+            activeMatchIndex = -1
+            isSearching = false
+            return@LaunchedEffect
+        }
+        delay(300)
+        runSearch()
+    }
+
     LaunchedEffect(uri) {
         initializeReader(uri, password)
     }
@@ -211,24 +330,50 @@ fun UltraPreview(
                                 onDoubleTap = { _ ->
                                     if (targetScale > 1.01f) {
                                         targetScale = 1f
-                                        targetOffset = androidx.compose.ui.geometry.Offset.Zero
+                                        targetOffset = Offset.Zero
                                     } else {
                                         targetScale = 3f
-                                        targetOffset = androidx.compose.ui.geometry.Offset.Zero
+                                        targetOffset = Offset.Zero
                                     }
                                 }
                             )
                         }
                         .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                val newScale = (targetScale * zoom).coerceIn(1f, 10f)
-                                
-                                if (newScale > 1f) {
-                                    targetScale = newScale
-                                    targetOffset = targetOffset + pan
-                                } else {
-                                    targetScale = 1f
-                                    targetOffset = androidx.compose.ui.geometry.Offset.Zero
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    val pressedCount = event.changes.count { it.pressed }
+
+                                    if (pressedCount >= 2) {
+                                        val zoom = event.calculateZoom()
+                                        val pan = event.calculatePan()
+                                        val newScale = (targetScale * zoom).coerceIn(1f, 10f)
+                                        targetScale = newScale
+                                        if (newScale > 1f) {
+                                            val maxX = size.width * (newScale - 1) / 2f
+                                            val maxY = size.height * (newScale - 1) / 2f
+                                            val newOffset = targetOffset + pan
+                                            targetOffset = Offset(
+                                                newOffset.x.coerceIn(-maxX, maxX),
+                                                newOffset.y.coerceIn(-maxY, maxY)
+                                            )
+                                        } else {
+                                            targetOffset = Offset.Zero
+                                        }
+                                        event.changes.forEach { it.consume() }
+                                    } else if (pressedCount == 1 && targetScale > 1.01f) {
+                                        val pan = event.calculatePan()
+                                        if (pan != Offset.Zero) {
+                                            val maxX = size.width * (targetScale - 1) / 2f
+                                            val maxY = size.height * (targetScale - 1) / 2f
+                                            val newOffset = targetOffset + pan
+                                            targetOffset = Offset(
+                                                newOffset.x.coerceIn(-maxX, maxX),
+                                                newOffset.y.coerceIn(-maxY, maxY)
+                                            )
+                                            event.changes.forEach { it.consume() }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -255,6 +400,9 @@ fun UltraPreview(
                                 password = activePassword,
                                 imageLoader = imageLoader,
                                 pageSize = pageSizes[index],
+                                rotation = 0,
+                                searchMatches = searchResults.filter { it.pageIndex == index },
+                                activeMatch = searchResults.getOrNull(activeMatchIndex),
                                 links = links.filter { it.pageIndex == index },
                                 onLinkClick = { url ->
                                     try {
@@ -271,89 +419,22 @@ fun UltraPreview(
             }
 
             if (!isInitializing && fileToUnlock == null) {
-                var isDragging by remember { mutableStateOf(false) }
-                var dragProgress by remember { mutableFloatStateOf(0f) }
-                var trackHeight by remember { mutableFloatStateOf(0f) }
-
-                val scrollPercentage by remember {
+                val currentPage by remember {
                     derivedStateOf {
-                        if (isDragging) dragProgress
-                        else if (activePageCount <= 1) 0f
-                        else {
-                            val layoutInfo = listState.layoutInfo
-                            val visibleItems = layoutInfo.visibleItemsInfo
-                            if (visibleItems.isEmpty()) 0f
-                            else {
-                                val firstItem = visibleItems.first()
-                                val index = firstItem.index
-                                val offset = -firstItem.offset.toFloat()
-                                val size = firstItem.size.toFloat()
-                                val progress = (index + (offset / size)) / (activePageCount - 1).coerceAtLeast(1)
-                                progress.coerceIn(0f, 1f)
-                            }
-                        }
-                    }
-                }
-
-                val currentPage by remember { 
-                    derivedStateOf { 
                         if (!listState.canScrollForward && activePageCount > 0) activePageCount
                         else (listState.firstVisibleItemIndex + 1).coerceIn(1, activePageCount)
-                    } 
+                    }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 4.dp)
-                        .fillMaxHeight(0.75f)
-                        .width(48.dp)
-                        .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
-                        .pointerInput(activePageCount, trackHeight) {
-                            detectTapGestures { offset ->
-                                if (trackHeight > 0) {
-                                    val newPercent = (offset.y / trackHeight).coerceIn(0f, 1f)
-                                    val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
-                                    scope.launch { listState.scrollToItem(targetPage.coerceIn(0, activePageCount - 1)) }
-                                }
-                            }
-                        }
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxHeight().width(6.dp).align(Alignment.Center).background(Color.Gray.copy(alpha = 0.15f), CircleShape)
+                if (activePageCount > 1) {
+                    PdfScrollbar(
+                        listState = listState,
+                        pageCount = activePageCount,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 2.dp)
+                            .fillMaxHeight(0.72f)
                     )
-                    
-                    if (trackHeight > 0 && activePageCount > 1) {
-                        val minThumbHeight = 48.dp
-                        val thumbHeightFactor = 1f / activePageCount.coerceAtLeast(1)
-                        val thumbHeightPx = with(density) { 
-                            (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeight.toPx()) 
-                        }
-                        
-                        Box(
-                            modifier = Modifier
-                                .height(with(density) { thumbHeightPx.toDp() })
-                                .width(12.dp)
-                                .graphicsLayer {
-                                    translationY = scrollPercentage * (trackHeight - thumbHeightPx)
-                                }
-                                .background(PaperPink, CircleShape)
-                                .align(Alignment.TopCenter)
-                                .draggable(
-                                    orientation = Orientation.Vertical,
-                                    state = rememberDraggableState { delta ->
-                                        if (trackHeight > thumbHeightPx && activePageCount > 1) {
-                                            isDragging = true
-                                            val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
-                                            dragProgress = newPercent
-                                            val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
-                                            scope.launch { listState.scrollToItem(targetPage.coerceIn(0, activePageCount - 1)) }
-                                        }
-                                    },
-                                    onDragStopped = { isDragging = false }
-                                )
-                        )
-                    }
                 }
 
                 Box(
@@ -401,64 +482,155 @@ fun UltraPreview(
                     
                     Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                         Text(fileName, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1, color = MaterialTheme.colorScheme.onSurface)
-                        Text("PDF VIEWER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                        Text("PDF VIEWER", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                     }
 
-                    IconButton(onClick = {
-                        try {
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/pdf"
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            context.startActivity(Intent.createChooser(intent, "Share PDF"))
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Cannot share file", Toast.LENGTH_SHORT).show()
+                    Box {
+                        IconButton(onClick = { showMoreMenu = true }) {
+                            Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurface)
                         }
-                    }) {
-                        Icon(Icons.Filled.Share, null, tint = MaterialTheme.colorScheme.onSurface)
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Find in document") },
+                                leadingIcon = { Icon(Icons.Filled.Search, null) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    showSearchBar = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Print") },
+                                leadingIcon = { Icon(Icons.Filled.Print, null) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    printPdf()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Share PDF") },
+                                leadingIcon = { Icon(Icons.Filled.Share, null) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    sharePdf()
+                                }
+                            )
+                        }
                     }
 
-                    IconButton(onClick = { showToolPicker = true }) {
-                        Icon(Icons.Filled.Add, null, tint = PaperPink, modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(4.dp))
+
+                    Surface(
+                        onClick = { showNewTask = true },
+                        enabled = !isInitializing && fileToUnlock == null,
+                        modifier = Modifier.size(38.dp),
+                        shape = CircleShape,
+                        color = PaperPink,
+                        contentColor = Color.White
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = "New task",
+                                modifier = Modifier.size(21.dp)
+                            )
+                        }
                     }
                 }
+
+                AnimatedVisibility(visible = showSearchBar) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.weight(1f).focusRequester(searchFocusRequester),
+                            singleLine = true,
+                            placeholder = { Text("Find in document") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { runSearch() }),
+                            trailingIcon = {
+                                if (isSearching) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = PaperPink
+                                    )
+                                }
+                            }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = when {
+                                isSearching -> "..."
+                                searchQuery.isNotBlank() && searchResults.isEmpty() -> "0/0"
+                                searchResults.isNotEmpty() -> "${activeMatchIndex + 1}/${searchResults.size}"
+                                else -> ""
+                            },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.Gray
+                        )
+                        IconButton(
+                            onClick = { goToMatch(-1) },
+                            enabled = searchResults.isNotEmpty(),
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Filled.KeyboardArrowUp, "Previous match", modifier = Modifier.size(20.dp))
+                        }
+                        IconButton(
+                            onClick = { goToMatch(1) },
+                            enabled = searchResults.isNotEmpty(),
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Filled.KeyboardArrowDown, "Next match", modifier = Modifier.size(20.dp))
+                        }
+                        IconButton(
+                            onClick = { closeSearch() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Filled.Close, "Close search", modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+
                 Divider(color = Color.Gray.copy(alpha = 0.1f))
             }
         }
 
-        if (showToolPicker) {
-            ModalBottomSheet(
-                onDismissRequest = { showToolPicker = false },
-                sheetState = sheetState,
-                containerColor = MaterialTheme.colorScheme.surface,
-                dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray.copy(0.2f)) },
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-            ) {
-                ToolPickerContent(
-                    onToolClick = { tool ->
-                        scope.launch { sheetState.hide() }.invokeOnCompletion { 
-                            showToolPicker = false
-                            onOpenInTool(tool, uri, activePassword)
-                        }
-                    }
-                )
-            }
+
+        AnimatedVisibility(
+            visible = showNewTask,
+            modifier = Modifier.fillMaxSize(),
+            enter = fadeIn(animationSpec = tween(180)),
+            exit = fadeOut(animationSpec = tween(140))
+        ) {
+            NewTaskScreen(
+                fileName = fileName,
+                pageCount = activePageCount,
+                onDismiss = { showNewTask = false },
+                onToolClick = { tool ->
+                    showNewTask = false
+                    onOpenInTool(tool, activeUri, activePassword)
+                }
+            )
         }
 
         if (fileToUnlock != null) {
-            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(top = 100.dp)) {
-                LockedFilePrompt(
-                    fileName = fileToUnlock!!,
-                    onDismiss = onDismiss,
-                    onUnlocked = { pass ->
-                        fileToUnlock = null
-                        initializeReader(uri, pass)
-                    },
-                    accentColor = PaperPink,
-                    isLoading = isDecrypting
-                )
-            }
+            LockedFilePrompt(
+                fileName = fileToUnlock!!,
+                onDismiss = onDismiss,
+                onUnlocked = { pass ->
+                    fileToUnlock = null
+                    initializeReader(uri, pass)
+                },
+                accentColor = PaperPink,
+                isLoading = isDecrypting
+            )
         }
 
         if (showJumpDialog) {
@@ -505,30 +677,161 @@ fun UltraPreview(
 }
 
 @Composable
+private fun PdfScrollbar(
+    listState: LazyListState,
+    pageCount: Int,
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    var trackHeight by remember { mutableFloatStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+    var dragProgress by remember { mutableFloatStateOf(0f) }
+
+    val readingProgress by remember(pageCount) {
+        derivedStateOf {
+            if (pageCount <= 1) {
+                0f
+            } else {
+                val first = listState.layoutInfo.visibleItemsInfo.firstOrNull()
+                if (first == null) {
+                    0f
+                } else {
+                    val itemSize = first.size.coerceAtLeast(1)
+                    val within = listState.firstVisibleItemScrollOffset.toFloat() / itemSize
+                    ((first.index + within.coerceIn(0f, 1f)) / (pageCount - 1))
+                        .coerceIn(0f, 1f)
+                }
+            }
+        }
+    }
+    val latestReadingProgress by rememberUpdatedState(readingProgress)
+    val progress = if (isDragging) dragProgress else readingProgress
+
+    val thumbHeightPx = if (trackHeight <= 0f) {
+        0f
+    } else {
+        val proportional = trackHeight / pageCount.coerceAtLeast(1)
+        val minimum = with(density) { 44.dp.toPx() }
+        proportional
+            .coerceIn(trackHeight * 0.08f, trackHeight * 0.22f)
+            .coerceAtLeast(minimum)
+            .coerceAtMost(trackHeight)
+    }
+
+    fun scrollTo(value: Float) {
+        val target = (value.coerceIn(0f, 1f) * (pageCount - 1)).roundToInt()
+            .coerceIn(0, pageCount - 1)
+        scope.launch { listState.scrollToItem(target) }
+    }
+
+    LaunchedEffect(isDragging) {
+        if (!isDragging) return@LaunchedEffect
+        snapshotFlow { dragProgress }.collectLatest { value ->
+            val target = (value * (pageCount - 1)).roundToInt()
+                .coerceIn(0, pageCount - 1)
+            listState.scrollToItem(target)
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .width(32.dp)
+            .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
+            .pointerInput(pageCount, trackHeight) {
+                detectTapGestures { offset ->
+                    if (trackHeight > 0f && pageCount > 1) {
+                        val value = (offset.y / trackHeight).coerceIn(0f, 1f)
+                        dragProgress = value
+                        scrollTo(value)
+                    }
+                }
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxHeight()
+                .width(4.dp)
+                .background(Color.Gray.copy(alpha = 0.16f), CircleShape)
+        )
+
+        if (trackHeight > 0f && pageCount > 1) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .width(14.dp)
+                    .height(with(density) { thumbHeightPx.toDp() })
+                    .offset {
+                        IntOffset(
+                            x = 0,
+                            y = (progress * (trackHeight - thumbHeightPx)).roundToInt()
+                        )
+                    }
+                    .background(PaperPink, CircleShape)
+                    .pointerInput(pageCount, trackHeight, thumbHeightPx) {
+                        detectDragGestures(
+                            onDragStart = {
+                                isDragging = true
+                                dragProgress = latestReadingProgress
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                val available = (trackHeight - thumbHeightPx).coerceAtLeast(1f)
+                                dragProgress = (dragProgress + dragAmount.y / available)
+                                    .coerceIn(0f, 1f)
+                            },
+                            onDragEnd = {
+                                isDragging = false
+                                scrollTo(dragProgress)
+                            },
+                            onDragCancel = {
+                                isDragging = false
+                                scrollTo(dragProgress)
+                            }
+                        )
+                    }
+            )
+        }
+    }
+}
+
+@Composable
 fun PdfPageReaderItem(
     uri: Uri,
     index: Int,
     password: String?,
     imageLoader: ImageLoader,
     pageSize: Pair<Float, Float>?,
+    rotation: Int,
+    searchMatches: List<TextMatch>,
+    activeMatch: TextMatch?,
     links: List<PdfLink>,
     onLinkClick: (String) -> Unit
 ) {
+    val displaySize = pageSize?.let {
+        if (rotation % 180 == 0) it else it.second to it.first
+    }
+
     // NATIVE ENGINE: 12.0f Resolution (Crisp even at 1x)
-    val lowResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 1.8f, priority = 1) }
-    val highResRequest = remember(uri, index, password) { PdfPageRequest(uri, index, password, 12.0f, priority = 0) }
-    
+    val lowResRequest = remember(uri, index, password, rotation) {
+        PdfPageRequest(uri = uri, pageIndex = index, password = password, scale = 1.8f, rotation = rotation, priority = 1)
+    }
+    val highResRequest = remember(uri, index, password, rotation) {
+        PdfPageRequest(uri = uri, pageIndex = index, password = password, scale = 12.0f, rotation = rotation, priority = 0)
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(pageSize?.let { it.first / it.second } ?: 0.707f)
+            .aspectRatio(displaySize?.let { it.first / it.second } ?: 0.707f)
             .padding(vertical = 4.dp)
             .shadow(4.dp)
             .background(Color.White)
     ) {
         val lowResPainter = rememberAsyncImagePainter(lowResRequest, imageLoader)
         val highResPainter = rememberAsyncImagePainter(highResRequest, imageLoader)
-        
+
         Image(
             painter = lowResPainter,
             contentDescription = null,
@@ -555,16 +858,75 @@ fun PdfPageReaderItem(
             }
         }
 
-        if (pageSize != null) {
-            val pageWidthDp = maxWidth
-            val pageHeightDp = maxHeight
+        if (pageSize != null && displaySize != null) {
+            val boxWidth = maxWidth.value
+            val boxHeight = maxHeight.value
+
+            val intrinsic = runCatching {
+                when {
+                    highResPainter.state is AsyncImagePainter.State.Success -> highResPainter.intrinsicSize
+                    lowResPainter.state is AsyncImagePainter.State.Success -> lowResPainter.intrinsicSize
+                    else -> null
+                }
+            }.getOrNull()
+            val imageAspect = if (
+                intrinsic != null &&
+                intrinsic.width > 0f && intrinsic.height > 0f &&
+                !intrinsic.width.isNaN() && !intrinsic.height.isNaN()
+            ) {
+                intrinsic.width / intrinsic.height
+            } else {
+                displaySize.first / displaySize.second
+            }
+            val boxAspect = boxWidth / boxHeight
+            val drawWidth: Float
+            val drawHeight: Float
+            if (imageAspect > boxAspect) {
+                drawWidth = boxWidth
+                drawHeight = boxWidth / imageAspect
+            } else {
+                drawHeight = boxHeight
+                drawWidth = boxHeight * imageAspect
+            }
+            val offsetX = (boxWidth - drawWidth) / 2f
+            val offsetY = (boxHeight - drawHeight) / 2f
+
+            searchMatches.forEach { match ->
+                val isActive = match === activeMatch
+                match.rects.forEach { rect ->
+                    val r = rotateNormalizedRect(
+                        rect.left,
+                        rect.top,
+                        rect.right,
+                        rect.bottom,
+                        rotation
+                    )
+                    val left = (offsetX + r[0] * drawWidth - 1f).coerceAtLeast(0f)
+                    val top = (offsetY + r[1] * drawHeight - 1f).coerceAtLeast(0f)
+                    val right = (offsetX + r[2] * drawWidth).coerceAtMost(boxWidth)
+                    val bottom = (offsetY + r[3] * drawHeight).coerceAtMost(boxHeight)
+                    Box(
+                        modifier = Modifier
+                            .offset(x = left.dp, y = top.dp)
+                            .size(width = (right - left).dp, height = (bottom - top).dp)
+                            .background(
+                                if (isActive) Color(0xFFFF9800).copy(alpha = 0.5f)
+                                else Color(0xFFFFC107).copy(alpha = 0.3f)
+                            )
+                    )
+                }
+            }
+
             links.forEach { link ->
-                val scaleX = pageWidthDp.value / pageSize.first
-                val scaleY = pageHeightDp.value / pageSize.second
-                val left = link.rect.lowerLeftX * scaleX
-                val top = (pageSize.second - link.rect.upperRightY) * scaleY
-                val width = (link.rect.upperRightX - link.rect.lowerLeftX) * scaleX
-                val height = (link.rect.upperRightY - link.rect.lowerLeftY) * scaleY
+                val u1 = link.rect.lowerLeftX / pageSize.first
+                val v1 = 1f - link.rect.upperRightY / pageSize.second
+                val u2 = link.rect.upperRightX / pageSize.first
+                val v2 = 1f - link.rect.lowerLeftY / pageSize.second
+                val r = rotateNormalizedRect(u1, v1, u2, v2, rotation)
+                val left = offsetX + r[0] * drawWidth
+                val top = offsetY + r[1] * drawHeight
+                val width = (r[2] - r[0]) * drawWidth
+                val height = (r[3] - r[1]) * drawHeight
                 Box(
                     modifier = Modifier
                         .offset(x = left.dp, y = top.dp)
@@ -572,6 +934,84 @@ fun PdfPageReaderItem(
                         .clickable { onLinkClick(link.url) }
                 )
             }
+        }
+    }
+}
+
+private fun rotateNormalizedRect(
+    left: Float,
+    top: Float,
+    right: Float,
+    bottom: Float,
+    rotation: Int
+): FloatArray {
+    fun map(u: Float, v: Float): Pair<Float, Float> = when (((rotation % 360) + 360) % 360) {
+        90 -> (1f - v) to u
+        180 -> (1f - u) to (1f - v)
+        270 -> v to (1f - u)
+        else -> u to v
+    }
+
+    val points = listOf(
+        map(left, top),
+        map(right, top),
+        map(right, bottom),
+        map(left, bottom)
+    )
+    val minX = points.minOf { it.first }
+    val maxX = points.maxOf { it.first }
+    val minY = points.minOf { it.second }
+    val maxY = points.maxOf { it.second }
+    return floatArrayOf(minX, minY, maxX, maxY)
+}
+
+private class PdfPrintAdapter(
+    private val context: Context,
+    private val uri: Uri
+) : PrintDocumentAdapter() {
+    override fun onLayout(
+        oldAttributes: PrintAttributes?,
+        newAttributes: PrintAttributes?,
+        cancellationSignal: CancellationSignal?,
+        callback: PrintDocumentAdapter.LayoutResultCallback?,
+        extras: Bundle?
+    ) {
+        if (cancellationSignal?.isCanceled == true) {
+            callback?.onLayoutCancelled()
+            return
+        }
+        val info = PrintDocumentInfo.Builder("PaperKnife+.pdf")
+            .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+            .build()
+        callback?.onLayoutFinished(info, true)
+    }
+
+    override fun onWrite(
+        pages: Array<out PageRange>?,
+        destination: ParcelFileDescriptor?,
+        cancellationSignal: CancellationSignal?,
+        callback: PrintDocumentAdapter.WriteResultCallback?
+    ) {
+        if (cancellationSignal?.isCanceled == true) {
+            callback?.onWriteCancelled()
+            return
+        }
+        try {
+            val fileDescriptor = destination?.fileDescriptor
+                ?: throw IllegalStateException("No print destination")
+            val inputStream = if (uri.scheme == "file") {
+                uri.path?.let { File(it).inputStream() }
+            } else {
+                context.contentResolver.openInputStream(uri)
+            }
+            inputStream?.use { input ->
+                FileOutputStream(fileDescriptor).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: throw IllegalStateException("Cannot open PDF")
+            callback?.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+        } catch (e: Exception) {
+            callback?.onWriteFailed(e.message)
         }
     }
 }

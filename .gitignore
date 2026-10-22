@@ -16,3 +16,13 @@ local.properties
 /PaperKnife-reference/
 TODOS.md
 AGENTS.md
+/changelog/
+/changelog.md
+
+# Signing keys (NEVER commit)
+*.jks
+*.keystore
+keystore.jks
+*.pem
+!fastlane/metadata/**/*.pem
+play-store-assets/

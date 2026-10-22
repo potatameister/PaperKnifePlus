@@ -32,6 +32,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
@@ -155,7 +156,7 @@ fun MergeView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         mergedUri = saveUri
-                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Merge", "${selectedFiles.size} files joined", Icons.Filled.Layers, saveUri, finalCount)
+                        SessionManager.addEntry(getUriDetails(context, saveUri).name, "Merge", "${selectedFiles.size} files joined", ToolCatalog.icon("merge"), saveUri, finalCount)
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
@@ -175,30 +176,13 @@ fun MergeView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Merge", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("JOIN MULTIPLE DOCUMENTS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedFiles.isNotEmpty() && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedFiles = emptyList(); currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "merge",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedFiles = emptyList(); currentState = ToolState.SELECTING },
+                    showAction = selectedFiles.isNotEmpty() && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -211,7 +195,7 @@ fun MergeView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") },
                             isDark = isDark,
-                            icon = Icons.Filled.Layers,
+                            icon = ToolCatalog.icon("merge"),
                             title = "Tap to choose files",
                             subtitle = "SELECT MULTIPLE PDFS",
                             accentColor = accentColor,
@@ -421,16 +405,16 @@ fun MergeFileListItem(
                     color = Color.Black.copy(0.6f),
                     shape = CircleShape
                 ) {
-                    Text("${index + 1}", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
+                    Text("${index + 1}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
                 }
             }
             
             // Info
             Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
-                Text(file.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                Text(file.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(file.size, fontSize = 11.sp, color = Color.Gray)
                 if (file.isLocked && !file.isUnlocked) {
-                    Text("LOCKED", fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor)
+                    Text("LOCKED", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor)
                 }
             }
             

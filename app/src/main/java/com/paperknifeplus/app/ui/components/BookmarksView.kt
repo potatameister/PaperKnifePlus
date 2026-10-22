@@ -54,6 +54,7 @@ fun BookmarksView(
     var selectedUri by remember { mutableStateOf(initialUri) }
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
@@ -116,6 +117,7 @@ fun BookmarksView(
             selectedUri = it
             val details = getUriDetails(context, it)
             fileName = details.name
+            fileSize = details.size
             isFileLoading = true
             extractBookmarks(it, null)
         }
@@ -207,6 +209,7 @@ fun BookmarksView(
             selectedUri = initialUri
             val details = getUriDetails(context, initialUri)
             fileName = details.name
+            fileSize = details.size
             isFileLoading = true
             extractBookmarks(initialUri, null)
         }
@@ -215,30 +218,13 @@ fun BookmarksView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Bookmarks", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("EDIT DOCUMENT NAVIGATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "bookmarks",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -251,7 +237,7 @@ fun BookmarksView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.BookmarkBorder,
+                            icon = ToolCatalog.icon("bookmarks"),
                             title = "Tap to enter file",
                             subtitle = "MANAGE PDF BOOKMARKS",
                             accentColor = accentColor,
@@ -260,8 +246,16 @@ fun BookmarksView(
                     }
                     ToolState.CONFIGURING -> {
                         Column(Modifier.fillMaxSize()) {
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("bookmarks"),
+                                accentColor = accentColor,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                            )
                             Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text("${bookmarks.size} BOOKMARKS", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                                Text("${bookmarks.size} BOOKMARKS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accentColor)
                                 Button(onClick = { showAddDialog = true }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)) {
                                     Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(8.dp))

@@ -1,5 +1,7 @@
 package com.paperknifeplus.app.ui.components
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -97,9 +99,9 @@ fun SettingsView(
             item {
                 SettingsGroup("USER PROFILE") {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                        Text("DEFAULT AUTHOR", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
+                        Text("DEFAULT AUTHOR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PaperPink, letterSpacing = 1.sp)
                         Spacer(Modifier.height(4.dp))
-                        Text("This name is automatically added to the 'Author' field in the metadata of every PDF you save.", fontSize = 10.sp, color = Color.Gray)
+                        Text("This name is automatically added to the 'Author' field in the metadata of every PDF you save.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                         Spacer(Modifier.height(12.dp))
                         TextField(
                             value = autoAuthor,
@@ -173,14 +175,22 @@ fun SettingsView(
             item {
                 SettingsGroup("COMMUNITY") {
                     SettingsItem(Icons.Outlined.Info, "About PaperKnife+", "Our mission and how it works") { onNavigateToAbout("main") }
-                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help reach the Play Store", accentColor = Color(0xFFF43F5E)) { onNavigateToAbout("support") }
+                    SettingsItem(Icons.Outlined.FavoriteBorder, "Support Us", "Help support development", accentColor = Color(0xFFE11D48)) {
+                        try {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse("https://potatameister.github.io/support"))
+                            )
+                        } catch (_: Exception) {
+                            Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                     SettingsItem(Icons.Outlined.StarOutline, "Hall of Fame", "The legends who made this possible", accentColor = Color(0xFFFFD700)) { onNavigateToAbout("hall") }
                 }
             }
 
             item {
                 Column(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("PaperKnife+ V1.1", fontSize = 8.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Text("PaperKnife+ V1.2", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                 }
             }
         }
@@ -238,12 +248,15 @@ fun SettingsView(
 
 @Composable
 fun ThemeOption(label: String, icon: ImageVector, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.background == Color.Black
+    val unselectedBackground = if (isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFF4F4F5)
+
     Surface(
         onClick = onClick,
         modifier = modifier.height(72.dp),
         shape = RoundedCornerShape(16.dp),
-        color = if (selected) PaperPink.copy(alpha = 0.1f) else Color.Transparent,
-        border = BorderStroke(1.dp, if (selected) PaperPink else Color.Gray.copy(alpha = 0.1f))
+        color = if (selected) PaperPink.copy(alpha = 0.1f) else unselectedBackground,
+        border = BorderStroke(1.dp, if (selected) PaperPink else Color.Transparent)
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(icon, null, modifier = Modifier.size(20.dp), tint = if (selected) PaperPink else Color.Gray)

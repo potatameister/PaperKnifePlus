@@ -95,34 +95,25 @@ fun CompareView(
 
     Scaffold(
         topBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                tonalElevation = 2.dp
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { if (isComparing) isComparing = false else onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Compare", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                        Text(if (isComparing) "SYNCHRONIZED VIEW" else "VISUAL DIFFERENCE TOOL", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                    }
-                    if (!isComparing && (fileA != null || fileB != null)) {
-                        TextButton(onClick = { fileA = null; fileB = null; nameA = ""; nameB = ""; passA = ""; passB = "" }) {
-                            Text("RESET", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                        }
-                    } else if (isComparing) {
-                        TextButton(onClick = { isComparing = false }) {
-                            Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = accentColor)
-                        }
-                    }
+            val compareAction: Pair<String, () -> Unit>? = when {
+                isComparing -> "CHANGE" to { isComparing = false }
+                fileA != null || fileB != null -> "RESET" to {
+                    fileA = null
+                    fileB = null
+                    nameA = ""
+                    nameB = ""
+                    passA = ""
+                    passB = ""
                 }
+                else -> null
             }
+            ToolTopBar(
+                toolId = "compare",
+                onBack = { if (isComparing) isComparing = false else onBack() },
+                subtitleOverride = if (isComparing) "SYNCHRONIZED VIEW" else "VISUAL DIFFERENCE TOOL",
+                actionLabel = compareAction?.first,
+                onAction = compareAction?.second
+            )
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -146,7 +137,7 @@ fun CompareView(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                            Icon(Icons.Filled.Compare, null, modifier = Modifier.size(48.dp).alpha(0.1f))
+                            Icon(ToolCatalog.icon("compare"), null, modifier = Modifier.size(48.dp).alpha(0.1f))
                             Spacer(Modifier.height(16.dp))
                             Text("Pick two files to begin comparison.", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
                         }
@@ -242,7 +233,7 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: 
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp)
+            contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             items(maxPages) { index ->
                 Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
@@ -262,7 +253,7 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: 
                             )
                         } else {
                             Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(Color.Gray.copy(0.05f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                Text("END OF FILE A", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
+                                Text("END OF FILE A", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
                             }
                         }
                     }
@@ -283,7 +274,7 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: 
                             )
                         } else {
                             Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(Color.Gray.copy(0.05f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                Text("END OF FILE B", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
+                                Text("END OF FILE B", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray.copy(0.4f))
                             }
                         }
                     }
@@ -323,7 +314,7 @@ fun CompareFileCard(label: String, name: String, isSelected: Boolean, color: Col
                 modifier = Modifier.size(28.dp)
             )
             Spacer(Modifier.height(12.dp))
-            Text(label, fontSize = 8.sp, fontWeight = FontWeight.Black, color = if (isSelected) color else Color.Gray, letterSpacing = 1.sp)
+            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Black, color = if (isSelected) color else Color.Gray, letterSpacing = 1.sp)
             Spacer(Modifier.height(4.dp))
             Text(if (isSelected) name else "Select File", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }

@@ -50,6 +50,7 @@ fun PageNumbersView(
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var unlockPassword by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf("") }
+    var fileSize by remember { mutableStateOf("") }
     var pageCount by remember { mutableIntStateOf(0) }
     var isFileLoading by remember { mutableStateOf(false) }
     var processingTime by remember { mutableStateOf("") }
@@ -71,6 +72,7 @@ fun PageNumbersView(
         selectedUri = uri
         val details = getUriDetails(context, uri)
         fileName = details.name
+        fileSize = details.size
         isFileLoading = true
         scope.launch(Dispatchers.IO) {
             val isEnc = checkIsEncryptedLocal(context, uri)
@@ -156,30 +158,13 @@ fun PageNumbersView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Page Numbers", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("CUSTOM PAGINATION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "page-numbers",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -192,7 +177,7 @@ fun PageNumbersView(
                         SelectionGrid(
                             onSelect = { pickLauncher.launch("application/pdf") }, 
                             isDark = isDark,
-                            icon = Icons.Filled.FormatListNumbered,
+                            icon = ToolCatalog.icon("page-numbers"),
                             title = "Tap to enter file",
                             subtitle = "ADD PAGE NUMBERS",
                             accentColor = accentColor,
@@ -204,6 +189,15 @@ fun PageNumbersView(
                             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Spacer(Modifier.height(12.dp))
+                            
+                            ToolFileCard(
+                                fileName = fileName,
+                                fileSize = fileSize,
+                                pageCount = pageCount,
+                                icon = ToolCatalog.icon("page-numbers"),
+                                accentColor = accentColor
+                            )
                             Spacer(Modifier.height(12.dp))
                             
                             Box(modifier = Modifier.weight(1f)) {
@@ -353,7 +347,7 @@ fun PageNumbersView(
                             OutlinedTextField(
                                 value = format,
                                 onValueChange = { format = it },
-                                label = { Text("Format ({n})", fontSize = 9.sp) },
+                                label = { Text("Format ({n})", fontSize = 10.sp) },
                                 modifier = Modifier.weight(1.5f),
                                 shape = RoundedCornerShape(12.dp),
                                 singleLine = true,
@@ -369,7 +363,7 @@ fun PageNumbersView(
                                 Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                                     Box(Modifier.size(16.dp).clip(CircleShape).background(numberColor).border(1.dp, Color.Gray.copy(0.3f), CircleShape))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("COLOR", fontSize = 9.sp, fontWeight = FontWeight.Black)
+                                    Text("COLOR", fontSize = 10.sp, fontWeight = FontWeight.Black)
                                 }
                             }
                         }
@@ -398,7 +392,7 @@ fun PageNumbersView(
                                 Icon(Icons.Filled.Place, null, tint = accentColor, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(16.dp))
                                 Column {
-                                    Text("POSITION", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                                    Text("POSITION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
                                     Text(position.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                                 }
                                 Spacer(Modifier.weight(1f))
