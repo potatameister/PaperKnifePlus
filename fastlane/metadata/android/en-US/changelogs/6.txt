@@ -1,0 +1,11 @@
+PaperKnife+ v1.2
+• New flat navigation and refreshed Home/Tools.
+• Customize Home tools (0–8, reset anytime).
+• Viewer: find, print, pinch zoom, fixed scrollbar.
+• New task picker for the open PDF.
+• Cleaner tool screens, less scrolling.
+• Compress estimates size and savings.
+• Sign/Watermark: colors and accurate, zoom-locked placement.
+• Redesigned password prompt.
+• History opens ZIP and text outputs correctly.
+• Fixed search-highlight alignment.
