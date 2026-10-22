@@ -1,5 +1,6 @@
 package com.paperknifeplus.app.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -30,20 +32,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 private const val MAX_HOME_TOOLS = 8
 
@@ -59,32 +54,17 @@ fun HomeToolsSheet(
     onDismiss: () -> Unit,
     onChanged: (List<String>) -> Unit
 ) {
-    val view = LocalView.current
-    val density = LocalDensity.current
-    val insets = remember(view) { ViewCompat.getRootWindowInsets(view) }
-    val topInset = with(density) {
-        (insets?.getInsets(WindowInsetsCompat.Type.statusBars())?.top ?: 0).toDp()
-    }
-    val bottomInset = with(density) {
-        (insets?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0).toDp()
-    }
+    BackHandler { onDismiss() }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = topInset, bottom = bottomInset)
-            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -169,7 +149,7 @@ fun HomeToolsSheet(
                     items(ToolCatalog.all, key = { it.id }) { tool ->
                         val index = selectedIds.indexOf(tool.id)
                         val isSelected = index >= 0
-                        val canToggle = if (isSelected) selectedIds.size > 1 else selectedIds.size < MAX_HOME_TOOLS
+                        val canToggle = if (isSelected) true else selectedIds.size < MAX_HOME_TOOLS
 
                         HomeToolCard(
                             tool = tool,
@@ -203,7 +183,6 @@ fun HomeToolsSheet(
                 }
             }
         }
-    }
 }
 
 @Composable

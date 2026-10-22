@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -155,13 +156,19 @@ fun PageLightbox(
                     }
                     val painter = rememberAsyncImagePainter(request, imageLoader)
                     val intrinsic = painter.intrinsicSize
-                    val rawPageAspect = if (
-                        intrinsic.width.isFinite() &&
-                        intrinsic.height.isFinite() &&
-                        intrinsic.width > 0f &&
-                        intrinsic.height > 0f
-                    ) {
-                        intrinsic.width / intrinsic.height
+                    val rawPageAspect = if (intrinsic.isSpecified) {
+                        val intrinsicWidth = intrinsic.width
+                        val intrinsicHeight = intrinsic.height
+                        if (
+                            intrinsicWidth.isFinite() &&
+                            intrinsicHeight.isFinite() &&
+                            intrinsicWidth > 0f &&
+                            intrinsicHeight > 0f
+                        ) {
+                            intrinsicWidth / intrinsicHeight
+                        } else {
+                            0f
+                        }
                     } else {
                         0f
                     }

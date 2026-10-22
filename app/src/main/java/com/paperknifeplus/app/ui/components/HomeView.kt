@@ -45,6 +45,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeView(
     isDarkMode: Boolean,
+    homeToolIds: List<String>,
+    onEditHomeTools: () -> Unit,
     onThemeToggle: () -> Unit,
     onToolClick: (String) -> Unit,
     onOpenPreview: (Uri, String, Int) -> Unit
@@ -64,8 +66,6 @@ fun HomeView(
         }
     }
 
-    var homeToolIds by remember { mutableStateOf(PreferencesManager.getHomeToolIds(context)) }
-    var showHomeEditor by remember { mutableStateOf(false) }
     val coreEngines = remember(homeToolIds) {
         homeToolIds.mapNotNull { ToolCatalog.byId[it] }
     }
@@ -114,7 +114,7 @@ fun HomeView(
                         letterSpacing = 1.2.sp
                     )
                     TextButton(
-                        onClick = { showHomeEditor = true },
+                        onClick = onEditHomeTools,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Icon(
@@ -135,8 +135,59 @@ fun HomeView(
                 }
             }
 
-            items(coreEngines, key = { it.id }) { tool ->
-                BentoCard(tool = tool, onClick = { onToolClick(tool.id) })
+            if (coreEngines.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }, key = "empty-core") {
+                    Surface(
+                        onClick = onEditHomeTools,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Add,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "No core tools yet",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    "Tap to add tools to Home",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Filled.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(coreEngines, key = { it.id }) { tool ->
+                    BentoCard(tool = tool, onClick = { onToolClick(tool.id) })
+                }
             }
 
             item(span = { GridItemSpan(maxLineSpan) }, key = "more") {
@@ -212,17 +263,6 @@ fun HomeView(
                 Spacer(modifier = Modifier.height(220.dp))
             }
         }
-    }
-
-    if (showHomeEditor) {
-        HomeToolsSheet(
-            selectedIds = homeToolIds,
-            onDismiss = { showHomeEditor = false },
-            onChanged = { ids ->
-                homeToolIds = ids
-                PreferencesManager.setHomeToolIds(context, ids)
-            }
-        )
     }
 }
 

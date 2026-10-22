@@ -84,9 +84,8 @@ object PreferencesManager {
 
     fun getHomeToolIds(context: Context): List<String> {
         val prefs = context.getSharedPreferences("pk_prefs", Context.MODE_PRIVATE)
-        val raw = prefs.getString("home_tool_ids", null)
-        val ids = raw?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
-        return ids.ifEmpty { ToolCatalog.core.map { it.id } }
+        val raw = prefs.getString("home_tool_ids", null) ?: return ToolCatalog.core.map { it.id }
+        return raw.split(",").filter { it.isNotBlank() }
     }
 }
 

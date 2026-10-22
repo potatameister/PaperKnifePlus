@@ -106,6 +106,10 @@ class MainActivity : ComponentActivity() {
                         var toolInitialPassword by remember { mutableStateOf<String?>(null) }
                         var aboutInitialPage by remember { mutableStateOf("main") }
                         var isAboutFromSettings by remember { mutableStateOf(false) }
+                        var homeToolIds by remember {
+                            mutableStateOf(PreferencesManager.getHomeToolIds(applicationContext))
+                        }
+                        var showHomeEditor by remember { mutableStateOf(false) }
                         
                         val mainScreens = listOf("home", "tools", "history", "settings")
                         val pagerState = androidx.compose.foundation.pager.rememberPagerState { mainScreens.size }
@@ -175,6 +179,8 @@ class MainActivity : ComponentActivity() {
                                     when (mainScreens[page]) {
                                         "home" -> HomeView(
                                             isDarkMode = isDarkMode,
+                                            homeToolIds = homeToolIds,
+                                            onEditHomeTools = { showHomeEditor = true },
                                             onThemeToggle = { 
                                                 themePreference = if (isDarkMode) 1 else 2
                                                 PreferencesManager.setTheme(applicationContext, themePreference)
@@ -311,6 +317,17 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                        }
+
+                        if (showHomeEditor) {
+                            HomeToolsSheet(
+                                selectedIds = homeToolIds,
+                                onDismiss = { showHomeEditor = false },
+                                onChanged = { ids ->
+                                    homeToolIds = ids
+                                    PreferencesManager.setHomeToolIds(applicationContext, ids)
+                                }
+                            )
                         }
 
                         androidx.compose.animation.AnimatedVisibility(
