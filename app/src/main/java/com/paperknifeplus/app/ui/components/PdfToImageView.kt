@@ -252,7 +252,7 @@ fun PdfToImageView(
                                 modifier = Modifier.fillMaxSize(),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                                contentPadding = PaddingValues(bottom = 100.dp)
+                                contentPadding = PaddingValues(bottom = 32.dp)
                             ) {
                                 items(pageCount, key = { it }) { index ->
                                     val isSelected = selectedPages.contains(index)

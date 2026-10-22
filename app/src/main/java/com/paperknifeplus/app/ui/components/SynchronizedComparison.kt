@@ -81,7 +81,7 @@ fun SynchronizedComparison(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 120.dp)
+                contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 items(maxPages) { index ->
                     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {

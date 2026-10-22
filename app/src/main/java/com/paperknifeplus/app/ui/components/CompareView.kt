@@ -233,7 +233,7 @@ fun ComparisonViewer(uriA: Uri, uriB: Uri, nameA: String, nameB: String, passA: 
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp)
+            contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             items(maxPages) { index ->
                 Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
