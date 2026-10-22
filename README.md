@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Download-APK-2ea44f?style=for-the-badge&logo=android&logoColor=white" alt="Download APK">
 </a>
 <a href="https://apt.izzysoft.de/packages/com.paperknifeplus.app">
-  <img src="https://img.shields.io/badge/dynamic/json?url=https://dlstats.izzyondroid.org/iod-stats-collector/stats/basic/yearly/rolling.json&amp;query=%24.%5B%27com.paperknifeplus.app%27%5D&amp;label=IzzyOnDroid%20yearly%20downloads&amp;style=for-the-badge" alt="IzzyOnDroid yearly downloads">
+  <img src="https://img.shields.io/badge/dynamic/json?url=https://dlstats.izzyondroid.org/iod-stats-collector/stats/basic/yearly/rolling.json&amp;query=%24.%5B%27com.paperknifeplus.app%27%5D&amp;label=Yearly%20downloads&amp;style=for-the-badge" alt="Yearly downloads">
 </a>
 <a href="https://discord.gg/7538nAWYx">
   <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
@@ -103,14 +103,6 @@ This confirms the signer identity. It does not verify the exact file contents. F
 
 PaperKnife+ is free, ad-free, and built in spare time. If it saves you a little work, you can help keep it going:
 
-<p align="center">
-  <a href="https://potatameister.github.io/support">
-    <img src="https://img.shields.io/badge/Donate-Support_PaperKnife+-E11D48?style=for-the-badge" alt="Donate">
-  </a>
-</p>
-
-Or choose a platform:
-
 <a href="https://github.com/sponsors/potatameister">
   <img src="https://img.shields.io/badge/GitHub_Sponsors-Support-EA4AAA?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Sponsors">
 </a>
@@ -121,7 +113,13 @@ Or choose a platform:
   <img src="https://img.shields.io/badge/Buy_Me_a_Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee">
 </a>
 
-Every contribution helps keep PaperKnife+ free and offline. You can also help by reporting bugs, suggesting tools, sharing the app, or joining the Play testing group when it opens.
+<p align="center">
+  <a href="https://potatameister.github.io/support">
+    <img src="https://img.shields.io/badge/More_ways_to_support-Donate-E11D48?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="More ways to support">
+  </a>
+</p>
+
+Every contribution helps keep PaperKnife+ free and offline. You can also help by reporting bugs, suggesting tools, sharing the app, or joining the [Play testing group](https://groups.google.com/g/paperknife-tester). After joining, opt in on [Google Play](https://play.google.com/apps/testing/com.paperknifeplus.app).
 
 ---
 
