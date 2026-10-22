@@ -7,10 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -22,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.LocalImageLoader
@@ -143,30 +142,13 @@ fun CompressView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Compress", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("OPTIMIZE PDF SIZE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "compress",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -188,71 +170,96 @@ fun CompressView(
                     }
                     ToolState.CONFIGURING -> {
                         Column(
-                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                            modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
-                            
-                            Box(modifier = Modifier.fillMaxWidth(0.65f).aspectRatio(0.707f)) {
-                                UnifiedPdfPreview(
-                                    uri = selectedUri!!,
-                                    pageCount = pageCount,
-                                    mode = PreviewMode.COVER,
-                                    password = null, 
-                                    accentColor = accentColor
-                                )
-                            }
-                            
-                            Spacer(Modifier.height(16.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
-                            
-                            Spacer(Modifier.height(24.dp))
-                            Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Spacer(Modifier.height(12.dp))
-                            
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                listOf("Basic", "Recommended", "Extreme").forEach { level ->
-                                    val isSelected = compressionLevel == level
-                                    Surface(
-                                        onClick = { compressionLevel = level },
-                                        color = if (isSelected) accentColor.copy(alpha = 0.1f) else Color.Transparent,
-                                        shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(1.dp, if (isSelected) accentColor else Color.Gray.copy(0.1f)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            RadioButton(selected = isSelected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = accentColor))
-                                            Spacer(Modifier.width(12.dp))
-                                            Column {
-                                                Text(level, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                                Text(
-                                                    text = when(level) {
-                                                        "Extreme" -> "Max reduction, lower image quality"
-                                                        "Recommended" -> "Great balance of size and quality"
-                                                        else -> "Maintains high visual fidelity"
-                                                    },
-                                                    fontSize = 10.sp, color = Color.Gray
-                                                )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Box(modifier = Modifier.width(110.dp).aspectRatio(0.707f)) {
+                                    UnifiedPdfPreview(
+                                        uri = selectedUri!!,
+                                        pageCount = pageCount,
+                                        mode = PreviewMode.COVER,
+                                        password = null,
+                                        accentColor = accentColor
+                                    )
+                                }
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        fileName,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
+
+                                    Spacer(Modifier.height(14.dp))
+                                    Text("OPTIMIZATION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
+                                    Spacer(Modifier.height(8.dp))
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        listOf("Basic", "Recommended", "Extreme").forEach { level ->
+                                            val isSelected = compressionLevel == level
+                                            Surface(
+                                                onClick = { compressionLevel = level },
+                                                color = if (isSelected) accentColor.copy(alpha = 0.1f) else Color.Transparent,
+                                                shape = RoundedCornerShape(14.dp),
+                                                border = BorderStroke(1.dp, if (isSelected) accentColor else Color.Gray.copy(0.1f)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Row(
+                                                    Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    RadioButton(
+                                                        selected = isSelected,
+                                                        onClick = null,
+                                                        modifier = Modifier.size(20.dp),
+                                                        colors = RadioButtonDefaults.colors(selectedColor = accentColor)
+                                                    )
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Column {
+                                                        Text(level, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                        Text(
+                                                            text = when (level) {
+                                                                "Extreme" -> "Max reduction, lower quality"
+                                                                "Recommended" -> "Best size / quality balance"
+                                                                else -> "Keeps high fidelity"
+                                                            },
+                                                            fontSize = 9.5.sp,
+                                                            color = Color.Gray,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                            
-                            Spacer(Modifier.height(32.dp))
+
+                            Spacer(Modifier.weight(1f))
+
                             Button(
-                                onClick = { 
+                                onClick = {
                                     val defaultName = fileName.replace(".pdf", "", true) + "-compressed.pdf"
-                                    saveLauncher.launch(defaultName) 
-                                }, 
-                                modifier = Modifier.fillMaxWidth().height(60.dp), 
-                                shape = RoundedCornerShape(20.dp), 
+                                    saveLauncher.launch(defaultName)
+                                },
+                                modifier = Modifier.fillMaxWidth().height(60.dp),
+                                shape = RoundedCornerShape(20.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
                                 Text("COMPRESS & SAVE PDF", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            Spacer(Modifier.height(100.dp))
+                            Spacer(Modifier.height(16.dp))
                         }
                     }
                     ToolState.PROCESSING -> {

@@ -95,34 +95,25 @@ fun CompareView(
 
     Scaffold(
         topBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                tonalElevation = 2.dp
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { if (isComparing) isComparing = false else onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Compare", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                        Text(if (isComparing) "SYNCHRONIZED VIEW" else "VISUAL DIFFERENCE TOOL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                    }
-                    if (!isComparing && (fileA != null || fileB != null)) {
-                        TextButton(onClick = { fileA = null; fileB = null; nameA = ""; nameB = ""; passA = ""; passB = "" }) {
-                            Text("RESET", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                        }
-                    } else if (isComparing) {
-                        TextButton(onClick = { isComparing = false }) {
-                            Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = accentColor)
-                        }
-                    }
+            val compareAction: Pair<String, () -> Unit>? = when {
+                isComparing -> "CHANGE" to { isComparing = false }
+                fileA != null || fileB != null -> "RESET" to {
+                    fileA = null
+                    fileB = null
+                    nameA = ""
+                    nameB = ""
+                    passA = ""
+                    passB = ""
                 }
+                else -> null
             }
+            ToolTopBar(
+                toolId = "compare",
+                onBack = { if (isComparing) isComparing = false else onBack() },
+                subtitleOverride = if (isComparing) "SYNCHRONIZED VIEW" else "VISUAL DIFFERENCE TOOL",
+                actionLabel = compareAction?.first,
+                onAction = compareAction?.second
+            )
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {

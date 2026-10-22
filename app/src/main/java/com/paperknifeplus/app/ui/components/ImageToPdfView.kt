@@ -104,32 +104,10 @@ fun ImageToPdfView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Image to PDF", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("PHOTO TO DOCUMENT CONVERTER", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUris.isNotEmpty() && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { pickLauncher.launch("image/*") }) {
-                                Icon(Icons.Filled.Add, null, modifier = Modifier.size(14.dp), tint = accentColor)
-                                Spacer(Modifier.width(4.dp))
-                                Text("ADD", fontSize = 11.sp, fontWeight = FontWeight.Black, color = accentColor)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "img2pdf",
+                    onBack = onBack,
+                )
             }
         }
     ) { padding ->

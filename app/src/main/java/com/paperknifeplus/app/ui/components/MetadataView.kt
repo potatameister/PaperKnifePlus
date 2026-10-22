@@ -173,30 +173,13 @@ fun MetadataView(
     Scaffold(
         topBar = {
             if (currentState != ToolState.SUCCESS && currentState != ToolState.PROCESSING) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(22.dp))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Metadata", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                            Text("EDIT DOCUMENT PROPERTIES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.sp)
-                        }
-                        if (selectedUri != null && currentState == ToolState.CONFIGURING) {
-                            TextButton(onClick = { selectedUri = null; currentState = ToolState.SELECTING }) {
-                                Text("CHANGE", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                            }
-                        }
-                    }
-                }
+                ToolTopBar(
+                    toolId = "metadata",
+                    onBack = onBack,
+                    actionLabel = "CHANGE",
+                    onAction = { selectedUri = null; currentState = ToolState.SELECTING },
+                    showAction = selectedUri != null && currentState == ToolState.CONFIGURING,
+                )
             }
         }
     ) { padding ->
@@ -217,50 +200,64 @@ fun MetadataView(
                         )
                     }
                     ToolState.CONFIGURING -> {
-                        // NITRO: Fully scrollable single-column overhaul
                         Column(
-                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                            modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.height(16.dp))
-                            
-                            Box(modifier = Modifier.fillMaxWidth(0.6f).aspectRatio(0.707f)) {
-                                UnifiedPdfPreview(
-                                    uri = selectedUri!!,
-                                    pageCount = pageCount,
-                                    mode = PreviewMode.COVER,
-                                    password = unlockPassword.ifEmpty { null },
-                                    accentColor = accentColor
-                                )
+                            Spacer(Modifier.height(10.dp))
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = ToolCatalog.icon("metadata"),
+                                        contentDescription = null,
+                                        tint = accentColor,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            fileName,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
+                                        Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
+                                    }
+                                }
                             }
-                            
-                            Spacer(Modifier.height(16.dp))
-                            Text(fileName, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-                            Text("$fileSize • $pageCount PAGES", fontSize = 10.sp, color = Color.Gray)
-                            
-                            Spacer(Modifier.height(24.dp))
-                            
+
+                            Spacer(Modifier.height(12.dp))
+
                             MetadataGroup("CORE METADATA") {
                                 MetadataEditField("Title", title, accentColor) { title = it }
                                 MetadataEditField("Author", author, accentColor) { author = it }
                             }
-                            
-                            Spacer(Modifier.height(16.dp))
-                            
+
+                            Spacer(Modifier.height(12.dp))
+
                             MetadataGroup("ADDITIONAL TAGS") {
                                 MetadataEditField("Subject", subject, accentColor) { subject = it }
                                 MetadataEditField("Keywords", keywords, accentColor) { keywords = it }
                             }
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
 
                             MetadataGroup("SOURCE ENGINE") {
                                 MetadataEditField("Creator", creator, accentColor) { creator = it }
                                 MetadataEditField("Producer", producer, accentColor) { producer = it }
                             }
-                            
-                            Spacer(Modifier.height(32.dp))
-                            
+
+                            Spacer(Modifier.weight(1f))
+
                             Button(
                                 onClick = { 
                                     val defaultName = fileName.replace(".pdf", "", true) + "-meta.pdf"
@@ -272,7 +269,7 @@ fun MetadataView(
                             ) {
                                 Text("SAVE PROPERTIES", fontWeight = FontWeight.Black, color = Color.White)
                             }
-                            Spacer(Modifier.height(100.dp))
+                            Spacer(Modifier.height(16.dp))
                         }
                     }
                     ToolState.PROCESSING -> {

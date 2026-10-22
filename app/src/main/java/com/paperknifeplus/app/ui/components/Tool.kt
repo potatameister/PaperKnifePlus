@@ -22,7 +22,9 @@ data class Tool(
     val icon: ImageVector? = null,
     val category: String, // Edit, Secure, Convert, Optimize
     val color: androidx.compose.ui.graphics.Color,
-    val bgColor: androidx.compose.ui.graphics.Color
+    val bgColor: androidx.compose.ui.graphics.Color,
+    /** Uppercase line shown under the tool name on the tool screen. */
+    val headerSubtitle: String = ""
 )
 
 object SessionManager {
