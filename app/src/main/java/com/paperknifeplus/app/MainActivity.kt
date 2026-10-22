@@ -13,7 +13,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -26,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -99,9 +97,7 @@ class MainActivity : ComponentActivity() {
 
             CompositionLocalProvider(coil.compose.LocalImageLoader provides nitroImageLoader) {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
-                    var showToolPicker by remember { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
-                    val haptics = LocalHapticFeedback.current
 
                     Box(Modifier.fillMaxSize()) {
                         var currentTool by remember { mutableStateOf<String?>(null) }
@@ -154,10 +150,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        BackHandler(enabled = currentTool != null || pagerState.currentPage != 0 || showToolPicker) {
-                            if (showToolPicker) {
-                                showToolPicker = false
-                            } else if (currentTool != null) {
+                        BackHandler(enabled = currentTool != null || pagerState.currentPage != 0) {
+                            if (currentTool != null) {
                                 currentTool = null
                             } else if (pagerState.currentPage != 0) {
                                 scope.launch { pagerState.animateScrollToPage(0) }
@@ -240,10 +234,6 @@ class MainActivity : ComponentActivity() {
                                         if (index != -1) {
                                             scope.launch { pagerState.scrollToPage(index) }
                                         }
-                                    },
-                                    onPlusClick = {
-                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        showToolPicker = true
                                     }
                                 )
                             }
@@ -293,27 +283,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
-
-                            androidx.compose.animation.AnimatedVisibility(
-                                visible = showToolPicker,
-                                modifier = Modifier.fillMaxSize(),
-                                enter = androidx.compose.animation.slideInVertically(
-                                    initialOffsetY = { it / 8 }
-                                ) + androidx.compose.animation.fadeIn(animationSpec = tween(200)),
-                                exit = androidx.compose.animation.slideOutVertically(
-                                    targetOffsetY = { it / 8 }
-                                ) + androidx.compose.animation.fadeOut(animationSpec = tween(160))
-                            ) {
-                                ToolLauncher(
-                                    onDismiss = { showToolPicker = false },
-                                    onToolClick = { tool ->
-                                        showToolPicker = false
-                                        toolInitialUri = previewData?.first
-                                        toolInitialPassword = null
-                                        currentTool = tool
-                                    }
-                                )
-                            }
                         }
 
                         androidx.compose.animation.AnimatedVisibility(
@@ -344,8 +313,7 @@ class MainActivity : ComponentActivity() {
 fun PaperKnifeBottomBar(
     modifier: Modifier = Modifier,
     currentScreen: String,
-    onNavigate: (String) -> Unit,
-    onPlusClick: () -> Unit
+    onNavigate: (String) -> Unit
 ) {
     Column(
         modifier = modifier
@@ -362,7 +330,7 @@ fun PaperKnifeBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(72.dp)
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -380,11 +348,6 @@ fun PaperKnifeBottomBar(
                 modifier = Modifier.weight(1f)
             ) { onNavigate("tools") }
 
-            AddNavItem(
-                modifier = Modifier.weight(1f),
-                onClick = onPlusClick
-            )
-
             NavItem(
                 icon = if (currentScreen == "history") Icons.Filled.History else Icons.Outlined.History,
                 label = "History",
@@ -398,55 +361,6 @@ fun PaperKnifeBottomBar(
                 selected = currentScreen == "settings" || currentScreen == "about",
                 modifier = Modifier.weight(1f)
             ) { onNavigate("settings") }
-        }
-    }
-}
-
-@Composable
-private fun AddNavItem(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    val haptics = LocalHapticFeedback.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.9f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "addScale"
-    )
-
-    Box(
-        modifier = modifier.fillMaxHeight(),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClick()
-            },
-            modifier = Modifier
-                .size(50.dp)
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                },
-            shape = CircleShape,
-            color = PaperPink,
-            contentColor = Color.White,
-            shadowElevation = 0.dp,
-            interactionSource = interactionSource
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = "Open tools",
-                    modifier = Modifier.size(25.dp)
-                )
-            }
         }
     }
 }
@@ -476,7 +390,7 @@ fun NavItem(
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
-            .padding(horizontal = 2.dp, vertical = 6.dp),
+            .padding(horizontal = 2.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -484,17 +398,17 @@ fun NavItem(
             imageVector = icon,
             contentDescription = label,
             tint = tint,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(23.dp)
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = label,
-            fontSize = 10.sp,
+            fontSize = 10.5.sp,
             fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
             color = tint,
             letterSpacing = 0.2.sp
         )
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 .size(3.dp)

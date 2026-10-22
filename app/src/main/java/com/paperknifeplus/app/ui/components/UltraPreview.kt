@@ -63,6 +63,7 @@ import com.paperknifeplus.app.ui.theme.PaperPink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.Image
@@ -81,14 +82,12 @@ fun UltraPreview(
     onOpenInTool: (String, Uri, String?) -> Unit
 ) {
     val context = LocalContext.current
-    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     
     var showJumpDialog by remember { mutableStateOf(false) }
     var jumpPageInput by remember { mutableStateOf("") }
-    var showToolPicker by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showNewTask by remember { mutableStateOf(false) }
 
     var showMoreMenu by remember { mutableStateOf(false) }
     var showSearchBar by remember { mutableStateOf(false) }
@@ -391,89 +390,22 @@ fun UltraPreview(
             }
 
             if (!isInitializing && fileToUnlock == null) {
-                var isDragging by remember { mutableStateOf(false) }
-                var dragProgress by remember { mutableFloatStateOf(0f) }
-                var trackHeight by remember { mutableFloatStateOf(0f) }
-
-                val scrollPercentage by remember {
+                val currentPage by remember {
                     derivedStateOf {
-                        if (isDragging) dragProgress
-                        else if (activePageCount <= 1) 0f
-                        else {
-                            val layoutInfo = listState.layoutInfo
-                            val visibleItems = layoutInfo.visibleItemsInfo
-                            if (visibleItems.isEmpty()) 0f
-                            else {
-                                val firstItem = visibleItems.first()
-                                val index = firstItem.index
-                                val offset = -firstItem.offset.toFloat()
-                                val size = firstItem.size.toFloat()
-                                val progress = (index + (offset / size)) / (activePageCount - 1).coerceAtLeast(1)
-                                progress.coerceIn(0f, 1f)
-                            }
-                        }
-                    }
-                }
-
-                val currentPage by remember { 
-                    derivedStateOf { 
                         if (!listState.canScrollForward && activePageCount > 0) activePageCount
                         else (listState.firstVisibleItemIndex + 1).coerceIn(1, activePageCount)
-                    } 
+                    }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 4.dp)
-                        .fillMaxHeight(0.75f)
-                        .width(48.dp)
-                        .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
-                        .pointerInput(activePageCount, trackHeight) {
-                            detectTapGestures { offset ->
-                                if (trackHeight > 0) {
-                                    val newPercent = (offset.y / trackHeight).coerceIn(0f, 1f)
-                                    val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
-                                    scope.launch { listState.scrollToItem(targetPage.coerceIn(0, activePageCount - 1)) }
-                                }
-                            }
-                        }
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxHeight().width(6.dp).align(Alignment.Center).background(Color.Gray.copy(alpha = 0.15f), CircleShape)
+                if (activePageCount > 1) {
+                    PdfScrollbar(
+                        listState = listState,
+                        pageCount = activePageCount,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 2.dp)
+                            .fillMaxHeight(0.72f)
                     )
-                    
-                    if (trackHeight > 0 && activePageCount > 1) {
-                        val minThumbHeight = 48.dp
-                        val thumbHeightFactor = 1f / activePageCount.coerceAtLeast(1)
-                        val thumbHeightPx = with(density) { 
-                            (trackHeight * thumbHeightFactor.coerceIn(0.08f, 0.25f)).coerceAtLeast(minThumbHeight.toPx()) 
-                        }
-                        
-                        Box(
-                            modifier = Modifier
-                                .height(with(density) { thumbHeightPx.toDp() })
-                                .width(12.dp)
-                                .graphicsLayer {
-                                    translationY = scrollPercentage * (trackHeight - thumbHeightPx)
-                                }
-                                .background(PaperPink, CircleShape)
-                                .align(Alignment.TopCenter)
-                                .draggable(
-                                    orientation = Orientation.Vertical,
-                                    state = rememberDraggableState { delta ->
-                                        if (trackHeight > thumbHeightPx && activePageCount > 1) {
-                                            isDragging = true
-                                            val newPercent = (scrollPercentage + delta / (trackHeight - thumbHeightPx)).coerceIn(0f, 1f)
-                                            dragProgress = newPercent
-                                            val targetPage = (newPercent * (activePageCount - 1)).roundToInt()
-                                            scope.launch { listState.scrollToItem(targetPage.coerceIn(0, activePageCount - 1)) }
-                                        }
-                                    },
-                                    onDragStopped = { isDragging = false }
-                                )
-                        )
-                    }
                 }
 
                 Box(
@@ -559,8 +491,23 @@ fun UltraPreview(
                         }
                     }
 
-                    IconButton(onClick = { showToolPicker = true }) {
-                        Icon(Icons.Filled.Add, null, tint = PaperPink, modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(4.dp))
+
+                    Surface(
+                        onClick = { showNewTask = true },
+                        enabled = !isInitializing && fileToUnlock == null,
+                        modifier = Modifier.size(38.dp),
+                        shape = CircleShape,
+                        color = PaperPink,
+                        contentColor = Color.White
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = "New task",
+                                modifier = Modifier.size(21.dp)
+                            )
+                        }
                     }
                 }
 
@@ -627,38 +574,34 @@ fun UltraPreview(
         }
 
 
-        if (showToolPicker) {
-            ModalBottomSheet(
-                onDismissRequest = { showToolPicker = false },
-                sheetState = sheetState,
-                containerColor = MaterialTheme.colorScheme.surface,
-                dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray.copy(0.2f)) },
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-            ) {
-                ToolPickerContent(
-                    onToolClick = { tool ->
-                        scope.launch { sheetState.hide() }.invokeOnCompletion { 
-                            showToolPicker = false
-                            onOpenInTool(tool, uri, activePassword)
-                        }
-                    }
-                )
-            }
+        AnimatedVisibility(
+            visible = showNewTask,
+            modifier = Modifier.fillMaxSize(),
+            enter = fadeIn(animationSpec = tween(180)),
+            exit = fadeOut(animationSpec = tween(140))
+        ) {
+            NewTaskScreen(
+                fileName = fileName,
+                pageCount = activePageCount,
+                onDismiss = { showNewTask = false },
+                onToolClick = { tool ->
+                    showNewTask = false
+                    onOpenInTool(tool, activeUri, activePassword)
+                }
+            )
         }
 
         if (fileToUnlock != null) {
-            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(top = 100.dp)) {
-                LockedFilePrompt(
-                    fileName = fileToUnlock!!,
-                    onDismiss = onDismiss,
-                    onUnlocked = { pass ->
-                        fileToUnlock = null
-                        initializeReader(uri, pass)
-                    },
-                    accentColor = PaperPink,
-                    isLoading = isDecrypting
-                )
-            }
+            LockedFilePrompt(
+                fileName = fileToUnlock!!,
+                onDismiss = onDismiss,
+                onUnlocked = { pass ->
+                    fileToUnlock = null
+                    initializeReader(uri, pass)
+                },
+                accentColor = PaperPink,
+                isLoading = isDecrypting
+            )
         }
 
         if (showJumpDialog) {
@@ -699,6 +642,126 @@ fun UltraPreview(
                 shape = RoundedCornerShape(28.dp),
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 6.dp
+            )
+        }
+    }
+}
+
+@Composable
+private fun PdfScrollbar(
+    listState: LazyListState,
+    pageCount: Int,
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    var trackHeight by remember { mutableFloatStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+    var dragProgress by remember { mutableFloatStateOf(0f) }
+
+    val readingProgress by remember(pageCount) {
+        derivedStateOf {
+            if (pageCount <= 1) {
+                0f
+            } else {
+                val first = listState.layoutInfo.visibleItemsInfo.firstOrNull()
+                if (first == null) {
+                    0f
+                } else {
+                    val itemSize = first.size.coerceAtLeast(1)
+                    val within = listState.firstVisibleItemScrollOffset.toFloat() / itemSize
+                    ((first.index + within.coerceIn(0f, 1f)) / (pageCount - 1))
+                        .coerceIn(0f, 1f)
+                }
+            }
+        }
+    }
+    val latestReadingProgress by rememberUpdatedState(readingProgress)
+    val progress = if (isDragging) dragProgress else readingProgress
+
+    val thumbHeightPx = if (trackHeight <= 0f) {
+        0f
+    } else {
+        val proportional = trackHeight / pageCount.coerceAtLeast(1)
+        val minimum = with(density) { 44.dp.toPx() }
+        proportional
+            .coerceIn(trackHeight * 0.08f, trackHeight * 0.22f)
+            .coerceAtLeast(minimum)
+            .coerceAtMost(trackHeight)
+    }
+
+    fun scrollTo(value: Float) {
+        val target = (value.coerceIn(0f, 1f) * (pageCount - 1)).roundToInt()
+            .coerceIn(0, pageCount - 1)
+        scope.launch { listState.scrollToItem(target) }
+    }
+
+    LaunchedEffect(isDragging) {
+        if (!isDragging) return@LaunchedEffect
+        snapshotFlow { dragProgress }.collectLatest { value ->
+            val target = (value * (pageCount - 1)).roundToInt()
+                .coerceIn(0, pageCount - 1)
+            listState.scrollToItem(target)
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .width(32.dp)
+            .onGloballyPositioned { trackHeight = it.size.height.toFloat() }
+            .pointerInput(pageCount, trackHeight) {
+                detectTapGestures { offset ->
+                    if (trackHeight > 0f && pageCount > 1) {
+                        val value = (offset.y / trackHeight).coerceIn(0f, 1f)
+                        dragProgress = value
+                        scrollTo(value)
+                    }
+                }
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxHeight()
+                .width(4.dp)
+                .background(Color.Gray.copy(alpha = 0.16f), CircleShape)
+        )
+
+        if (trackHeight > 0f && pageCount > 1) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .width(14.dp)
+                    .height(with(density) { thumbHeightPx.toDp() })
+                    .offset {
+                        IntOffset(
+                            x = 0,
+                            y = (progress * (trackHeight - thumbHeightPx)).roundToInt()
+                        )
+                    }
+                    .background(PaperPink, CircleShape)
+                    .pointerInput(pageCount, trackHeight, thumbHeightPx) {
+                        detectDragGestures(
+                            onDragStart = {
+                                isDragging = true
+                                dragProgress = latestReadingProgress
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                val available = (trackHeight - thumbHeightPx).coerceAtLeast(1f)
+                                dragProgress = (dragProgress + dragAmount.y / available)
+                                    .coerceIn(0f, 1f)
+                            },
+                            onDragEnd = {
+                                isDragging = false
+                                scrollTo(dragProgress)
+                            },
+                            onDragCancel = {
+                                isDragging = false
+                                scrollTo(dragProgress)
+                            }
+                        )
+                    }
             )
         }
     }
