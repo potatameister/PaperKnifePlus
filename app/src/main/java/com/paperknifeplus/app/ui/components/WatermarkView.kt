@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -99,6 +100,7 @@ fun WatermarkView(
     var activeOpacity by remember { mutableFloatStateOf(1f) }
     var isFocusMode by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
+    var previewPageSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
     
     var showWatermarkOptions by remember { mutableStateOf(false) }
     var showTextInput by remember { mutableStateOf(false) }
@@ -197,14 +199,15 @@ fun WatermarkView(
                                     val page = document.getPage(pageIdx)
                                     PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
                                         val pdImage = LosslessFactory.createFromImage(document, wm.bitmap)
-                                        val pdfWidth = page.mediaBox.width
-                                        val pdfHeight = page.mediaBox.height
+                                        val crop = page.cropBox
+                                        val pdfWidth = crop.width
+                                        val pdfHeight = crop.height
                                         
                                         val drawWidth = pdfWidth * wm.normalizedWidth
                                         val drawHeight = drawWidth * (wm.bitmap.height.toFloat() / wm.bitmap.width.toFloat())
                                         
-                                        val xPos = (wm.normalizedX * pdfWidth) - (drawWidth / 2)
-                                        val yPos = (pdfHeight - (wm.normalizedY * pdfHeight)) - (drawHeight / 2)
+                                        val xPos = crop.lowerLeftX + (wm.normalizedX * pdfWidth) - (drawWidth / 2)
+                                        val yPos = crop.lowerLeftY + ((1f - wm.normalizedY) * pdfHeight) - (drawHeight / 2)
                                         
                                         cs.saveGraphicsState()
                                         val matrix = Matrix()
@@ -244,13 +247,13 @@ fun WatermarkView(
     }
 
     val watermarkOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val containerWidth = constraints.maxWidth.toFloat()
-            val containerHeight = constraints.maxHeight.toFloat()
-            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
-            
-            val pageWidth = fitRect.width()
-            val pageHeight = fitRect.height()
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { previewPageSize = it.size }
+        ) {
+            val pageWidth = constraints.maxWidth.toFloat()
+            val pageHeight = constraints.maxHeight.toFloat()
 
             // Render confirmed watermarks
             placedWatermarks.filter { it.pageIndex == pageIndex || it.pageIndex == -1 }.forEach { wm ->
@@ -263,8 +266,8 @@ fun WatermarkView(
                             height = (pageWidth * wm.normalizedWidth * (wm.bitmap.height.toFloat() / wm.bitmap.width.toFloat())).dp / LocalDensity.current.density
                         )
                         .graphicsLayer {
-                            translationX = fitRect.left + (wm.normalizedX * pageWidth) - (containerWidth / 2)
-                            translationY = fitRect.top + (wm.normalizedY * pageHeight) - (containerHeight / 2)
+                            translationX = pageWidth * (wm.normalizedX - 0.5f)
+                            translationY = pageHeight * (wm.normalizedY - 0.5f)
                             rotationZ = wm.rotation
                             alpha = wm.opacity
                         }
@@ -439,10 +442,6 @@ fun WatermarkView(
     if (lightboxPage != null) {
         val pageIdx = lightboxPage!!
         BoxWithConstraints {
-            val containerWidth = constraints.maxWidth.toFloat()
-            val containerHeight = constraints.maxHeight.toFloat()
-            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
-            
             PageLightbox(
                 uri = selectedUri!!,
                 initialPage = pageIdx,
@@ -450,6 +449,7 @@ fun WatermarkView(
                 password = unlockPassword.ifEmpty { null },
                 onDismiss = { lightboxPage = null; isFocusMode = false; activeWatermarkBitmap = null },
                 itemOverlay = watermarkOverlay,
+                zoomEnabled = false,
                 bottomBar = { currentPage ->
                     Surface(
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
@@ -471,15 +471,17 @@ fun WatermarkView(
                                         Button(
                                             onClick = { 
                                                 activeWatermarkBitmap?.let {
-                                                    val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width()
-                                                    val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height()
+                                                    val pageW = previewPageSize.width.toFloat()
+                                                    val pageH = previewPageSize.height.toFloat()
+                                                    val nx = if (pageW > 0f) 0.5f + activeOffset.x / pageW else 0.5f
+                                                    val ny = if (pageH > 0f) 0.5f + activeOffset.y / pageH else 0.5f
                                                     
                                                     placedWatermarks = placedWatermarks + PlacedWatermark(
                                                         pageIndex = -1,
                                                         bitmap = it,
                                                         normalizedX = nx,
                                                         normalizedY = ny,
-                                                        normalizedWidth = (fitRect.width() * 0.5f * activeScale) / fitRect.width(),
+                                                        normalizedWidth = 0.5f * activeScale,
                                                         rotation = activeRotation,
                                                         opacity = activeOpacity
                                                     )
@@ -494,15 +496,17 @@ fun WatermarkView(
                                         Button(
                                             onClick = { 
                                                 activeWatermarkBitmap?.let {
-                                                    val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width()
-                                                    val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height()
+                                                    val pageW = previewPageSize.width.toFloat()
+                                                    val pageH = previewPageSize.height.toFloat()
+                                                    val nx = if (pageW > 0f) 0.5f + activeOffset.x / pageW else 0.5f
+                                                    val ny = if (pageH > 0f) 0.5f + activeOffset.y / pageH else 0.5f
                                                     
                                                     placedWatermarks = placedWatermarks + PlacedWatermark(
                                                         pageIndex = currentPage,
                                                         bitmap = it,
                                                         normalizedX = nx,
                                                         normalizedY = ny,
-                                                        normalizedWidth = (fitRect.width() * 0.5f * activeScale) / fitRect.width(),
+                                                        normalizedWidth = 0.5f * activeScale,
                                                         rotation = activeRotation,
                                                         opacity = activeOpacity
                                                     )

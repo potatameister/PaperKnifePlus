@@ -177,7 +177,7 @@ fun ExtractImagesView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "Extract Images", "$extractedCount assets", ToolCatalog.icon("extract-images"), saveUri)
+                        SessionManager.addEntry(fileName, "Extract Images", "$extractedCount assets", ToolCatalog.icon("extract-images"), saveUri, mimeType = "application/zip")
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {

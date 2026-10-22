@@ -27,6 +27,7 @@ import coil.compose.LocalImageLoader
 import coil.compose.rememberAsyncImagePainter
 import com.paperknifeplus.app.ui.theme.PaperPink
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -60,6 +61,14 @@ fun CompressView(
     var progressPage by remember { mutableIntStateOf(0) }
     var showLoadingWarning by remember { mutableStateOf(false) }
     var fileToUnlock by remember { mutableStateOf<String?>(null) }
+    var cachedCompression by remember { mutableStateOf<File?>(null) }
+    var estimatedSizeBytes by remember { mutableLongStateOf(0L) }
+    var isEstimating by remember { mutableStateOf(false) }
+    val currentCache by rememberUpdatedState(cachedCompression)
+
+    DisposableEffect(Unit) {
+        onDispose { currentCache?.delete() }
+    }
 
     fun handleFileSelection(uri: Uri, password: String? = null) {
         selectedUri = uri
@@ -106,22 +115,46 @@ fun CompressView(
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         uri?.let { saveUri ->
+            val cached = cachedCompression
             currentState = ToolState.PROCESSING
             val startTime = System.currentTimeMillis()
             scope.launch(Dispatchers.IO) {
                 try {
-                    compressPdf(context, selectedUri!!, saveUri, if (unlockPassword.isEmpty()) null else unlockPassword, compressionLevel) { current, total ->
-                        progressPage = current
+                    if (cached != null && cached.exists()) {
+                        val output = context.contentResolver.openOutputStream(saveUri, "w")
+                            ?: throw IllegalStateException("Cannot open output file")
+                        output.use { out ->
+                            cached.inputStream().use { input -> input.copyTo(out) }
+                        }
+                        withContext(Dispatchers.Main) { progressPage = pageCount }
+                    } else {
+                        compressPdf(context, selectedUri!!, saveUri, if (unlockPassword.isEmpty()) null else unlockPassword, compressionLevel) { current, total ->
+                            progressPage = current
+                        }
                     }
                     val endTime = System.currentTimeMillis()
                     val timeStr = String.format("%.1fs", (endTime - startTime) / 1000.0)
-                    
+
                     val newDetails = getUriDetails(context, saveUri)
-                    val spaceSaved = if (fileSizeOld > 0) ((fileSizeOld - newDetails.sizeBytes).toFloat() / fileSizeOld * 100).toInt().coerceAtLeast(0) else 0
                     val finalCount = getPageCount(context, saveUri, null)
-                    
+                    val savedPercent = if (fileSizeOld > 0 && newDetails.sizeBytes > 0) {
+                        (((fileSizeOld - newDetails.sizeBytes).toFloat() / fileSizeOld) * 100)
+                            .toInt()
+                            .coerceAtLeast(0)
+                    } else {
+                        0
+                    }
+
+                    cached?.delete()
                     withContext(Dispatchers.Main) {
+                        cachedCompression = null
+                        estimatedSizeBytes = 0L
                         processingTime = timeStr
+                        spaceSavedText = if (savedPercent > 0) {
+                            "Saved $savedPercent% • ${formatSize(newDetails.sizeBytes)}"
+                        } else {
+                            "No size reduction"
+                        }
                         outputUri = saveUri
                         fileName = getUriDetails(context, saveUri).name
                         SessionManager.addEntry(fileName, "Compress", "Optimized", ToolCatalog.icon("compress"), saveUri, finalCount)
@@ -134,6 +167,36 @@ fun CompressView(
                     }
                 }
             }
+        }
+    }
+
+    LaunchedEffect(selectedUri, compressionLevel, currentState, unlockPassword) {
+        if (currentState != ToolState.CONFIGURING || selectedUri == null) return@LaunchedEffect
+        cachedCompression?.delete()
+        cachedCompression = null
+        estimatedSizeBytes = 0L
+        isEstimating = true
+        delay(450)
+        val temp = File(context.cacheDir, "compress_estimate_${System.currentTimeMillis()}.pdf")
+        var keep = false
+        try {
+            compressPdf(
+                context = context,
+                inputUri = selectedUri!!,
+                outputUri = Uri.fromFile(temp),
+                password = unlockPassword.ifEmpty { null },
+                level = compressionLevel,
+                onProgress = { _, _ -> }
+            )
+            if (temp.exists() && temp.length() > 0L) {
+                cachedCompression = temp
+                estimatedSizeBytes = temp.length()
+                keep = true
+            }
+        } catch (_: Exception) {
+        } finally {
+            if (!keep) temp.delete()
+            isEstimating = false
         }
     }
 
@@ -183,19 +246,33 @@ fun CompressView(
                                 accentColor = accentColor
                             )
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
 
-                            Box(modifier = Modifier.fillMaxWidth(0.5f).aspectRatio(0.707f)) {
-                                UnifiedPdfPreview(
-                                    uri = selectedUri!!,
-                                    pageCount = pageCount,
-                                    mode = PreviewMode.COVER,
-                                    password = null,
-                                    accentColor = accentColor
-                                )
+                            BoxWithConstraints(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val previewWidth = minOf(maxWidth * 0.72f, maxHeight * 0.707f)
+                                Box(modifier = Modifier.width(previewWidth).aspectRatio(0.707f)) {
+                                    UnifiedPdfPreview(
+                                        uri = selectedUri!!,
+                                        pageCount = pageCount,
+                                        mode = PreviewMode.COVER,
+                                        password = null,
+                                        accentColor = accentColor
+                                    )
+                                }
                             }
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
+                            CompressionEstimateCard(
+                                originalBytes = fileSizeOld,
+                                estimatedBytes = estimatedSizeBytes,
+                                isEstimating = isEstimating,
+                                accentColor = accentColor
+                            )
+
+                            Spacer(Modifier.height(12.dp))
                             Text("COMPRESSION LEVEL", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accentColor, letterSpacing = 1.5.sp)
                             Spacer(Modifier.height(8.dp))
 
@@ -242,7 +319,7 @@ fun CompressView(
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
 
-                            Spacer(Modifier.weight(1f))
+                            Spacer(Modifier.height(12.dp))
 
                             Button(
                                 onClick = {
@@ -250,6 +327,7 @@ fun CompressView(
                                     saveLauncher.launch(defaultName)
                                 },
                                 modifier = Modifier.fillMaxWidth().height(60.dp),
+                                enabled = !isEstimating,
                                 shape = RoundedCornerShape(20.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
                             ) {
@@ -272,13 +350,17 @@ fun CompressView(
                     ToolState.SUCCESS -> {
                         SuccessView(
                             message = "Compression Complete",
-                            subMessage = "", // REMOVED 0B BUG
+                            subMessage = spaceSavedText.ifBlank { "Saved successfully" },
                             processingTime = processingTime,
                             onDone = onBack,
                             onProcessMore = { 
                                 selectedUri = null
                                 outputUri = null
                                 unlockPassword = ""
+                                cachedCompression?.delete()
+                                cachedCompression = null
+                                estimatedSizeBytes = 0L
+                                isEstimating = false
                                 currentState = ToolState.SELECTING 
                             },
                             onPreview = {
@@ -324,6 +406,101 @@ fun CompressView(
                     accentColor = accentColor,
                     isLoading = isFileLoading
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompressionEstimateCard(
+    originalBytes: Long,
+    estimatedBytes: Long,
+    isEstimating: Boolean,
+    accentColor: Color
+) {
+    val savings = if (originalBytes > 0 && estimatedBytes > 0) {
+        (((originalBytes - estimatedBytes).toFloat() / originalBytes) * 100)
+            .toInt()
+            .coerceAtLeast(0)
+    } else {
+        0
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.06f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(accentColor.copy(alpha = 0.10f), RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Compress,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = when {
+                        isEstimating -> "Estimating compressed size..."
+                        estimatedBytes > 0 && savings > 0 -> "Estimated reduction"
+                        estimatedBytes > 0 -> "Size estimate"
+                        else -> "Original size"
+                    },
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = accentColor,
+                    letterSpacing = 0.8.sp
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = when {
+                        isEstimating -> formatSize(originalBytes)
+                        estimatedBytes > 0 -> "${formatSize(originalBytes)} → ${formatSize(estimatedBytes)}"
+                        else -> formatSize(originalBytes)
+                    },
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            when {
+                isEstimating -> {
+                    CircularProgressIndicator(
+                        color = accentColor,
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+                estimatedBytes > 0 -> {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (savings > 0) {
+                            Color(0xFF10B981).copy(alpha = 0.12f)
+                        } else {
+                            Color.Gray.copy(alpha = 0.10f)
+                        }
+                    ) {
+                        Text(
+                            text = if (savings > 0) "-$savings%" else "0%",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (savings > 0) Color(0xFF059669) else Color.Gray
+                        )
+                    }
+                }
             }
         }
     }

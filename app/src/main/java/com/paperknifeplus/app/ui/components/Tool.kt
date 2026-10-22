@@ -11,7 +11,9 @@ data class ActivityEntry(
     val size: String,
     val icon: ImageVector,
     val uri: Uri? = null,
-    val pageCount: Int = 0
+    val pageCount: Int = 0,
+    val mimeType: String = "application/pdf",
+    val textContent: String? = null
 )
 
 data class Tool(
@@ -30,7 +32,16 @@ data class Tool(
 object SessionManager {
     val history = mutableStateListOf<ActivityEntry>()
     
-    fun addEntry(name: String, tool: String, size: String, icon: ImageVector, uri: Uri? = null, pageCount: Int = 0) {
+    fun addEntry(
+        name: String,
+        tool: String,
+        size: String,
+        icon: ImageVector,
+        uri: Uri? = null,
+        pageCount: Int = 0,
+        mimeType: String = "application/pdf",
+        textContent: String? = null
+    ) {
         history.add(0, ActivityEntry(
             id = System.currentTimeMillis().toString(),
             name = name,
@@ -38,7 +49,9 @@ object SessionManager {
             size = size,
             icon = icon,
             uri = uri,
-            pageCount = pageCount
+            pageCount = pageCount,
+            mimeType = mimeType,
+            textContent = textContent
         ))
     }
 

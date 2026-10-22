@@ -112,7 +112,7 @@ fun PdfToTextView(
                 extractedText = text
                 processingTime = time
                 withContext(Dispatchers.Main) {
-                    SessionManager.addEntry(fileName, "PDF to Text", "${text.length} chars", ToolCatalog.icon("pdf2text"))
+                    SessionManager.addEntry(fileName, "PDF to Text", "${text.length} chars", ToolCatalog.icon("pdf2text"), mimeType = "text/plain", textContent = text)
                     currentState = ToolState.SUCCESS
                 }
             }

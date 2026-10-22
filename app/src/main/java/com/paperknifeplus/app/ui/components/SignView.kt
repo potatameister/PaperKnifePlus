@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -105,6 +106,7 @@ fun SignView(
     var activeRotation by remember { mutableFloatStateOf(0f) }
     var isFocusMode by remember { mutableStateOf(false) }
     var lightboxPage by remember { mutableStateOf<Int?>(null) }
+    var previewPageSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
     
     var showSignOptions by remember { mutableStateOf(false) }
     var showSignaturePad by remember { mutableStateOf(false) }
@@ -220,15 +222,16 @@ fun SignView(
                                 PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
                                     sigs.forEach { sig ->
                                         val pdImage = LosslessFactory.createFromImage(document, sig.bitmap)
-                                        val pdfWidth = page.mediaBox.width
-                                        val pdfHeight = page.mediaBox.height
+                                        val crop = page.cropBox
+                                        val pdfWidth = crop.width
+                                        val pdfHeight = crop.height
                                         
                                         // 1:1 NATIVE MAPPING
                                         val drawWidth = pdfWidth * sig.normalizedWidth
                                         val drawHeight = drawWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())
                                         
-                                        val xPos = (sig.normalizedX * pdfWidth) - (drawWidth / 2)
-                                        val yPos = (pdfHeight - (sig.normalizedY * pdfHeight)) - (drawHeight / 2)
+                                        val xPos = crop.lowerLeftX + (sig.normalizedX * pdfWidth) - (drawWidth / 2)
+                                        val yPos = crop.lowerLeftY + ((1f - sig.normalizedY) * pdfHeight) - (drawHeight / 2)
                                         
                                         cs.saveGraphicsState()
                                         val matrix = Matrix()
@@ -285,14 +288,13 @@ fun SignView(
     }
 
     val signatureOverlay: @Composable (BoxScope.(Int) -> Unit) = { pageIndex ->
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val containerWidth = constraints.maxWidth.toFloat()
-            val containerHeight = constraints.maxHeight.toFloat()
-            // GOLDEN BOUND: Map relative to Aspect-Fit content
-            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
-            
-            val pageWidth = fitRect.width()
-            val pageHeight = fitRect.height()
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { previewPageSize = it.size }
+        ) {
+            val pageWidth = constraints.maxWidth.toFloat()
+            val pageHeight = constraints.maxHeight.toFloat()
 
             // Render confirmed signatures
             placedSignatures.filter { it.pageIndex == pageIndex }.forEach { sig ->
@@ -305,19 +307,19 @@ fun SignView(
                             height = (pageWidth * sig.normalizedWidth * (sig.bitmap.height.toFloat() / sig.bitmap.width.toFloat())).dp / LocalDensity.current.density
                         )
                         .graphicsLayer {
-                            translationX = fitRect.left + (sig.normalizedX * pageWidth) - (containerWidth / 2)
-                            translationY = fitRect.top + (sig.normalizedY * pageHeight) - (containerHeight / 2)
+                            translationX = pageWidth * (sig.normalizedX - 0.5f)
+                            translationY = pageHeight * (sig.normalizedY - 0.5f)
                             rotationZ = sig.rotation
                         }
                         .align(Alignment.Center)
                 )
             }
-            
+
             // Render active signature in Focus Mode
             if (isFocusMode && activeSignatureBitmap != null && (lightboxPage == pageIndex || lightboxPage == null)) {
                 val bitmap = activeSignatureBitmap!!
                 val baseWidth = pageWidth * 0.4f
-                
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -483,10 +485,6 @@ fun SignView(
     if (lightboxPage != null) {
         val pageIdx = lightboxPage!!
         BoxWithConstraints {
-            val containerWidth = constraints.maxWidth.toFloat()
-            val containerHeight = constraints.maxHeight.toFloat()
-            val fitRect = LayoutMath.getFitRect(containerWidth, containerHeight, 0.707f)
-            
             PageLightbox(
                 uri = selectedUri!!,
                 initialPage = pageIdx,
@@ -494,6 +492,7 @@ fun SignView(
                 password = unlockPassword.ifEmpty { null },
                 onDismiss = { lightboxPage = null; isFocusMode = false; activeSignatureBitmap = null },
                 itemOverlay = signatureOverlay,
+                zoomEnabled = false,
                 bottomBar = { currentPage ->
                     Surface(
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp),
@@ -509,16 +508,18 @@ fun SignView(
                                 Button(
                                     onClick = { 
                                         activeSignatureBitmap?.let {
-                                            // Normalizing relative to the fit-box
-                                            val nx = (activeOffset.x + (containerWidth / 2) - fitRect.left) / fitRect.width()
-                                            val ny = (activeOffset.y + (containerHeight / 2) - fitRect.top) / fitRect.height()
-                                            
+                                            // Normalize against the actual on-screen page bounds.
+                                            val pageW = previewPageSize.width.toFloat()
+                                            val pageH = previewPageSize.height.toFloat()
+                                            val nx = if (pageW > 0f) 0.5f + activeOffset.x / pageW else 0.5f
+                                            val ny = if (pageH > 0f) 0.5f + activeOffset.y / pageH else 0.5f
+
                                             placedSignatures = placedSignatures + PlacedSignature(
                                                 pageIndex = currentPage,
                                                 bitmap = it,
                                                 normalizedX = nx,
                                                 normalizedY = ny,
-                                                normalizedWidth = (fitRect.width() * 0.4f * activeScale) / fitRect.width(),
+                                                normalizedWidth = 0.4f * activeScale,
                                                 rotation = activeRotation
                                             )
                                         }

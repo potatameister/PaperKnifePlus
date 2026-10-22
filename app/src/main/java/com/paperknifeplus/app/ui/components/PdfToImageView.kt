@@ -117,7 +117,7 @@ fun PdfToImageView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "PDF to Image", "${selectedPages.size} images", ToolCatalog.icon("pdf2img"), saveUri)
+                        SessionManager.addEntry(fileName, "PDF to Image", "${selectedPages.size} images", ToolCatalog.icon("pdf2img"), saveUri, mimeType = "application/zip")
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {

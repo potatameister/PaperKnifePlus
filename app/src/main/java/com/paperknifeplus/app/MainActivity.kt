@@ -203,10 +203,38 @@ class MainActivity : ComponentActivity() {
                                             toolInitialPassword = null
                                             currentTool = it 
                                         })
-                                        "history" -> HistoryView(onItemClick = { uri, name, count ->
-                                            previewData = Triple(uri, name, count)
-                                            toolInitialPassword = null
-                                            currentTool = "ultra_preview"
+                                        "history" -> HistoryView(onItemClick = { entry ->
+                                            entry.uri?.let { uri ->
+                                                val isPdf = entry.mimeType == "application/pdf" ||
+                                                    entry.name.endsWith(".pdf", ignoreCase = true)
+                                                if (isPdf) {
+                                                    previewData = Triple(uri, entry.name, entry.pageCount)
+                                                    toolInitialPassword = null
+                                                    currentTool = "ultra_preview"
+                                                } else {
+                                                    try {
+                                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                                            setDataAndType(uri, entry.mimeType)
+                                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                        }
+                                                        startActivity(android.content.Intent.createChooser(intent, "Open with"))
+                                                    } catch (e: Exception) {
+                                                        try {
+                                                            val fallback = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                                                setDataAndType(uri, "*/*")
+                                                                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                            }
+                                                            startActivity(android.content.Intent.createChooser(fallback, "Open with"))
+                                                        } catch (e2: Exception) {
+                                                            android.widget.Toast.makeText(
+                                                                applicationContext,
+                                                                "No app can open this file",
+                                                                android.widget.Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         })
                                         "settings" -> SettingsView(
                                             isDarkMode = isDarkMode,

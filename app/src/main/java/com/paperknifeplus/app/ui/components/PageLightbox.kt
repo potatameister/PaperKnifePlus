@@ -62,7 +62,8 @@ fun PageLightbox(
     onToggleSelection: ((Int) -> Unit)? = null,
     isGrayscale: Boolean = false,
     itemOverlay: @Composable (BoxScope.(Int) -> Unit)? = null,
-    bottomBar: @Composable (BoxScope.(Int) -> Unit)? = null
+    bottomBar: @Composable (BoxScope.(Int) -> Unit)? = null,
+    zoomEnabled: Boolean = true
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
@@ -142,9 +143,32 @@ fun PageLightbox(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Box(
+                    val containerWidth = constraints.maxWidth.toFloat()
+                    val containerHeight = constraints.maxHeight.toFloat()
+                    val painter = rememberAsyncImagePainter(request, imageLoader)
+                    val intrinsic = painter.intrinsicSize
+                    val pageAspect = if (
+                        intrinsic.width > 0f &&
+                        intrinsic.height > 0f &&
+                        !intrinsic.width.isNaN() &&
+                        !intrinsic.height.isNaN()
+                    ) {
+                        intrinsic.width / intrinsic.height
+                    } else {
+                        0.707f
+                    }
+                    val containerAspect = if (containerHeight > 0f) containerWidth / containerHeight else 0.707f
+                    val fitWidth = if (containerAspect > pageAspect) containerHeight * pageAspect else containerWidth
+                    val fitHeight = if (containerAspect > pageAspect) {
+                        containerHeight
+                    } else if (pageAspect > 0f) {
+                        containerWidth / pageAspect
+                    } else {
+                        containerWidth
+                    }
+
+                    val gestureModifier = if (zoomEnabled) {
                         Modifier
-                            .fillMaxSize()
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onDoubleTap = { tapOffset ->
@@ -172,8 +196,8 @@ fun PageLightbox(
                                             val newScale = (scale * zoom).coerceIn(1f, 4f)
                                             scale = newScale
                                             if (newScale > 1f) {
-                                                val maxX = size.width * (newScale - 1) / 2f
-                                                val maxY = size.height * (newScale - 1) / 2f
+                                                val maxX = fitWidth * (newScale - 1) / 2f
+                                                val maxY = fitHeight * (newScale - 1) / 2f
                                                 val newOffset = offset + pan
                                                 offset = Offset(
                                                     newOffset.x.coerceIn(-maxX, maxX),
@@ -186,8 +210,8 @@ fun PageLightbox(
                                         } else if (pressedCount == 1 && scale > 1.01f) {
                                             val pan = event.calculatePan()
                                             if (pan != Offset.Zero) {
-                                                val maxX = size.width * (scale - 1) / 2f
-                                                val maxY = size.height * (scale - 1) / 2f
+                                                val maxX = fitWidth * (scale - 1) / 2f
+                                                val maxY = fitHeight * (scale - 1) / 2f
                                                 val newOffset = offset + pan
                                                 offset = Offset(
                                                     newOffset.x.coerceIn(-maxX, maxX),
@@ -198,14 +222,21 @@ fun PageLightbox(
                                         }
                                     }
                                 }
-                            },
+                            }
+                    } else {
+                        Modifier
+                    }
+
+                    Box(
+                        Modifier.fillMaxSize().then(gestureModifier),
                         contentAlignment = Alignment.Center
                     ) {
-                        val painter = rememberAsyncImagePainter(request, imageLoader)
-                        
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
+                                .size(
+                                    width = with(density) { fitWidth.toDp() },
+                                    height = with(density) { fitHeight.toDp() }
+                                )
                                 .graphicsLayer(
                                     scaleX = animatedScale,
                                     scaleY = animatedScale,
@@ -218,11 +249,11 @@ fun PageLightbox(
                                 painter = painter,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit,
+                                contentScale = ContentScale.FillBounds,
                                 colorFilter = if (isGrayscale) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null
                             )
-                            
-                            // PRO: Apply tool overlay (page numbers, etc) inside the zoomable layer
+
+                            // The overlay now receives the exact page bounds, not the screen bounds.
                             itemOverlay?.invoke(this, pageIndex)
                         }
 

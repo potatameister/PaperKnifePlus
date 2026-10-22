@@ -149,7 +149,7 @@ fun PdfToZipView(
                     withContext(Dispatchers.Main) {
                         processingTime = timeStr
                         fileName = getUriDetails(context, saveUri).name
-                        SessionManager.addEntry(fileName, "PDF to ZIP", "$pageCount pages archived", ToolCatalog.icon("pdf2zip"), saveUri)
+                        SessionManager.addEntry(fileName, "PDF to ZIP", "$pageCount pages archived", ToolCatalog.icon("pdf2zip"), saveUri, mimeType = "application/zip")
                         currentState = ToolState.SUCCESS
                     }
                 } catch (e: Exception) {
