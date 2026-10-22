@@ -29,11 +29,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import coil.ImageLoader
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
@@ -65,9 +68,13 @@ fun PageLightbox(
     val pagerState = rememberPagerState(initialPage = initialPage) { totalCount }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val navBarPadding = with(density) {
-        WindowInsets.navigationBars.getBottom(density).toDp()
+    val view = LocalView.current
+    val navBarPx = remember(view) {
+        ViewCompat.getRootWindowInsets(view)
+            ?.getInsets(WindowInsetsCompat.Type.navigationBars())
+            ?.bottom ?: 0
     }
+    val navBarPadding = with(density) { navBarPx.toDp() }
     
     var showJumpDialog by remember { mutableStateOf(false) }
     var jumpPageInput by remember { mutableStateOf("") }
