@@ -9,17 +9,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -28,8 +25,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -104,7 +99,6 @@ class MainActivity : ComponentActivity() {
 
             CompositionLocalProvider(coil.compose.LocalImageLoader provides nitroImageLoader) {
                 PaperKnifePlusTheme(darkTheme = isDarkMode) {
-                    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                     var showToolPicker by remember { mutableStateOf(false) }
                     val scope = rememberCoroutineScope()
                     val haptics = LocalHapticFeedback.current
@@ -162,7 +156,7 @@ class MainActivity : ComponentActivity() {
 
                         BackHandler(enabled = currentTool != null || pagerState.currentPage != 0 || showToolPicker) {
                             if (showToolPicker) {
-                                scope.launch { sheetState.hide() }.invokeOnCompletion { showToolPicker = false }
+                                showToolPicker = false
                             } else if (currentTool != null) {
                                 currentTool = null
                             } else if (pagerState.currentPage != 0) {
@@ -237,7 +231,7 @@ class MainActivity : ComponentActivity() {
                             }
 
                             if (currentTool == null) {
-                                FixedTitanBottomBar(
+                                PaperKnifeBottomBar(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter),
                                     currentScreen = mainScreens[pagerState.currentPage],
@@ -252,27 +246,6 @@ class MainActivity : ComponentActivity() {
                                         showToolPicker = true
                                     }
                                 )
-                            }
-
-                            if (showToolPicker) {
-                                ModalBottomSheet(
-                                    onDismissRequest = { showToolPicker = false },
-                                    sheetState = sheetState,
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray.copy(0.2f)) },
-                                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-                                ) {
-                                    ToolPickerContent(
-                                        onToolClick = { tool ->
-                                            scope.launch { sheetState.hide() }.invokeOnCompletion { 
-                                                showToolPicker = false
-                                                toolInitialUri = previewData?.first
-                                                toolInitialPassword = null
-                                                currentTool = tool 
-                                            }
-                                        }
-                                    )
-                                }
                             }
 
                             androidx.compose.animation.AnimatedVisibility(
@@ -320,6 +293,27 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
+
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = showToolPicker,
+                                modifier = Modifier.fillMaxSize(),
+                                enter = androidx.compose.animation.slideInVertically(
+                                    initialOffsetY = { it / 8 }
+                                ) + androidx.compose.animation.fadeIn(animationSpec = tween(200)),
+                                exit = androidx.compose.animation.slideOutVertically(
+                                    targetOffsetY = { it / 8 }
+                                ) + androidx.compose.animation.fadeOut(animationSpec = tween(160))
+                            ) {
+                                ToolLauncher(
+                                    onDismiss = { showToolPicker = false },
+                                    onToolClick = { tool ->
+                                        showToolPicker = false
+                                        toolInitialUri = previewData?.first
+                                        toolInitialPassword = null
+                                        currentTool = tool
+                                    }
+                                )
+                            }
                         }
 
                         androidx.compose.animation.AnimatedVisibility(
@@ -347,85 +341,111 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun FixedTitanBottomBar(
+fun PaperKnifeBottomBar(
     modifier: Modifier = Modifier,
     currentScreen: String,
     onNavigate: (String) -> Unit,
     onPlusClick: () -> Unit
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Box(
             modifier = Modifier
-                .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.background.copy(alpha = 0.92f)
-                        )
-                    )
-                )
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.10f))
         )
 
-        Surface(
-            modifier = Modifier.fillMaxWidth().height(68.dp),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-            shadowElevation = 0.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                NavItem(
-                    icon = if (currentScreen == "home") Icons.Filled.Home else Icons.Outlined.Home,
-                    label = "Home",
-                    selected = currentScreen == "home",
-                    modifier = Modifier.weight(1f)
-                ) { onNavigate("home") }
-
-                NavItem(
-                    icon = if (currentScreen == "tools") Icons.Filled.GridView else Icons.Outlined.GridView,
-                    label = "Tools",
-                    selected = currentScreen == "tools",
-                    modifier = Modifier.weight(1f)
-                ) { onNavigate("tools") }
-
-                Spacer(modifier = Modifier.width(72.dp))
-
-                NavItem(
-                    icon = if (currentScreen == "history") Icons.Filled.History else Icons.Outlined.History,
-                    label = "History",
-                    selected = currentScreen == "history",
-                    modifier = Modifier.weight(1f)
-                ) { onNavigate("history") }
-
-                NavItem(
-                    icon = if (currentScreen == "settings" || currentScreen == "about") Icons.Filled.Settings else Icons.Outlined.Settings,
-                    label = "Settings",
-                    selected = currentScreen == "settings" || currentScreen == "about",
-                    modifier = Modifier.weight(1f)
-                ) { onNavigate("settings") }
-            }
-        }
-
-        Surface(
-            onClick = onPlusClick,
+        Row(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (-18).dp)
-                .size(58.dp),
-            shape = RoundedCornerShape(20.dp),
+                .fillMaxWidth()
+                .height(64.dp)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            NavItem(
+                icon = if (currentScreen == "home") Icons.Filled.Home else Icons.Outlined.Home,
+                label = "Home",
+                selected = currentScreen == "home",
+                modifier = Modifier.weight(1f)
+            ) { onNavigate("home") }
+
+            NavItem(
+                icon = if (currentScreen == "tools") Icons.Filled.GridView else Icons.Outlined.GridView,
+                label = "Tools",
+                selected = currentScreen == "tools",
+                modifier = Modifier.weight(1f)
+            ) { onNavigate("tools") }
+
+            AddNavItem(
+                modifier = Modifier.weight(1f),
+                onClick = onPlusClick
+            )
+
+            NavItem(
+                icon = if (currentScreen == "history") Icons.Filled.History else Icons.Outlined.History,
+                label = "History",
+                selected = currentScreen == "history",
+                modifier = Modifier.weight(1f)
+            ) { onNavigate("history") }
+
+            NavItem(
+                icon = if (currentScreen == "settings" || currentScreen == "about") Icons.Filled.Settings else Icons.Outlined.Settings,
+                label = "Settings",
+                selected = currentScreen == "settings" || currentScreen == "about",
+                modifier = Modifier.weight(1f)
+            ) { onNavigate("settings") }
+        }
+    }
+}
+
+@Composable
+private fun AddNavItem(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.9f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "addScale"
+    )
+
+    Box(
+        modifier = modifier.fillMaxHeight(),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            },
+            modifier = Modifier
+                .size(50.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+            shape = CircleShape,
             color = PaperPink,
-            border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+            contentColor = Color.White,
+            shadowElevation = 0.dp,
+            interactionSource = interactionSource
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(28.dp))
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "Open tools",
+                    modifier = Modifier.size(25.dp)
+                )
             }
         }
     }
@@ -443,26 +463,20 @@ fun NavItem(
         targetValue = if (selected) PaperPink else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
         label = "navTint"
     )
-    val background by animateColorAsState(
-        targetValue = if (selected) PaperPink.copy(alpha = 0.10f) else Color.Transparent,
-        label = "navBackground"
-    )
     val haptics = LocalHapticFeedback.current
-    val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.08f else 1f,
-        label = "navIconScale"
-    )
+    val interactionSource = remember { MutableInteractionSource() }
 
     Column(
         modifier = modifier
-            .padding(horizontal = 2.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(background)
-            .clickable {
+            .fillMaxHeight()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) {
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
-            .padding(vertical = 6.dp, horizontal = 4.dp),
+            .padding(horizontal = 2.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -470,12 +484,7 @@ fun NavItem(
             imageVector = icon,
             contentDescription = label,
             tint = tint,
-            modifier = Modifier
-                .size(22.dp)
-                .graphicsLayer {
-                    scaleX = iconScale
-                    scaleY = iconScale
-                }
+            modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
@@ -484,6 +493,13 @@ fun NavItem(
             fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
             color = tint,
             letterSpacing = 0.2.sp
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Box(
+            modifier = Modifier
+                .size(3.dp)
+                .clip(CircleShape)
+                .background(if (selected) PaperPink else Color.Transparent)
         )
     }
 }

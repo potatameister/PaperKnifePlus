@@ -803,10 +803,10 @@ fun PdfPageReaderItem(
                 val isActive = match === activeMatch
                 match.rects.forEach { rect ->
                     val r = rotateNormalizedRect(
-                        rect.lowerLeftX,
-                        rect.lowerLeftY,
-                        rect.upperRightX,
-                        rect.upperRightY,
+                        rect.left,
+                        rect.top,
+                        rect.right,
+                        rect.bottom,
                         rotation
                     )
                     val left = (offsetX + r[0] * drawWidth - 1f).coerceAtLeast(0f)

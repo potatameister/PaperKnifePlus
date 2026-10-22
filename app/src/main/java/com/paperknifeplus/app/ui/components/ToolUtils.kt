@@ -519,9 +519,21 @@ suspend fun decryptToCache(context: Context, uri: Uri, password: String): Uri? =
     }
 }
 
+/**
+ * Page-space rectangle with a top-left origin and coordinates normalized to 0..1.
+ * Keeping this separate from [PDRectangle] avoids confusing PDF's bottom-left
+ * origin and its `(x, y, width, height)` constructor with edge coordinates.
+ */
+data class NormalizedRect(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float
+)
+
 data class TextMatch(
     val pageIndex: Int,
-    val rects: List<PDRectangle>,
+    val rects: List<NormalizedRect>,
     val snippet: String = ""
 )
 
@@ -593,7 +605,7 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
 
                                     line.forEach { position ->
                                         minX = minOf(minX, position.xDirAdj)
-                                        maxX = maxOf(maxX, position.xDirAdj + position.widthDirAdj * 0.95f)
+                                        maxX = maxOf(maxX, position.xDirAdj + position.widthDirAdj)
                                         minY = minOf(minY, position.yDirAdj - position.heightDir * 1.25f)
                                         maxY = maxOf(maxY, position.yDirAdj)
                                     }
@@ -603,7 +615,7 @@ suspend fun findAllTextMatches(context: Context, uri: Uri, password: String?, qu
                                     val nx2 = (maxX / pageWidth).coerceIn(0f, 1f)
                                     val ny2 = (maxY / pageHeight).coerceIn(0f, 1f)
                                     if (nx2 <= nx || ny2 <= ny) null
-                                    else PDRectangle(nx, ny, nx2, ny2)
+                                    else NormalizedRect(nx, ny, nx2, ny2)
                                 }
 
                                 if (rects.isNotEmpty()) {
