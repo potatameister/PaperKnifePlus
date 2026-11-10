@@ -1,0 +1,46 @@
+name: Download stats
+
+# Recalculates the combined download count behind the README badge.
+# This workflow only commits .github/badges/downloads.json on main:
+# it never creates tags or releases, so F-Droid / IzzyOnDroid builds are
+# not triggered. The [skip ci] marker and GITHUB_TOKEN push also keep the
+# regular Build workflow from running.
+
+on:
+  schedule:
+    - cron: "17 3 * * *" # daily, 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: download-stats
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Recalculate download totals
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/update-download-stats.py
+
+      - name: Commit badge data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/badges/downloads.json
+          if git diff --cached --quiet; then
+            echo "No change - nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore(badges): update download stats [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
