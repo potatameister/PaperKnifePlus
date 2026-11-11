@@ -11,9 +11,6 @@
 <a href="https://github.com/potatameister/PaperKnifePlus/releases/latest">
   <img src="https://img.shields.io/badge/Download-APK-2ea44f?style=for-the-badge&logo=android&logoColor=white" alt="Download APK">
 </a>
-<a href="https://apt.izzysoft.de/packages/com.paperknifeplus.app">
-  <img src="https://img.shields.io/badge/dynamic/json?url=https://dlstats.izzyondroid.org/iod-stats-collector/stats/basic/yearly/rolling.json&amp;query=%24.%5B%27com.paperknifeplus.app%27%5D&amp;label=Yearly%20downloads&amp;style=for-the-badge" alt="Yearly downloads">
-</a>
 <a href="https://github.com/potatameister/PaperKnifePlus/releases" title="IzzyOnDroid + GitHub Releases (F-Droid does not publish download stats)">
   <img src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/potatameister/PaperKnifePlus/main/.github/badges/downloads.json&amp;query=%24.display&amp;label=Total%20downloads&amp;style=for-the-badge&amp;color=EA4AAA" alt="Total downloads (IzzyOnDroid + GitHub Releases)">
 </a>
